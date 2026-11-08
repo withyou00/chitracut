@@ -72,7 +72,7 @@ const itemStart = it => it.type ? it.start : derived[it.id].start;
 const itemDur = it => it.type ? it.dur : derived[it.id].dur;
 function thumbFor(it){ if(it && it.type === 'gfx'){ const c = document.createElement('canvas'); c.width = 160; c.height = 90; paintGfx(c, it.gfx, (GFXMAP[it.gfx]||{}).thumbT||1); return c.toDataURL(); }
   const m = it && media(it.mediaId); return (m && m.thumb && m.type !== 'audio') ? m.thumb : (S.clips[0] && (media(S.clips[0].mediaId)||{}).thumb) || PLACEHOLDER; }
-function visTarget(){ const it = selItem(); if(it && (!it.type || isMediaOv(it))) return it; return clipAt(S.time); }
+function visTarget(){ const it = selItem(); if(it && (!it.type || isMediaOv(it) || it.type === 'adjust')) return it; return clipAt(S.time); }
 function transTarget(){ const c = selClip(); if(c && S.clips.indexOf(c) > 0) return c; const p = clipAt(S.time); if(p && S.clips.indexOf(p) > 0) return p; return S.clips[1] || null; }
 const usedMedia = id => S.clips.some(c=>c.mediaId===id) || S.overlays.some(o=>o.mediaId===id) || S.audios.some(a=>a.mediaId===id);
 function setFill(el){ const mn=+el.min||0, mx=+el.max||100, v=+el.value; el.style.setProperty('--p', ((v-mn)/(mx-mn||1)*100)+'%'); }
@@ -107,10 +107,10 @@ const FILTER_CSS = {none:'',vivid:'saturate(1.45) contrast(1.15)',warm:'sepia(.3
 /* =====================================================================
    LEFT PANEL
    ===================================================================== */
-const LTABS = [['media','Media','media'],['audio','Audio','audio'],['text','Text','text'],['stickers','Stickers','sticker'],['effects','Effects','effects'],['transitions','Transitions','trans'],['captions','Captions','captions'],['filters','Filters','filters'],['adjust','Adjustment','adjust']];
+const LTABS = [['media','Media','media'],['templates','Templates','library'],['audio','Audio','audio'],['text','Text','text'],['stickers','Stickers','sticker'],['effects','Effects','effects'],['transitions','Transitions','trans'],['captions','Captions','captions'],['filters','Filters','filters'],['adjust','Adjustment','adjust']];
 const LSUB = {media:[['all','All'],['video','Videos'],['image','Photos'],['audio','Audio'],['library','Library']], audio:[['sfx','Sound effects'],['yours','Yours'],['voice','Voice-over'],['tts','Text to speech']],
-  text:[['add','Add text'],['styles','Text styles'],['effects','Text effects']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[['video','Video effects'],['body','Body effects']], transitions:[['all','Transitions']],
-  captions:[['auto','Auto captions'],['srt','SRT file']], filters:[['filters','Filters']], adjust:[['lut','LUT'],['adjust','Adjust']]};
+  text:[['add','Add text'],['templates','Text templates'],['styles','Text styles'],['effects','Text effects']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[['video','Video effects'],['body','Body effects']], transitions:[['all','Transitions']],
+  templates:TPL_CATS.map(c=>[c,c]), captions:[['auto','Auto captions'],['edit','Edit captions'],['srt','SRT file']], filters:[['filters','Filters']], adjust:[['lut','LUT'],['adjust','Adjust']]};
 const TEXT_ADD = [
   ['default','Default text',{text:'ನಿಮ್ಮ ಪಠ್ಯ ಇಲ್ಲಿ'}],
   ['title','Title',{text:'TITLE',size:96,font:'Anton',shadow:40,y:42}],
@@ -188,7 +188,9 @@ function leftContent(tab, sub){
       return `<div class="dropzone" data-l="rec"><b>🎙 Voice-over record</b>Playhead (${fmtTC(S.time)}) ಇರುವ ಜಾಗದಿಂದ ನಿಮ್ಮ ಧ್ವನಿ record ಆಗುತ್ತದೆ</div>
         <div class="lnote">Record ಆಗುವಾಗ video play ಆಗುತ್ತದೆ. Headphone ಬಳಸಿದರೆ ಉತ್ತಮ. Live captions ON ಮಾಡಿದರೆ ಮಾತು ತಕ್ಷಣ ಕನ್ನಡ captions ಆಗುತ್ತದೆ (Chrome).</div>`;
     }
+    case 'templates': return templatesGrid(sub);
     case 'text': {
+      if(sub === 'templates') return `<div class="tiles ttpl">${TEXT_TPL.map(t=>`<button class="tile" data-ttpl="${t.id}"><div class="tth tfxth"><canvas data-ttc="${t.id}" width="150" height="84"></canvas></div><span>${t.name}</span></button>`).join('')}</div><div class="lnote">Click = playhead ನಲ್ಲಿ ಸೇರಿಸಿ. ನಂತರ text ಬದಲಿಸಿ.</div>`;
       if(sub === 'effects'){ const o = selOv(); return `<div class="ltitle" style="margin-top:0">${o && o.type==='text' ? 'Selected text ಗೆ effect ಹಾಕಿ' : 'Click = ಹೊಸ text ಸೇರಿಸಿ'}</div>` + tfxGrid(o && o.type === 'text' ? o.tfx : null); }
       if(sub === 'styles'){
         const o = selOv(), on = o && o.type === 'text';
@@ -226,6 +228,7 @@ function leftContent(tab, sub){
         <div class="lnote">Timeline ನಲ್ಲಿ ಎರಡು clips ನಡುವಿನ <b>⇄</b> ಗುಂಡಿ ಒತ್ತಿದರೂ transition ಆರಿಸಬಹುದು.</div>`;
     }
     case 'captions':
+      if(sub === 'edit') return captionsEditor();
       if(sub === 'srt') return `<div class="ltitle" style="margin-top:0">SRT subtitle file</div>
         <div class="btns"><button id="cSrtIn">${ic('import')} Import .srt</button><button id="cSrtOut">${ic('export')} Export .srt</button></div>
         <div class="btns"><button id="cDelAll">${ic('trash')} ಎಲ್ಲಾ captions delete</button></div>
@@ -243,14 +246,14 @@ function leftContent(tab, sub){
           list.map(f=>`<button class="tile ${cur==='pf:'+f.id?'on':''}" data-filt="pf:${f.id}"><div class="tth"><img class="pfimg" src="${th[f.id]}"></div><span>${f.name}</span></button>`).join('');
       }
       return head + `<div class="tiles">${tiles}</div>
-        ${it && cur !== 'none' ? `<div style="margin-top:14px"><div class="ltitle" style="margin:0 0 6px">${esc(filterName(cur))}</div>${sl(it,'Strength','filterAmt',0,100)}</div><div class="btns"><button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>` : ''}
+        ${it && cur !== 'none' ? `<div style="margin-top:14px"><div class="ltitle" style="margin:0 0 6px">${esc(filterName(cur))}</div>${sl(it,'Strength','filterAmt',0,100)}</div><div class="btns">${it.type!=='adjust'?`<button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button><button data-addfl="${cur}">${ic('layers')} Filter layer ಆಗಿ ಸೇರಿಸಿ</button>`:''}</div>` : ''}
         <div class="lnote">🎬 Cinematic colour grades — ನಿಜವಾದ 3D LUT ಆಗಿ GPU ನಲ್ಲಿ apply ಆಗುತ್ತವೆ. Preview ನಿಮ್ಮ clip ನ frame ಮೇಲೆಯೇ. ಬೆಳಕು/ಬಣ್ಣ ಇನ್ನಷ್ಟು ಸರಿಪಡಿಸಲು ಬಲಗಡೆ <b>Adjust</b>.</div>`;
     }
     case 'adjust': {
-      const it = visTarget();
-      if(!it) return '<div class="lnote">ಮೊದಲು clip select ಮಾಡಿ</div>';
-      if(sub === 'adjust') return adjustBody(it);
-      return lutBody(it);
+      const it = visTarget(), addB = `<div class="lhead"><button class="primary" data-addadj="1">${ic('plus')} Adjustment layer</button></div>`;
+      if(!it) return addB + '<div class="lnote">ಮೊದಲು clip select ಮಾಡಿ, ಅಥವಾ ಹಲವು clips ಗೆ ಒಮ್ಮೆಲೆ ಹಾಕಲು Adjustment layer ಸೇರಿಸಿ.</div>';
+      if(sub === 'adjust') return addB + adjustBody(it);
+      return addB + lutBody(it);
     }
   }
   return '';
@@ -370,6 +373,7 @@ const RT = {
   ovvideo:[['video','Video'],['audio','Audio'],['speed','Speed'],['anim','Animation'],['track','Tracking'],['adjust','Adjust']],
   ovimage:[['video','Image'],['anim','Animation'],['track','Tracking'],['adjust','Adjust']],
   gfx:[['gfx','Graphic'],['anim','Animation'],['track','Tracking']],
+  adjust:[['adjust','Adjust'],['layer','Layer']],
   text:[['text','Text'],['anim','Animation'],['tts','Text to speech'],['track','Tracking']], sticker:[['sticker','Sticker'],['anim','Animation'],['track','Tracking']], audio:[['audio','Audio']]
 };
 function rsubFor(tab, kind){
@@ -379,7 +383,7 @@ function rsubFor(tab, kind){
     case 'speed': return kind === 'clip' ? [['normal','Normal'],['curve','Curve']] : null;
     case 'anim': return [['in','In'],['out','Out'],['combo',(kind==='clip'||kind==='clipimg')?'Combo':'Loop']];
     case 'adjust': return null;
-    case 'text': return [['basic','Basic'],['style','Style'],['effects','Effects']];
+    case 'text': return [['basic','Basic'],['style','Style'],['effects','Effects'],['bubble','Bubble']];
   }
   return null;
 }
@@ -409,6 +413,10 @@ function transformSec(it){
   b += sl(it,'Rotate',ov?'rot':'tf.rot',-180,180);
   const B = (a,i,t) => `<button data-act="${a}" title="${t}">${ic(i)}</button>`;
   b += `<div class="alignbar">${ov?B('center','center','Center'):B('fit','fit','Fit')}${(!ov||med)?B(ov?'fillv':'fill','fill','Fill / full screen')+B('flip','flip','Mirror'):''}${B('rot90','rotate','Rotate 90°')}${ov?B('up','up','Layer ಮೇಲೆ')+B('down','down','Layer ಕೆಳಗೆ'):''}</div>`;
+  const k = atKf(it);
+  if(k){ const cur = k.ease || 'smooth';
+    b += `<div class="ltitle" style="margin:10px 0 6px">Keyframe easing <small style="font-weight:400">(ಈ ◆ ಇಂದ ಮುಂದಿನ ◆ ವರೆಗೆ)</small></div><div class="easeg">${EASE_LIST.map(([e,n])=>{ let d=''; for(let i=0;i<=24;i++){ const f=i/24, v=EASE[e](f); d+=(i?'L':'M')+(4+f*40).toFixed(1)+','+(30-v*24).toFixed(1); }
+      return `<button class="${cur===e?'on':''}" data-ease="${e}" title="${n}"><svg viewBox="0 0 48 34"><path d="${d}"/></svg><span>${n}</span></button>`; }).join('')}</div>`; }
   return sec('tf','Transform',b,{reset:'resetTf',kf:true});
 }
 function chromaBody(it){
@@ -497,6 +505,17 @@ function audioBody(it, kind, sub){
       chk('audio.isolate','Isolate voice','ಮಾತಿನ frequency ಮಾತ್ರ ಉಳಿಸುತ್ತದೆ (basic)', a.isolate));
     h += sec('eq','Equalizer', sl(it,'Bass boost','audio.bass',-15,15)+sl(it,'Treble','audio.treble',-15,15));
   } else h += '<div class="note">PiP video ಗೆ Voice tools ಬೇಕಿದ್ದರೆ ಅದನ್ನು main track ಗೆ ಎಳೆಯಿರಿ ಅಥವಾ Extract audio ಮಾಡಿ.</div>';
+  if(kind === 'audio') h += sec('beat','🥁 Beat sync', `<div class="crow"><span>Beats</span><b style="color:var(--text)">${it.beats ? `${beatTimes(it).length} · ${it.bpm} BPM` : '—'}</b></div>
+      <div class="btns"><button data-beat="detect">🥁 Detect beats</button></div>
+      ${it.beats ? `<div class="crow"><span>ಪ್ರತಿ ಎಷ್ಟು beat ಗೆ cut</span><select id="beatEvery">${[1,2,4,8].map(n=>`<option value="${n}" ${(S.beatEvery||2)===n?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="btns"><button class="primary" data-beat="cut">✂ Clips ಅನ್ನು beat ಗೆ cut ಮಾಡಿ</button></div>` : ''}
+      <div class="note">ಹಾಡಿನ beat ಗುರುತಿಸಿ (timeline ನಲ್ಲಿ ಹಳದಿ ಗೆರೆಗಳು) main track ನ photos / clips ಅನ್ನು ಅದಕ್ಕೆ ತಕ್ಕಂತೆ ಕತ್ತರಿಸುತ್ತದೆ.</div>`);
+  if(kind === 'clip') h += sec('sil','✂ Auto cut silence', `<div class="prow"><div class="plab">Threshold dB</div><input type="range" id="silThr" min="-70" max="-15" step="1" value="${S.silThr??-40}"><input class="num" type="number" id="silThrN" min="-70" max="-15" value="${S.silThr??-40}"></div>
+      <div class="crow"><span>Auto threshold</span><input type="checkbox" id="silAuto" ${S.silAuto!==false?'checked':''}></div>
+      <div class="prow"><div class="plab">Min silence (s)</div><input type="range" id="silMin" min="0.2" max="3" step="0.1" value="${S.silMin??.6}"><input class="num" type="number" id="silMinN" min="0.2" max="3" step="0.1" value="${S.silMin??.6}"></div>
+      <div id="silStat" style="color:var(--mute);min-height:18px"></div>
+      <div class="btns"><button data-sil="analyze">🔍 Analyze</button><button class="primary" data-sil="apply">✂ Silence ತೆಗೆಯಿರಿ</button></div>
+      <div class="note">ಮಾತಿನ video ದಲ್ಲಿ ಮೌನದ ಭಾಗಗಳನ್ನು ತಾನಾಗಿ ತೆಗೆದು clip ಅನ್ನು ತುಂಡುಗಳಾಗಿ ಮಾಡುತ್ತದೆ. ತಪ್ಪಾದರೆ Ctrl+Z.</div>`);
   const B = (a,i,t) => `<button data-act="${a}">${ic(i)} ${t}</button>`;
   h += `<div class="btns">${kind==='clip'?(it.extracted?B('restoreAudio','undo','Restore audio'):B('extract','wave','Extract audio')):''}${kind==='audio'&&it.linkClip?B('restoreLinked','undo','Video ಗೆ ಮರಳಿಸಿ'):''}${B('cap','captions','Auto captions')}${kind==='audio'?B('dup','copy','Duplicate')+B('del','trash','Delete'):''}</div>`;
   if(kind === 'clip') h += '<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>';
@@ -655,14 +674,18 @@ function inspBody(it, kind, tab, sub){
     case 'track': return trackBody(it);
     case 'adjust': return adjustBody(normItem(it), true);
     case 'tts': return ttsBody(it);
+    case 'layer': return '<div style="height:8px"></div>' + sec('op','Layer', sl(it,'Intensity','opacity',0,100)) + sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+sl(it,'Duration','dur',.3,600,.1)) +
+      `<div class="note">🎚 Adjustment layer ಇದರ <b>ಕೆಳಗಿನ ಎಲ್ಲಾ</b> tracks (main video, overlays, text) ಮೇಲೆ filter / adjust / effect ಹಾಕುತ್ತದೆ. Timeline ನಲ್ಲಿ ಉದ್ದ ಮಾಡಿ ಹಲವು clips ಗೆ ಒಮ್ಮೆಲೆ ಬಳಸಿ. Filter / Effect ಗೆ ಎಡಗಡೆ Filters / Effects ಬಳಸಿ.</div>
+      <div class="btns"><button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`;
     case 'text':
+      if(sub === 'bubble') return bubbleBody(it);
       if(sub === 'effects') return '<div style="height:8px"></div>' + tfxGrid(it.tfx) + (it.tfx ? '<div class="note">Effect ಹಾಕಿದಾಗ ಬಣ್ಣ/outline/shadow effect ನಿಂದಲೇ ಬರುತ್ತವೆ. ಸಾಮಾನ್ಯ style ಗೆ ✕ None ಒತ್ತಿ.</div>' : '');
       if(sub === 'style') return `<div style="height:10px"></div><div class="tiles tstyle">${TEXT_PRESETS.map((p,i)=>`<button class="tile" data-preset="${i}"><div class="tth" style="${presetCss(p)}">Aa</div></button>`).join('')}</div><div style="height:6px"></div>` +
         sec('ol','Outline', colorRow(it,'Color','stroke')+sl(it,'Width','strokeW',0,20)) +
         sec('bx','Background', `<div class="crow"><span>Background box</span><input type="checkbox" data-p="bgOn" ${it.bgOn?'checked':''}></div>`+colorRow(it,'Color','bgColor')+sl(it,'Opacity','bgAlpha',0,100)) +
         sec('sh','Shadow / Glow', colorRow(it,'Color','shadowColor')+sl(it,'Amount','shadow',0,100)) +
         (it.caption ? '<div class="btns"><button data-act="capall">💬 ಈ style ಎಲ್ಲಾ captions ಗೆ</button></div>' : '');
-      return sec('tc','Text', `<textarea data-p="text" rows="3" placeholder="ಇಲ್ಲಿ ಬರೆಯಿರಿ…">${esc(it.text)}</textarea>`) +
+      return sec('tc','Text', `<textarea data-p="text" rows="3" placeholder="ಇಲ್ಲಿ ಬರೆಯಿರಿ…">${esc(it.text)}</textarea>` + sl(it,'Curve','curve',-100,100)) +
         sec('fn','Font', `<div class="fonts">${FONTS.map(([f,n])=>`<button class="${it.font===f?'on':''}" data-set="font" data-val="${f}" style="font-family:'${f}'">${n}</button>`).join('')}</div>
           <div class="tbtns"><button class="${it.bold?'on':''}" data-toggle="bold"><b>B</b></button><button class="${it.italic?'on':''}" data-toggle="italic"><i>I</i></button>${[['left','⯇≡'],['center','≡'],['right','≡⯈']].map(([k,n])=>`<button class="${it.align===k?'on':''}" data-set="align" data-val="${k}">${n}</button>`).join('')}</div>
           ${colorRow(it,'Color','color',true)}`) +
@@ -914,7 +937,7 @@ function waveStyle(m, inP, speed){
 }
 function ovItemHTML(o){
   const m = media(o.mediaId), nm = esc(m ? m.name : '');
-  const label = o.type==='gfx' ? '✨ '+esc((GFXMAP[o.gfx]||{}).name||'Graphic') : o.type==='text' ? (o.caption?'💬 ':'T  ')+esc((o.text||'').replace(/\n/g,' ')) : o.type==='sticker' ? (o.text.startsWith('svg:')?'⭐':o.text)+' Sticker' : o.type==='video' ? '🎞 '+nm : '🖼 '+nm;
+  const label = o.type==='adjust' ? '🎚 '+esc(o.filter&&o.filter!=='none'?filterName(o.filter)+' layer':'Adjustment layer') : o.type==='gfx' ? '✨ '+esc((GFXMAP[o.gfx]||{}).name||'Graphic') : o.type==='text' ? (o.caption?'💬 ':'T  ')+esc((o.text||'').replace(/\n/g,' ')) : o.type==='sticker' ? (o.text.startsWith('svg:')?'⭐':o.text)+' Sticker' : o.type==='video' ? '🎞 '+nm : '🖼 '+nm;
   const fx = [o.mask&&o.mask.type!=='none'?'◐':'', o.ck&&o.ck.on?'🟩':'', o.rmbg?'✂':'', o.blend&&o.blend!=='source-over'?'⧉':'', o.fx&&o.fx.type!=='none'&&isMediaOv(o)?'⚡':''].join('');
   const bg = o.type==='image' && m && m.thumb ? `background-image:url(${m.thumb});background-size:auto 100%;background-repeat:repeat-x;` : '';
   const strip = o.type==='video' && m ? ovStrip(o, m) : '';
@@ -980,7 +1003,8 @@ function renderTimeline(){
     h += `<div class="trow aurow ${ts.mute?'thide':''} ${ts.lock?'tlock':''}" data-zone="audio" data-track="${t}">${trackHead('au',t,items)}<div class="tbody">${items.map(a => {
       const m = media(a.mediaId), icon = {voice:'🎙',extract:'🔊',sfx:'🔔',tts:'🗣'}[a.kind] || '🎵';
       const fx = (a.audio.voice!=='none'||a.audio.echo||a.audio.reverb||a.audio.bass||a.audio.treble||a.audio.pitch) ? ' 🎛' : '';
-      return `<div class="it audio ${a.kind} ${S.sel===a.id?'sel':''} ${selMulti.has(a.id)?'msel':''}" data-oid="${a.id}" style="left:${a.start*pps}px;width:${Math.max(14,a.dur*pps-2)}px;${waveStyle(m,a.in,a.speed)}"><span class="lbl">${icon} ${esc(m?m.name:'')}${fx}${a.volume===0?' 🔇':''}</span><div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
+      const bts = a.beats ? beatTimes(a).map(t=>`<i class="bt" style="left:${(t-a.start)*pps}px"></i>`).join('') : '';
+      return `<div class="it audio ${a.kind} ${S.sel===a.id?'sel':''} ${selMulti.has(a.id)?'msel':''}" data-oid="${a.id}" style="left:${a.start*pps}px;width:${Math.max(14,a.dur*pps-2)}px;${waveStyle(m,a.in,a.speed)}">${bts}<span class="lbl">${icon} ${esc(m?m.name:'')}${fx}${a.volume===0?' 🔇':''}</span><div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
     }).join('')}</div></div>`;
   }
   h += `<div class="trow drop auz" data-zone="audio"><div class="thead"></div><div class="tbody">🎵 Audio: music / sound ಇಲ್ಲಿ ಹಾಕಿ</div></div>`;
@@ -1313,7 +1337,8 @@ $('#modal').addEventListener('click', async e => {
    WIRING
    ===================================================================== */
 $('#btnHome').innerHTML = ic('home'); $('#logoIc').innerHTML = ic('play');
-$('#btnExport').innerHTML = ic('export') + '<span>Export</span>'; $('#btnFull').innerHTML = ic('full');
+$('#btnExport').innerHTML = ic('export') + '<span>Export</span>';
+{ const cb = document.createElement('button'); cb.id = 'btnCover'; cb.innerHTML = ic('edit') + '<span>Cover</span>'; cb.title = 'Cover / Thumbnail maker'; cb.onclick = () => openCover(); $('#btnExport').before(cb); } $('#btnFull').innerHTML = ic('full');
 $('#btnHome').onclick = showHome;
 $('#btnExport').onclick = openExport;
 $('#btnPlay').onclick = () => S.playing ? pause() : play();
@@ -1484,6 +1509,7 @@ function ctxForItem(it){
       hasA ? ['Freeze frame (3s)', freezeFrame, {icon:'pause'}] : null,
       [multi ? `Compound clip (${selMulti.size} clips)` : 'Compound clip… (Ctrl+click ಮಾಡಿ ಹಲವು ಆರಿಸಿ)', () => compoundClips([...selMulti]), {icon:'layers', dis:!multi}],
       hasA ? ['Reverse audio', () => reverseItem(it), {icon:'undo'}] : null,
+      hasA ? ['Remove silences…', () => { S.rt.clip = 'audio'; S.rs.audio = 'basic'; S.closed.sil = false; renderInspector(); const x = IB.querySelector('[data-sil]'); if(x) x.scrollIntoView({block:'center'}); }, {icon:'wave'}] : null,
       '-', ['Move to overlay track', () => clipToOverlay(it, derived[it.id].start), {icon:'layers'}],
       ['Mirror', () => { flipSel(); renderTimeline(); }, {icon:'flip'}], ['Rotate 90°', rotateSel, {icon:'rotate'}],
       ['Delete left of playhead', () => trimSide('left'), {icon:'delL', key:'Q'}], ['Delete right of playhead', () => trimSide('right'), {icon:'delR', key:'W'}],
@@ -1497,6 +1523,7 @@ function ctxForItem(it){
     const own = it.linkClip && (S.clips.find(c => c.id === it.linkClip) || S.overlays.find(o => o.id === it.linkClip));
     return [...base, own ? ['Video ಗೆ audio ಮರಳಿಸಿ (Restore)', () => restoreAudio(own), {icon:'undo'}] : null,
       [it.volume > 0 ? 'Mute' : 'Unmute', () => toggleMuteItem(it), {icon:it.volume > 0 ? 'volx' : 'vol'}], ['Reverse audio', () => reverseItem(it), {icon:'undo'}],
+      ['Detect beats / Beat sync', () => { S.rt.audio = 'audio'; S.rs.audio = 'basic'; renderInspector(); doBeat('detect', it); }, {icon:'music2'}],
       ['Audio effects…', () => { S.rt.audio = 'audio'; S.rs.audio = 'fx'; renderInspector(); }, {icon:'wave'}], '-', ...attrs];
   }
   return [...base, ...lay];
@@ -1628,6 +1655,7 @@ function drawAnimTile(c, it, sub, name, p){
 let aTile = null;
 function paintV8(root, it){
   if(it) root.querySelectorAll('canvas.apv').forEach(c => { const sub = c.dataset.sub; drawAnimTile(c, it, sub, c.dataset.an, sub === 'combo' ? .3 : sub === 'in' ? .4 : .5); });
+  paintV9(root);
   root.querySelectorAll('canvas[data-tfxc]').forEach(c => { const t = TFX_MAP[c.dataset.tfxc]; if(!t) return; const x = c.getContext('2d'); x.clearRect(0,0,c.width,c.height);
     x.font = '900 40px Anton,"Baloo Tamma 2",Inter,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; drawStyledText(x, t.id === 'kannadaGold' ? 'ಕನ್ನಡ' : 'ART', c.width/2, c.height/2+2, 40, t.st); });
   // images may still be loading the first time
@@ -1645,6 +1673,7 @@ function hoverAnim(root, getIt){
 }
 hoverAnim(IB, () => selItem());
 function v8Input(e){
+  if(v9Input(e)) return true;
   const el = e.target, it = selItem();
   if(el.id === 'animQ'){ S.animQ = el.value; const g = $('#animGrid'); if(g && it){ const sub = S.rs.anim || 'in'; g.innerHTML = animGrid(it, sub); paintV8(g, it); } IB.querySelectorAll('[data-anicat]').forEach(b => b.classList.toggle('on', !S.animQ && b.dataset.anicat === (S.animCat||'Trending'))); return true; }
   if(el.id === 'vQ'){ S.vq = el.value; const pos = el.selectionStart; renderInspector(); const n = $('#vQ'); if(n){ n.focus(); n.setSelectionRange(pos,pos); } return true; }
@@ -1663,6 +1692,7 @@ async function runTTS(it, btn){
 }
 function v8Click(t, it){
   const d = t.dataset;
+  if(v9Click(t, it)) return true;
   if(d.anicat){ S.animCat = d.anicat; S.animQ = ''; renderInspector(); return true; }
   if(d.vcat){ S.vcat = d.vcat; S.vq = ''; renderInspector(); return true; }
   if(d.tfxcat){ S.tfxCat = d.tfxcat; t.closest('#lcontent') ? renderLeft() : renderInspector(); return true; }
@@ -1683,3 +1713,168 @@ function v8Click(t, it){
   }
   return false;
 }
+
+/* =====================================================================
+   v9 PANELS: templates, captions editor, bubbles, beats, silence, cover
+   ===================================================================== */
+function templatesGrid(cat){
+  const list = TPL.filter(t => cat === 'All' || t.cat === cat);
+  return `<div class="tiles tplt">${list.map(t=>`<button class="tile" data-tpl="${t.id}"><div class="tth tplth r${t.ratio.replace(':','x')}"><canvas data-tplc="${t.id}" width="${t.ratio==='16:9'?192:108}" height="${t.ratio==='16:9'?108:192}"></canvas></div><span>${t.name}</span><small>${t.ratio} · ${t.n} media</small></button>`).join('')}</div>
+    <div class="lnote">✨ Template ಆರಿಸಿ → ನಿಮ್ಮ photos / videos ಆರಿಸಿ → ವಿಡಿಯೋ ಸಿದ್ಧ. ನಂತರ ಎಲ್ಲವನ್ನೂ ಬದಲಿಸಬಹುದು. Music ಸೇರಿಸಿ <b>Beat sync</b> ಮಾಡಿದರೆ ಇನ್ನೂ ಚೆನ್ನಾಗಿರುತ್ತದೆ.</div>`;
+}
+function paintTplCanvas(c, t){
+  const x = c.getContext('2d'), W = c.width, H = c.height, g = x.createLinearGradient(0,0,W,H);
+  g.addColorStop(0, t.col[0]); g.addColorStop(1, t.col[1]); x.fillStyle = g; x.fillRect(0,0,W,H);
+  x.globalAlpha = .18; for(let i=0;i<6;i++){ x.fillStyle = '#fff'; x.fillRect((i%3)*W/3+4, Math.floor(i/3)*H/2+4, W/3-8, H/2-8); } x.globalAlpha = 1;
+  const tt = t.texts.find(z => z.key === 'title') || t.texts[0], px = Math.min(W, H)*.2*(tt.size/80);
+  x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `900 ${px}px "${tt.font||'Inter'}","Noto Sans Kannada",sans-serif`;
+  const st = tt.tfx && TFX_MAP[tt.tfx] ? TFX_MAP[tt.tfx].st : {fill:tt.color||'#fff', shadow:[0,2,6,'#000a']};
+  if(tt.bubble) drawBubble(x, tt.bubble, x.measureText(tt.text).width + px*.6, px*1.3, px, tt.bubColor||'#fff', tt.bubStroke||'#111');
+  let txt = tt.text; while(x.measureText(txt).width > W*.92 && px > 6){ x.font = x.font.replace(/\d+(\.\d+)?px/, m => (parseFloat(m)*.9)+'px'); }
+  drawStyledText(x, txt, W/2, H*.5, px, st);
+}
+function paintV9(root){
+  root.querySelectorAll('canvas[data-tplc]').forEach(c => { const t = TPL.find(z => z.id === c.dataset.tplc); if(t) paintTplCanvas(c, t); });
+  root.querySelectorAll('canvas[data-ttc]').forEach(c => { const t = TEXT_TPL.find(z => z.id === c.dataset.ttc); if(!t) return; const x = c.getContext('2d'), W = c.width, H = c.height; x.fillStyle = '#2a2a2f'; x.fillRect(0,0,W,H);
+    t.items.forEach((it, i) => { const px = Math.min(30, it.size*.3), y = H*(t.items.length > 1 ? (i ? .7 : .38) : .5); x.save(); x.translate(W/2, y); x.font = `900 ${px}px "${it.font||'Inter'}","Noto Sans Kannada",sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+      const tw = Math.min(W*.9, x.measureText(it.text).width); if(it.bubble) drawBubble(x, it.bubble, tw + px*.5, px*1.25, px, it.bubColor||'#fff', it.bubStroke||'#111');
+      if(it.tfx && TFX_MAP[it.tfx]) drawStyledText(x, it.text, 0, 0, px, TFX_MAP[it.tfx].st); else { x.fillStyle = it.color || '#fff'; x.fillText(it.text, 0, 0, W*.9); } x.restore(); }); });
+  root.querySelectorAll('canvas[data-bubc]').forEach(c => { const x = c.getContext('2d'), W = c.width, H = c.height; x.clearRect(0,0,W,H); x.save(); x.translate(W/2, H/2); drawBubble(x, c.dataset.bubc, W*.55, H*.38, 22, '#ffffff', '#111111'); x.fillStyle = '#111'; x.font = '700 15px Inter'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Aa', 0, 0); x.restore(); });
+}
+function bubbleBody(it){
+  return `<div style="height:8px"></div><div class="tiles bubt"><button class="tile ${!it.bubble?'on':''}" data-bub="none"><div class="tth">${ic('ban')}</div><span>None</span></button>${BUBBLES.map(([k,n])=>`<button class="tile ${it.bubble===k?'on':''}" data-bub="${k}"><div class="tth tfxth"><canvas data-bubc="${k}" width="120" height="72"></canvas></div><span>${n}</span></button>`).join('')}</div><div style="height:10px"></div>
+    ${it.bubble ? colorRow(it,'Bubble color','bubColor',true) + colorRow(it,'Border','bubStroke') : ''}
+    <div class="note">💬 Bubble ಹಾಕಿದರೆ text ಹಿಂದೆ ಆಕಾರ ಬರುತ್ತದೆ. Text ಬಣ್ಣ Basic tab ನಲ್ಲಿ ಬದಲಿಸಿ.</div>`;
+}
+function captionsEditor(){
+  const caps = S.overlays.filter(o => o.type === 'text' && o.caption).sort((a,b) => a.start - b.start);
+  if(!caps.length) return '<div class="lnote">ಇನ್ನೂ captions ಇಲ್ಲ. <b>Auto captions</b> ಅಥವಾ SRT import ಮಾಡಿ.</div>';
+  return `<div class="capfind"><input type="text" id="capFind" placeholder="Find" value="${esc(S.capFind||'')}"><input type="text" id="capRepl" placeholder="Replace" value="${esc(S.capRepl||'')}"><button data-caprepl="1">Replace all</button></div>
+    <div class="caplist">${caps.map((o,i)=>`<div class="caprow ${S.sel===o.id?'on':''}" data-cid="${o.id}"><span class="ct" data-capgo="${o.id}">${fmtTC(o.start)}</span><textarea rows="1" data-capt="${o.id}" data-ci2="${i}">${esc(o.text)}</textarea><button class="ib sm" data-capmerge="${o.id}" title="ಮುಂದಿನದರ ಜೊತೆ ಸೇರಿಸಿ">⤓</button><button class="ib sm" data-capdel="${o.id}" title="Delete">✕</button></div>`).join('')}</div>
+    <div class="lnote">✏️ Text ಮೇಲೆ click → video ಆ ಜಾಗಕ್ಕೆ ಹೋಗುತ್ತದೆ. <b>Enter</b> = ಮುಂದಿನ caption, <b>Shift+Enter</b> = ಹೊಸ ಸಾಲು. ⤓ = ಮುಂದಿನ caption ಜೊತೆ ಸೇರಿಸಿ.</div>`;
+}
+LC.addEventListener('focusin', e => { const ta = e.target.closest('[data-capt]'); if(!ta) return; const o = S.overlays.find(x => x.id === ta.dataset.capt); if(!o) return; pause(); S.sel = o.id; seek(o.start + .02); pushUndo(); LC.querySelectorAll('.caprow').forEach(r => r.classList.toggle('on', r.dataset.cid === o.id)); renderTimeline(); });
+LC.addEventListener('keydown', e => {
+  const ta = e.target.closest('[data-capt]'); if(!ta || e.key !== 'Enter' || e.shiftKey) return; e.preventDefault();
+  const all = [...LC.querySelectorAll('[data-capt]')], i = all.indexOf(ta); if(all[i+1]){ all[i+1].focus(); all[i+1].select(); }
+});
+function doBeat(a, it){
+  if(a === 'detect'){ const sec_ = IB.querySelector('[data-beat="detect"]'); if(sec_){ sec_.disabled = true; sec_.textContent = '⏳ Analyzing…'; }
+    detectBeats(it).then(() => { renderTimeline(); renderInspector(); }).catch(err => { alert('Beat detect ಆಗಲಿಲ್ಲ: ' + err.message); renderInspector(); }); return; }
+  if(a === 'cut'){ const n = cutToBeats(it, S.beatEvery || 2); if(n) renderInspector(); }
+}
+async function doSilence(a, c){
+  const st = $('#silStat'); if(st) st.textContent = '⏳ Audio ಓದುತ್ತಿದೆ…';
+  try{
+    const r = await analyzeSilence(c, {thr:S.silAuto === false ? (S.silThr ?? -40) : null, minSil:S.silMin ?? .6, pad:.12});
+    if(S.silAuto !== false){ S.silThr = r.thr; const a1 = $('#silThr'), a2 = $('#silThrN'); if(a1){ a1.value = r.thr; setFill(a1); } if(a2) a2.value = r.thr; }
+    if(a === 'analyze'){ const st2 = $('#silStat'); if(st2) st2.innerHTML = `${r.cuts} ಕಡೆ ಮೌನ · <b>${r.removed.toFixed(1)} s</b> ಕಡಿಮೆ ಆಗುತ್ತದೆ (threshold ${r.thr} dB)`; return; }
+    if(!r.cuts && r.keep.length === 1 && Math.abs(r.keep[0][0]-c.in) < .05 && Math.abs(r.keep[0][1]-c.out) < .05){ const st2 = $('#silStat'); if(st2) st2.textContent = 'ಮೌನದ ಭಾಗ ಸಿಗಲಿಲ್ಲ'; return; }
+    applySilenceCut(c, r.keep);
+  }catch(err){ const st2 = $('#silStat'); if(st2) st2.textContent = '❌ ' + err.message; }
+}
+function v9Input(e){
+  const el = e.target, id = el.id;
+  if(el.dataset.capt){ const o = S.overlays.find(x => x.id === el.dataset.capt); if(o){ o.text = el.value; renderTimeline(); } return true; }
+  if(id === 'capFind' || id === 'capRepl'){ S[id === 'capFind' ? 'capFind' : 'capRepl'] = el.value; return true; }
+  if(id === 'beatEvery'){ S.beatEvery = +el.value; return true; }
+  if(id === 'silThr' || id === 'silThrN'){ S.silThr = +el.value; S.silAuto = false; const cb = $('#silAuto'); if(cb) cb.checked = false; const o = id === 'silThr' ? $('#silThrN') : $('#silThr'); if(o) o.value = el.value; if(el.type === 'range') setFill(el); return true; }
+  if(id === 'silMin' || id === 'silMinN'){ S.silMin = +el.value; const o = id === 'silMin' ? $('#silMinN') : $('#silMin'); if(o) o.value = el.value; if(el.type === 'range') setFill(el); return true; }
+  if(id === 'silAuto'){ S.silAuto = el.checked; return true; }
+  return false;
+}
+function v9Click(t, it){
+  const d = t.dataset;
+  if(d.tpl){ openTemplateDialog(d.tpl); return true; }
+  if(d.ttpl){ addTextTemplate(d.ttpl); return true; }
+  if(d.bub){ const o = selOv(); if(o && o.type === 'text'){ pushUndo(); o.bubble = d.bub === 'none' ? '' : d.bub; if(o.bubble) o.bgOn = false; renderInspector(); } return true; }
+  if(d.ease){ const x = selItem(), k = x && atKf(x); if(k){ pushUndo(); k.ease = d.ease; renderInspector(); seek(S.time); } return true; }
+  if(d.addadj){ addOverlay(newOverlay('adjust', {start:S.time, dur:Math.max(3, Math.min(10, S.total - S.time || 5)), opacity:100}), 'adjust'); S.ltab = 'adjust'; S.lsub.adjust = 'adjust'; renderLeft(); return true; }
+  if(d.addfl){ const o = newOverlay('adjust', {start:0, dur:Math.max(1, S.mainEnd || S.total || 5), filter:d.addfl, filterAmt:(visTarget()||{}).filterAmt || 80}); addOverlay(o, 'adjust'); const c = visTarget(); renderLeft(); return true; }
+  if(d.beat){ const a = selAud(); if(a) doBeat(d.beat, a); return true; }
+  if(d.sil){ const c = selClip(); if(c) doSilence(d.sil, c); return true; }
+  if(d.capgo){ const o = S.overlays.find(x => x.id === d.capgo); if(o){ S.sel = o.id; seek(o.start + .02); renderTimeline(); } return true; }
+  if(d.capdel){ pushUndo(); S.overlays = S.overlays.filter(x => x.id !== d.capdel); afterEdit(); renderLeft(); return true; }
+  if(d.capmerge){ const caps = S.overlays.filter(o => o.type === 'text' && o.caption).sort((a,b) => a.start - b.start), i = caps.findIndex(o => o.id === d.capmerge), a = caps[i], b = caps[i+1];
+    if(a && b){ pushUndo(); a.text = (a.text + ' ' + b.text).trim(); a.dur = b.start + b.dur - a.start; S.overlays = S.overlays.filter(x => x !== b); afterEdit(); renderLeft(); } return true; }
+  if(d.caprepl){ const f = S.capFind || ''; if(!f) return true; pushUndo(); let n = 0; for(const o of S.overlays) if(o.type === 'text' && o.caption && o.text.includes(f)){ o.text = o.text.split(f).join(S.capRepl || ''); n++; } afterEdit(); renderLeft(); alert(n + ' captions ಬದಲಾದವು'); return true; }
+  return false;
+}
+// ---- template dialog ----
+let tplPick = [];
+function openTemplateDialog(id){
+  const t = TPL.find(z => z.id === id); if(!t) return;
+  tplPick = S.media.filter(m => !m.missing && m.type !== 'audio').slice(0, t.n).map(m => m.id);
+  const keys = t.texts.filter(z => z.key);
+  showModal(`<h3 style="margin-top:0">✨ ${esc(t.name)} <small style="color:var(--mute);font-weight:400">${t.ratio}</small></h3>
+    <div style="color:var(--mute);margin-bottom:6px">ಬಳಸಬೇಕಾದ photos / videos ಆರಿಸಿ (ಕ್ರಮವಾಗಿ). ${t.n} ಸೂಕ್ತ — ಕಡಿಮೆ ಇದ್ದರೆ ಮತ್ತೆ ಬಳಸುತ್ತದೆ.</div>
+    <div class="tplpick" id="tplPick"></div>
+    <div class="btns"><button id="tplImp">${ic('import')} ಇನ್ನಷ್ಟು import</button></div>
+    ${keys.map(z=>`<div class="xrow"><span>${z.key==='title'?'Title':'Subtitle'}</span><input type="text" data-tplk="${z.key}" value="${esc(z.text)}"></div>`).join('')}
+    <div class="note">⚠ ಈಗಿನ timeline ನ clips / text ಬದಲಾಗುತ್ತವೆ (Audio ಹಾಗೇ ಇರುತ್ತದೆ). ತಪ್ಪಾದರೆ Ctrl+Z.</div>
+    <div class="btns" style="justify-content:flex-end"><button id="tplCancel">Cancel</button><button class="primary" id="tplGo" data-id="${id}">✨ Use template</button></div>`);
+  renderTplPick();
+}
+function renderTplPick(){
+  const box = $('#tplPick'); if(!box) return;
+  const list = S.media.filter(m => !m.missing && m.type !== 'audio');
+  box.innerHTML = list.length ? list.map(m => { const i = tplPick.indexOf(m.id); return `<button class="tpm ${i>=0?'on':''}" data-tpm="${m.id}" style="background-image:url(${m.thumb||''})">${i>=0?`<b>${i+1}</b>`:''}<span>${m.type==='video'?fmtT(m.duration):'IMG'}</span></button>`; }).join('') : '<div class="lnote">ಇನ್ನೂ media ಇಲ್ಲ — "ಇನ್ನಷ್ಟು import" ಒತ್ತಿ.</div>';
+}
+const tplIn = document.createElement('input'); tplIn.type = 'file'; tplIn.accept = 'video/*,image/*'; tplIn.multiple = true; tplIn.hidden = true; document.body.appendChild(tplIn);
+tplIn.onchange = async () => { for(const f of tplIn.files){ try{ const m = f.type.startsWith('video/') ? await addVideoMedia(f) : await addImageMedia(f); tplPick.push(m.id); }catch(err){ alert(f.name + ': ' + err.message); } } tplIn.value = ''; renderTplPick(); renderLeft(); };
+$('#modal').addEventListener('click', e => {
+  const pm = e.target.closest('[data-tpm]'); if(pm){ const id = pm.dataset.tpm, i = tplPick.indexOf(id); i >= 0 ? tplPick.splice(i,1) : tplPick.push(id); renderTplPick(); return; }
+  if(e.target.closest('#tplImp')){ tplIn.click(); return; }
+  if(e.target.closest('#tplCancel')){ hideModal(); return; }
+  const go = e.target.closest('#tplGo'); if(!go) return;
+  const t = TPL.find(z => z.id === go.dataset.id), medias = tplPick.map(media).filter(Boolean);
+  if(!medias.length) return alert('ಕನಿಷ್ಠ ಒಂದು photo / video ಆರಿಸಿ');
+  const texts = {}; $('#modalBox').querySelectorAll('[data-tplk]').forEach(x => texts[x.dataset.tplk] = x.value);
+  hideModal(); buildTemplate(t, medias, texts); updatePInfo(); renderLeft();
+});
+// ---- cover maker ----
+const COV = {t:0, title:'', sub:'', style:'kannadaGold', font:'Baloo Tamma 2', size:60, pos:'bottom', shade:55, bright:5, sat:15, out:'yt'};
+let covFrame = null, covTimer = null;
+const COV_SIZES = [['yt','YouTube 1280×720',[1280,720]],['same','Video ratio',null],['sq','Square 1080',[1080,1080]],['vert','Reels 1080×1920',[1080,1920]]];
+function covDims(){ const s = COV_SIZES.find(z => z[0] === COV.out); if(s && s[2]) return s[2]; const k = 1280/Math.max(out.width, out.height); return [Math.round(out.width*k), Math.round(out.height*k)]; }
+async function openCover(){
+  if(!S.total) return alert('ಮೊದಲು media ಸೇರಿಸಿ'); pause();
+  if(!COV.title) COV.title = S.project ? S.project.name : 'ನನ್ನ ವಿಡಿಯೋ';
+  COV.t = clamp(COV.t || S.time, 0, S.total);
+  const styles = ['kannadaGold','gold3d','fire','neonBlue','comic','popart','sticker','dblOutline','red3d','royal','silver','minimalShadow'];
+  showModal(`<div class="xwrap"><div class="xprev cov"><canvas id="covCv"></canvas></div><div class="xform"><h3 style="margin:0 0 10px">🖼 Cover / Thumbnail</h3>
+    <div class="xrow"><span>Frame</span><input type="range" id="covT" min="0" max="${S.total.toFixed(2)}" step="0.04" value="${COV.t}"></div>
+    <div class="xrow"><span>Title</span><textarea id="covTitle" rows="2">${esc(COV.title)}</textarea></div>
+    <div class="xrow"><span>Subtitle</span><input type="text" id="covSub" value="${esc(COV.sub)}" placeholder="ಉದಾ: Part 1 / NEW"></div>
+    <div class="covst">${styles.map(k=>`<button data-covst="${k}" class="${COV.style===k?'on':''}"><canvas data-tfxc="${k}" width="96" height="44"></canvas></button>`).join('')}</div>
+    <div class="xrow"><span>Font</span><select id="covFont">${FONTS.map(([f,n])=>`<option value="${f}" ${COV.font===f?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="xrow"><span>Size</span><input type="range" id="covSize" min="20" max="120" value="${COV.size}"></div>
+    <div class="xrow"><span>Position</span><select id="covPos">${[['top','Top'],['center','Center'],['bottom','Bottom']].map(([k,n])=>`<option value="${k}" ${COV.pos===k?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="xrow"><span>Shade</span><input type="range" id="covShade" min="0" max="90" value="${COV.shade}"></div>
+    <div class="xrow"><span>Brightness</span><input type="range" id="covBright" min="-40" max="40" value="${COV.bright}"></div>
+    <div class="xrow"><span>Saturation</span><input type="range" id="covSat" min="-50" max="60" value="${COV.sat}"></div>
+    <div class="xrow"><span>Size</span><select id="covOut">${COV_SIZES.map(([k,n])=>`<option value="${k}" ${COV.out===k?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="btns" style="justify-content:flex-end"><button id="covClose">Close</button><button id="covAdd">${ic('plus')} Video ಆರಂಭಕ್ಕೆ ಸೇರಿಸಿ</button><button class="primary" id="covDl">${ic('export')} Download PNG</button></div>
+    </div></div>`);
+  $('#modalBox').classList.add('wide'); paintV8($('#modalBox'), null);
+  covFrame = await grabFrame(COV.t); drawCovPreview();
+}
+function drawCovPreview(){ const c = $('#covCv'); if(!c) return; const [W,H] = covDims(), k = Math.min(300/W, 360/H); c.width = Math.round(W*k); c.height = Math.round(H*k); const big = document.createElement('canvas'); big.width = W; big.height = H; drawCover(big, covFrame, COV); c.getContext('2d').drawImage(big, 0, 0, c.width, c.height); }
+$('#modal').addEventListener('input', e => {
+  const id = e.target.id, v = e.target.value; if(!id || !id.startsWith('cov')) return;
+  const map = {covTitle:'title', covSub:'sub', covFont:'font', covSize:'size', covPos:'pos', covShade:'shade', covBright:'bright', covSat:'sat', covOut:'out'};
+  if(id === 'covT'){ COV.t = +v; clearTimeout(covTimer); covTimer = setTimeout(async () => { covFrame = await grabFrame(COV.t); drawCovPreview(); }, 120); return; }
+  if(map[id]){ COV[map[id]] = ['size','shade','bright','sat'].includes(map[id]) ? +v : v; if(id === 'covFont') ensureFont(v); drawCovPreview(); }
+});
+$('#modal').addEventListener('change', e => { if(e.target.id === 'covFont'){ COV.font = e.target.value; ensureFont(COV.font); setTimeout(drawCovPreview, 300); } });
+$('#modal').addEventListener('click', async e => {
+  const st = e.target.closest('[data-covst]'); if(st){ COV.style = st.dataset.covst; $('#modalBox').querySelectorAll('[data-covst]').forEach(b => b.classList.toggle('on', b === st)); drawCovPreview(); return; }
+  if(e.target.closest('#covClose')){ hideModal(); $('#modalBox').classList.remove('wide'); return; }
+  const dl = e.target.closest('#covDl'), add = e.target.closest('#covAdd'); if(!dl && !add) return;
+  const [W,H] = add ? [out.width*2, out.height*2] : covDims(), c = document.createElement('canvas'); c.width = W; c.height = H; drawCover(c, covFrame, COV);
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  if(dl){ saveBlob(blob, (S.project ? S.project.name : 'cover') + '_cover.png'); return; }
+  const m = await addImageMedia(new File([blob], 'Cover.png', {type:'image/png'}));
+  pushUndo(); const cl = newClip(m); cl.out = 1; S.clips.unshift(cl); if(S.clips[1]) S.clips[1].trans = {type:'fade', dur:.4};
+  hideModal(); $('#modalBox').classList.remove('wide'); afterEdit(); renderLeft(); seek(0);
+});

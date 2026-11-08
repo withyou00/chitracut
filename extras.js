@@ -930,3 +930,209 @@ function translitKn(text){
   });
 }
 const latinRatio = s => { const L = (s.match(/[A-Za-z]/g)||[]).length, K = (s.match(/[ಀ-೿]/g)||[]).length; return L/Math.max(1, L+K); };
+
+/* =====================================================================
+   v9: TEXT BUBBLES
+   ===================================================================== */
+const BUBBLES = [['speech','Speech'],['thought','Thought'],['shout','Shout'],['pill','Pill'],['ribbon','Ribbon'],['tag','Tag'],['note','Sticky note'],['circle','Circle'],['comic','Comic box'],['cloud','Cloud'],['brush','Brush'],['underline','Marker']];
+function drawBubble(x, id, bw, bh, px, fill, stroke){
+  const lw = Math.max(1.5, px*.06), hw = bw/2, hh = bh/2;
+  x.save(); x.lineJoin = 'round'; x.fillStyle = fill; x.strokeStyle = stroke; x.lineWidth = lw;
+  const done = (noStroke) => { x.fill(); if(!noStroke) x.stroke(); };
+  x.beginPath();
+  switch(id){
+    case 'speech': { const r = Math.min(hh, px*.5); x.roundRect ? x.roundRect(-hw-px*.2,-hh-px*.1,bw+px*.4,bh+px*.2,r) : x.rect(-hw,-hh,bw,bh);
+      x.moveTo(-hw*.45, hh+px*.1); x.lineTo(-hw*.7, hh+px*.75); x.lineTo(-hw*.15, hh+px*.1); done(); break; }
+    case 'thought': x.ellipse(0,0,hw+px*.6,hh+px*.5,0,0,7); done();
+      x.beginPath(); x.arc(-hw*.6, hh+px*.65, px*.22, 0, 7); done(); x.beginPath(); x.arc(-hw*.8, hh+px*1.05, px*.12, 0, 7); done(); break;
+    case 'shout': { const n = 16; for(let i=0;i<n*2;i++){ const a = i/(n*2)*Math.PI*2, r = i%2 ? 1 : 1.32; const px_ = Math.cos(a)*(hw+px*.5)*r, py = Math.sin(a)*(hh+px*.5)*r; i ? x.lineTo(px_,py) : x.moveTo(px_,py); } x.closePath(); done(); break; }
+    case 'pill': x.roundRect ? x.roundRect(-hw-px*.3,-hh,bw+px*.6,bh,hh) : x.rect(-hw,-hh,bw,bh); done(); break;
+    case 'ribbon': { const e = px*.7; x.moveTo(-hw-e,-hh); x.lineTo(hw+e,-hh); x.lineTo(hw+e*.55,0); x.lineTo(hw+e,hh); x.lineTo(-hw-e,hh); x.lineTo(-hw-e*.55,0); x.closePath(); done(); break; }
+    case 'tag': { const e = px*.6; x.moveTo(-hw-e,0); x.lineTo(-hw,-hh); x.lineTo(hw+px*.2,-hh); x.lineTo(hw+px*.2,hh); x.lineTo(-hw,hh); x.closePath(); done(); x.beginPath(); x.fillStyle = stroke; x.arc(-hw-e*.35,0,px*.1,0,7); x.fill(); break; }
+    case 'note': x.rotate(-.04); x.shadowColor = '#0006'; x.shadowBlur = px*.3; x.shadowOffsetY = px*.12; x.rect(-hw-px*.3,-hh-px*.25,bw+px*.6,bh+px*.5); done(true);
+      x.shadowColor = 'transparent'; x.beginPath(); x.fillStyle = stroke; x.globalAlpha = .25; x.rect(-px*.6,-hh-px*.45,px*1.2,px*.35); x.fill(); break;
+    case 'circle': { const r = Math.max(hw, hh) + px*.35; x.arc(0,0,r,0,7); done(); break; }
+    case 'comic': x.fillStyle = stroke; x.rect(-hw-px*.2+px*.18,-hh+px*.18,bw+px*.4,bh); x.fill(); x.beginPath(); x.fillStyle = fill; x.rect(-hw-px*.2,-hh,bw+px*.4,bh); done(); break;
+    case 'cloud': { const n = Math.max(5, Math.round(bw/(px*.9))); for(let i=0;i<n;i++){ const t = (i+.5)/n; x.moveTo(-hw+bw*t+px*.45, -hh); x.arc(-hw+bw*t, -hh, px*.45, 0, 7); x.moveTo(-hw+bw*t+px*.45, hh); x.arc(-hw+bw*t, hh, px*.45, 0, 7); }
+      x.moveTo(-hw+hh,-hh); x.ellipse(0,0,hw+px*.2,hh+px*.1,0,0,7); x.fill(); break; }
+    case 'brush': for(let i=0;i<5;i++){ const o = (i-2)*bh*.16; x.rect(-hw-px*.3+(i%2)*px*.25, o-bh*.12, bw+px*.4-(i%3)*px*.2, bh*.3); } x.fill(); break;
+    case 'underline': x.globalAlpha = .9; x.rect(-hw-px*.1, hh*.15, bw+px*.2, hh*.75); x.fill(); break;
+  }
+  x.restore();
+}
+
+/* =====================================================================
+   v9: TEXT TEMPLATES
+   ===================================================================== */
+const TT = (id,name,items) => ({id,name,items});
+const TEXT_TPL = [
+  TT('news','Breaking News',[{text:'BREAKING NEWS',size:54,y:78,font:'Oswald',bubble:'ribbon',bubColor:'#d81b20',bubStroke:'#ffffff',color:'#ffffff',anim:{in:'wipeIn',out:'fade',loop:'none',inDur:.5,outDur:.3}},{text:'ಇಲ್ಲಿ ಸುದ್ದಿ ಬರೆಯಿರಿ',size:34,y:86,bubble:'pill',bubColor:'#111111',bubStroke:'#111111',color:'#ffffff',anim:{in:'fadeLeft',out:'fade',loop:'none',inDur:.6,outDur:.3}}]),
+  TT('subscribe','Subscribe',[{text:'SUBSCRIBE',size:60,y:80,font:'Anton',bubble:'pill',bubColor:'#e62117',bubStroke:'#e62117',color:'#ffffff',anim:{in:'popUp',out:'zoomOut',loop:'pulse',inDur:.5,outDur:.4}}]),
+  TT('sale','Sale',[{text:'50% OFF',size:110,y:45,font:'Anton',tfx:'comic',anim:{in:'crashZoom',out:'fade',loop:'shake',inDur:.5,outDur:.3}},{text:'ಇಂದು ಮಾತ್ರ!',size:40,y:60,bubble:'shout',bubColor:'#ffe600',bubStroke:'#111111',color:'#111111',anim:{in:'popUp',out:'fade',loop:'none',inDur:.5,outDur:.3}}]),
+  TT('lower','Lower Third',[{text:'ನಿಮ್ಮ ಹೆಸರು',size:46,y:80,x:30,align:'left',bubble:'tag',bubColor:'#20d5ec',bubStroke:'#04262b',color:'#04262b',anim:{in:'fadeLeft',out:'fadeLeft',loop:'none',inDur:.5,outDur:.4}},{text:'ಹುದ್ದೆ / ಶಾಲೆ',size:30,y:87,x:28,align:'left',color:'#ffffff',bgOn:true,bgColor:'#000000',bgAlpha:70,anim:{in:'fadeLeft',out:'fadeLeft',loop:'none',inDur:.7,outDur:.4}}]),
+  TT('quote','Quote',[{text:'“ ನಿಮ್ಮ ನುಡಿ ಇಲ್ಲಿ ”',size:48,y:50,font:'Tiro Kannada',bubble:'note',bubColor:'#fff6b0',bubStroke:'#8a6d00',color:'#3b2a00',anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.5}}]),
+  TT('bday','Happy Birthday',[{text:'Happy Birthday',size:72,y:40,font:'Pacifico',tfx:'candy',anim:{in:'elastic',out:'fade',loop:'breathe',inDur:.8,outDur:.5}},{text:'ಹುಟ್ಟುಹಬ್ಬದ ಶುಭಾಶಯಗಳು',size:40,y:52,font:'Baloo Tamma 2',tfx:'kannadaGold',anim:{in:'letterPop',out:'fade',loop:'none',inDur:1,outDur:.5}}]),
+  TT('festival','ಹಬ್ಬದ ಶುಭಾಶಯ',[{text:'ಹಬ್ಬದ ಶುಭಾಶಯಗಳು',size:70,y:45,font:'Baloo Tamma 2',tfx:'gold3d',anim:{in:'zoomBlurIn',out:'fade',loop:'glowPulse',inDur:.8,outDur:.5}}]),
+  TT('cinematic','Cinematic Title',[{text:'THE JOURNEY',size:84,y:48,font:'Bebas Neue',tfx:'silver',anim:{in:'focusIn',out:'blur',loop:'none',inDur:1.2,outDur:.8}},{text:'a film by you',size:26,y:57,font:'Montserrat',color:'#dddddd',anim:{in:'fade',out:'fade',loop:'none',inDur:1.5,outDur:.6}}]),
+  TT('chapter','Chapter',[{text:'ಅಧ್ಯಾಯ 1',size:36,y:44,font:'Montserrat',color:'#20d5ec',anim:{in:'fadeDown',out:'fade',loop:'none',inDur:.6,outDur:.4}},{text:'ಪಾಠದ ಹೆಸರು',size:74,y:52,font:'Baloo Tamma 2',tfx:'minimalShadow',anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.4}}]),
+  TT('comicpop','Comic Pop',[{text:'WOW!',size:110,y:45,font:'Anton',tfx:'popart',curve:30,bubble:'shout',bubColor:'#ffe600',bubStroke:'#111111',anim:{in:'popUp',out:'zoomOut',loop:'wobble',inDur:.4,outDur:.3}}]),
+  TT('neonsign','Neon Sign',[{text:'OPEN',size:100,y:48,font:'Montserrat',tfx:'neonPink',anim:{in:'strobeIn',out:'fade',loop:'glowPulse',inDur:1,outDur:.4}}]),
+  TT('arc','Arc Title',[{text:'ನಮ್ಮ ಶಾಲೆ ನಮ್ಮ ಹೆಮ್ಮೆ',size:56,y:40,font:'Baloo Tamma 2',tfx:'royal',curve:45,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.4}}]),
+];
+function addTextTemplate(id){
+  const t = TEXT_TPL.find(x => x.id === id); if(!t) return; pushUndo(); let last = null;
+  for(const it of t.items){ const o = newOverlay('text', {...deep(it), start:S.time, dur:4, shadow:it.tfx ? 0 : (it.shadow ?? 20)}); if(it.font) ensureFont(it.font); S.overlays.push(o); last = o; }
+  S.sel = last.id; afterEdit();
+}
+
+/* =====================================================================
+   v9: VIDEO TEMPLATES — your photos / videos go into a ready design
+   ===================================================================== */
+const TPL = [
+  {id:'school',name:'ಶಾಲಾ ಕಾರ್ಯಕ್ರಮ',cat:'Events',ratio:'16:9',n:6,slot:3,trans:['fade','zoomIn','circleOpen','slideL'],loop:'kenburns',filter:'pf:natural',col:['#0f4c81','#f2c33a'],
+   texts:[{text:'ಶಾಲಾ ವಾರ್ಷಿಕೋತ್ಸವ',key:'title',size:78,y:42,font:'Baloo Tamma 2',tfx:'kannadaGold',at:0,dur:3.5,anim:{in:'zoomBlurIn',out:'fade',loop:'none',inDur:.8,outDur:.5}},
+          {text:'2026',key:'sub',size:40,y:55,font:'Montserrat',bubble:'ribbon',bubColor:'#c8102e',bubStroke:'#ffffff',color:'#ffffff',at:.4,dur:3.1,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.6,outDur:.4}},
+          {text:'ಧನ್ಯವಾದಗಳು',size:80,y:50,font:'Baloo Tamma 2',tfx:'gold',at:-3,dur:3,anim:{in:'popUp',out:'fade',loop:'none',inDur:.6,outDur:.6}}]},
+  {id:'bday',name:'Birthday',cat:'Events',ratio:'9:16',n:6,slot:2.5,trans:['heart','star','circleOpen','zoomIn'],loop:'zoomInOut',filter:'pf:peach',col:['#ff5fb6','#ffd1f0'],gfx:[['confetti',0]],
+   texts:[{text:'Happy Birthday',key:'title',size:80,y:30,font:'Pacifico',tfx:'candy',at:0,dur:4,anim:{in:'elastic',out:'fade',loop:'breathe',inDur:.8,outDur:.5}},
+          {text:'ನಿಮ್ಮ ಹೆಸರು',key:'sub',size:52,y:42,font:'Baloo Tamma 2',tfx:'kannadaGold',at:.6,dur:3.4,anim:{in:'letterPop',out:'fade',loop:'none',inDur:1,outDur:.5}}]},
+  {id:'festival',name:'ಹಬ್ಬ',cat:'Events',ratio:'9:16',n:5,slot:3,trans:['star','fade','flashShake','circleOpen'],loop:'kenburns',filter:'pf:goldenhour',col:['#ff8a00','#7a1f00'],gfx:[['fireworks',0]],
+   texts:[{text:'ಹಬ್ಬದ ಶುಭಾಶಯಗಳು',key:'title',size:72,y:40,font:'Baloo Tamma 2',tfx:'gold3d',at:0,dur:4,anim:{in:'zoomBlurIn',out:'fade',loop:'glowPulse',inDur:.8,outDur:.5}},
+          {text:'ನಿಮ್ಮ ಹೆಸರು',key:'sub',size:40,y:52,color:'#ffffff',bubble:'pill',bubColor:'#7a1f00',bubStroke:'#f2c33a',at:.6,dur:3.4,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.6,outDur:.4}}]},
+  {id:'ytintro',name:'YouTube Intro',cat:'YouTube',ratio:'16:9',n:3,slot:1.4,trans:['rgbGlitch','whipL','zoomBlur'],loop:'none',filter:'pf:blockbuster',col:['#111','#e62117'],
+   texts:[{text:'MY CHANNEL',key:'title',size:96,y:46,font:'Anton',tfx:'neonBlue',at:.2,dur:3.6,anim:{in:'glitchSlide',out:'digital',loop:'rgbLoop',inDur:.6,outDur:.4}},
+          {text:'Welcome!',key:'sub',size:40,y:60,font:'Montserrat',color:'#ffffff',at:.9,dur:2.9,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.5,outDur:.3}}]},
+  {id:'ytoutro',name:'YouTube Outro',cat:'YouTube',ratio:'16:9',n:1,slot:8,trans:[],loop:'kenburns',filter:'pf:moody',col:['#1b1b1b','#20d5ec'],gfx:[['subscribe',1],['bell',1.5]],
+   texts:[{text:'Thanks for watching',key:'title',size:64,y:30,font:'Montserrat',tfx:'minimalShadow',at:.3,dur:7.5,anim:{in:'fadeDown',out:'fade',loop:'none',inDur:.8,outDur:.5}}]},
+  {id:'reels',name:'Reels Fast Cut',cat:'Social',ratio:'9:16',n:8,slot:.8,trans:['whipL','zoomBlur','flashShake','whipR'],loop:'none',filter:'pf:teal',col:['#7a3cff','#ff6b8b'],
+   texts:[{text:'WAIT FOR IT…',key:'title',size:64,y:20,font:'Anton',tfx:'dblOutline',at:0,dur:2.4,anim:{in:'punchIn',out:'fade',loop:'shakeLoop',inDur:.3,outDur:.2}}]},
+  {id:'memories',name:'Memories',cat:'Social',ratio:'9:16',n:6,slot:3.5,trans:['fade','blurDissolve','fade'],loop:'kenburns',filter:'pf:film400',col:['#3b2a1a','#e8d5b0'],gfx:[['filmdust',0]],
+   texts:[{text:'Memories',key:'title',size:80,y:44,font:'Dancing Script',tfx:'minimalShadow',at:.2,dur:4,anim:{in:'focusIn',out:'fade',loop:'none',inDur:1.2,outDur:.6}},
+          {text:'ನೆನಪುಗಳು',key:'sub',size:44,y:54,font:'Tiro Kannada',color:'#f5e6c8',at:.8,dur:3.4,anim:{in:'fade',out:'fade',loop:'none',inDur:1,outDur:.6}}]},
+  {id:'travel',name:'Travel Diary',cat:'Social',ratio:'16:9',n:6,slot:2.5,trans:['slideL','whipR','zoomIn','slideU'],loop:'kenburns',filter:'pf:nature',col:['#1fb6ff','#7fffd4'],
+   texts:[{text:'TRAVEL DIARY',key:'title',size:86,y:44,font:'Bebas Neue',tfx:'ocean',at:.2,dur:3.6,anim:{in:'motionL',out:'motionR',loop:'none',inDur:.7,outDur:.5}},
+          {text:'ನನ್ನ ಪ್ರವಾಸ',key:'sub',size:40,y:56,bubble:'brush',bubColor:'#ffe600',bubStroke:'#000',color:'#111',at:.7,dur:3.1,anim:{in:'wipeIn',out:'fade',loop:'none',inDur:.6,outDur:.4}}]},
+  {id:'lesson',name:'ಪಾಠದ ಪರಿಚಯ',cat:'Education',ratio:'16:9',n:2,slot:4,trans:['fade'],loop:'zoomOutSlow',filter:'pf:clean',col:['#0b6e4f','#c9ffe9'],gfx:[['lowerthird',4.2]],
+   texts:[{text:'ಅಧ್ಯಾಯ 1',key:'sub',size:40,y:38,font:'Montserrat',color:'#20d5ec',at:.2,dur:3.6,anim:{in:'fadeDown',out:'fade',loop:'none',inDur:.6,outDur:.4}},
+          {text:'ಪಾಠದ ಹೆಸರು',key:'title',size:84,y:50,font:'Baloo Tamma 2',tfx:'mint',at:.4,dur:3.4,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.4}}]},
+  {id:'quote',name:'Status / Quote',cat:'Social',ratio:'9:16',n:1,slot:7,trans:[],loop:'kenburns',filter:'pf:moody',col:['#222','#fff6b0'],
+   texts:[{text:'“ ಕಲಿಕೆ ಎಂದಿಗೂ ನಿಲ್ಲಬಾರದು ”',key:'title',size:56,y:50,font:'Tiro Kannada',bubble:'note',bubColor:'#fff6b0',bubStroke:'#8a6d00',color:'#3b2a00',at:.3,dur:6.5,anim:{in:'letterFade',out:'fade',loop:'float',inDur:1.5,outDur:.6}}]},
+];
+const TPL_CATS = ['All','Events','Social','YouTube','Education'];
+function buildTemplate(tpl, medias, texts){
+  pushUndo();
+  S.ratio = tpl.ratio; if(typeof syncSelects === 'function') syncSelects(); setCanvas();
+  for(const c of S.clips) if(vids[c.id]) vids[c.id].pause();
+  active = null; dropAllChains(); pairKey = '';
+  const n = Math.max(tpl.n, medias.length), W = cv.width, H = cv.height;
+  S.clips = []; S.overlays = [];
+  for(let i=0;i<n;i++){
+    const m = medias[i % medias.length], c = newClip(m);
+    if(m.type === 'video'){ const len = Math.min(m.duration, tpl.slot); c.in = Math.max(0, Math.min(m.duration - len, m.duration*.15)); c.out = c.in + len; } else c.out = tpl.slot;
+    if(m.w && m.h) c.tf.scale = Math.round(Math.max(W/m.w, H/m.h)/Math.min(W/m.w, H/m.h)*100);
+    c.anim.loop = tpl.loop; c.filter = tpl.filter; c.filterAmt = 85;
+    if(i > 0 && tpl.trans.length) c.trans = {type:tpl.trans[(i-1) % tpl.trans.length], dur:Math.min(.6, tpl.slot*.35)};
+    S.clips.push(c);
+  }
+  layout();
+  for(const t of tpl.texts){
+    const st = t.at < 0 ? Math.max(0, S.mainEnd + t.at) : t.at, val = texts[t.key] != null && t.key ? texts[t.key] : t.text;
+    const o = newOverlay('text', {...deep(t), text:val, start:st, dur:Math.min(t.dur, Math.max(.5, S.mainEnd - st)), shadow:t.tfx ? 0 : 20});
+    delete o.key; delete o.at; if(t.font) ensureFont(t.font); S.overlays.push(o);
+  }
+  for(const [g, at] of (tpl.gfx || [])){ const G = GFXMAP[g]; if(!G) continue;
+    const o = newOverlay('gfx', {gfx:g, start:at, dur:Math.min(G.dur, Math.max(1, S.mainEnd - at)), text:G.text||'', text2:G.text2||'', color:G.color||'#20d5ec', gspeed:1, size:G.full?100:(G.aspect<.5?70:40), x:50, y:g==='lowerthird'?80:g==='subscribe'?72:g==='bell'?72:50, blend:G.blend||'source-over', anim:{in:'none',out:'fade',loop:'none',inDur:.5,outDur:.5}});
+    if(g === 'bell') o.x = 72; if(g === 'subscribe') o.x = 45; S.overlays.push(o); }
+  S.sel = S.clips[0] ? S.clips[0].id : null; afterEdit(); seek(0);
+}
+
+/* =====================================================================
+   v9: BEAT DETECTION + AUTO CUT TO BEATS
+   ===================================================================== */
+async function detectBeats(a){
+  const m = media(a.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Audio file ಸಿಗಲಿಲ್ಲ');
+  const sr = 11025, ab = await new OfflineAudioContext(1,1,sr).decodeAudioData(await blob.arrayBuffer());
+  const d = ab.getChannelData(0), hop = 256, n = Math.floor(d.length/hop), env = new Float32Array(n);
+  let lp = 0, prev = 0;
+  for(let i=0;i<n;i++){ let e = 0; for(let j=i*hop;j<(i+1)*hop && j<d.length;j++){ lp += (d[j]-lp)*.25; e += lp*lp; } e = Math.log(1e-6 + e); env[i] = Math.max(0, e - prev); prev = e; }
+  // smooth + normalise onset envelope
+  const fps = sr/hop, on = new Float32Array(n); let mx = 1e-9;
+  for(let i=1;i<n-1;i++){ on[i] = (env[i-1] + 2*env[i] + env[i+1])/4; mx = Math.max(mx, on[i]); }
+  for(let i=0;i<n;i++) on[i] /= mx;
+  // tempo by autocorrelation (70–180 BPM)
+  let best = 0, bestLag = Math.round(fps*.5);
+  for(let lag = Math.round(fps*60/180); lag <= Math.round(fps*60/70); lag++){ let s = 0; for(let i=lag;i<n;i++) s += on[i]*on[i-lag]; s *= 1 + .15*Math.exp(-Math.pow(60*fps/lag - 115, 2)/1800); if(s > best){ best = s; bestLag = lag; } }
+  let bestOff = 0, bo = -1;
+  for(let off=0; off<bestLag; off++){ let s = 0; for(let i=off;i<n;i+=bestLag) s += on[i]; if(s > bo){ bo = s; bestOff = off; } }
+  const beats = [], win = Math.round(fps*.06);
+  for(let i=bestOff;i<n;i+=bestLag){ let bi = i, bv = -1; for(let j=Math.max(0,i-win); j<=Math.min(n-1,i+win); j++) if(on[j] > bv){ bv = on[j]; bi = j; } beats.push(+(bi/fps).toFixed(3)); }
+  a.beats = beats; a.bpm = Math.round(60*fps/bestLag);
+  return a;
+}
+// returns timeline times of the beats that fall inside the audio item
+const beatTimes = a => (a.beats||[]).filter(b => b >= a.in && b <= a.in + a.dur*a.speed).map(b => a.start + (b - a.in)/a.speed);
+function cutToBeats(a, every){
+  const T = beatTimes(a).filter((_,i) => i % every === 0); if(T.length < 2) return alert('Beats ಸಾಕಾಗುವಷ್ಟು ಇಲ್ಲ');
+  if(!S.clips.length) return alert('Main track ನಲ್ಲಿ photo / video ಸೇರಿಸಿ');
+  pushUndo();
+  const bounds = T[0] > .3 ? [0, ...T] : T.map((t,i) => i === 0 ? 0 : t);
+  let k = 0;
+  for(const c of S.clips){
+    if(k >= bounds.length - 1) break;
+    const dur = bounds[k+1] - bounds[k], m = media(c.mediaId);
+    c.trans = {type:'none', dur:.6}; c.curve = null; c.curveName = 'none';
+    if(m.type === 'image') c.out = c.in + dur; else { c.out = Math.min(m.duration, c.in + dur*c.speed); }
+    k++;
+  }
+  afterEdit();
+  return k;
+}
+
+/* =====================================================================
+   v9: AUTO SILENCE CUT
+   ===================================================================== */
+async function analyzeSilence(c, opt){
+  const m = media(c.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file ಸಿಗಲಿಲ್ಲ');
+  if(!c._pcm || c._pcmKey !== m.id){ const ab = await new OfflineAudioContext(1,1,16000).decodeAudioData(await blob.arrayBuffer()); c._pcm = ab.getChannelData(0); c._pcmKey = m.id; }
+  const d = c._pcm, sr = 16000, win = 320, s0 = Math.floor(c.in*sr), s1 = Math.min(d.length, Math.floor(c.out*sr)), n = Math.floor((s1-s0)/win), db = new Float32Array(n);
+  for(let i=0;i<n;i++){ let e = 0; for(let j=s0+i*win; j<s0+(i+1)*win; j++) e += d[j]*d[j]; db[i] = 10*Math.log10(e/win + 1e-10); }
+  const sorted = [...db].sort((a,b)=>a-b), floor = sorted[Math.floor(n*.1)] || -60, peak = sorted[Math.floor(n*.95)] || -20;
+  const thr = opt.thr != null ? opt.thr : Math.max(floor + 8, Math.min(peak - 18, -30));
+  const minN = Math.round(opt.minSil*sr/win), pad = opt.pad;
+  const keep = []; let i = 0, segStart = c.in;
+  while(i < n){
+    if(db[i] < thr){ let j = i; while(j < n && db[j] < thr) j++;
+      if(j - i >= minN){ const a = c.in + i*win/sr + pad, b = c.in + j*win/sr - pad; if(b > a){ if(a - segStart > .05) keep.push([segStart, a]); segStart = b; } }
+      i = j; } else i++;
+  }
+  if(c.out - segStart > .05) keep.push([segStart, c.out]);
+  const kept = keep.reduce((s,k)=>s+k[1]-k[0],0);
+  return {keep, thr:Math.round(thr), removed:(c.out-c.in)-kept, cuts:Math.max(0, keep.length-1)};
+}
+function applySilenceCut(c, keep){
+  if(!keep.length) return; pushUndo();
+  const i = S.clips.indexOf(c), parts = keep.map(([a,b],k) => { const x = deep(c); delete x._pcm; x.id = k === 0 ? c.id : nid(); x.in = a; x.out = b; x.kf = [];
+    if(k > 0){ x.trans = {type:'none',dur:.6}; x.anim.in = 'none'; } if(k < keep.length-1) x.anim.out = 'none'; return x; });
+  delete c._pcm; S.clips.splice(i, 1, ...parts); afterEdit();
+}
+
+/* =====================================================================
+   v9: COVER / THUMBNAIL MAKER
+   ===================================================================== */
+async function grabFrame(t){
+  const prevSel = S.sel; S.sel = null;
+  await renderAt(t); const c = document.createElement('canvas'); c.width = out.width; c.height = out.height; c.getContext('2d').drawImage(out,0,0);
+  S.sel = prevSel; render(performance.now()); return c;
+}
+function drawCover(cnv, frame, o){
+  const x = cnv.getContext('2d'), W = cnv.width, H = cnv.height;
+  x.fillStyle = '#000'; x.fillRect(0,0,W,H);
+  if(frame){ const k = Math.max(W/frame.width, H/frame.height); x.filter = `brightness(${1+o.bright/100}) saturate(${1+o.sat/100})`; x.drawImage(frame, (W-frame.width*k)/2, (H-frame.height*k)/2, frame.width*k, frame.height*k); x.filter = 'none'; }
+  if(o.shade > 0){ const g = x.createLinearGradient(0, o.pos==='top'?0:H, 0, o.pos==='top'?H:0); g.addColorStop(0, `rgba(0,0,0,${o.shade/100})`); g.addColorStop(.65, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0,0,W,H); }
+  const u = Math.min(W,H), px = o.size/100*u*.22, y = o.pos==='top' ? H*.2 : o.pos==='bottom' ? H*.78 : H*.5;
+  x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `900 ${px}px "${o.font}","Noto Sans Kannada",sans-serif`;
+  const st = (TFX_MAP[o.style] || TFX_MAP.kannadaGold).st, lines = (o.title||'').split('\n');
+  lines.forEach((l,i) => drawStyledText(x, l, W/2, y + (i - (lines.length-1)/2)*px*1.15, px, st));
+  if(o.sub){ x.font = `700 ${px*.42}px Montserrat,"Noto Sans Kannada",sans-serif`; const sy = y + (lines.length/2 + .5)*px*1.15;
+    x.save(); x.translate(W/2, sy); const tw = x.measureText(o.sub).width; drawBubble(x, 'pill', tw + px*.5, px*.62, px*.42, '#e62117', '#e62117'); x.fillStyle = '#fff'; x.fillText(o.sub, 0, 0); x.restore(); }
+}

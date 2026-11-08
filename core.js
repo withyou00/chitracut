@@ -64,7 +64,7 @@ const clipDefaults = () => ({in:0, out:3, speed:1, curve:null, curveName:'none',
   anim:{in:'none',out:'none',loop:'none',inDur:0.5,outDur:0.5}, trans:{type:'none',dur:0.6}, audio:defAudio()});
 const ovDefaults = type => ({text:'', mediaId:null, start:0, dur:3, x:50, y:50,
   size: type==='image' ? 40 : type==='video' ? 50 : type==='sticker' ? 90 : 48, rot:0, opacity:100, kf:[], blend:'source-over', flip:false, rt:{smooth:0,bright:0,clear:0}, rmbg:false, rmbgInv:false,
-  in:0, speed:1, volume:100, caption:false,
+  in:0, speed:1, volume:100, caption:false, curve:0, bubble:'', bubColor:'#ffffff', bubStroke:'#111111', tfx:'',
   font:'Noto Sans Kannada', bold:true, italic:false, align:'center',
   color:'#ffffff', stroke:'#000000', strokeW:0, bgOn:false, bgColor:'#000000', bgAlpha:70, shadow:30, shadowColor:'#000000',
   filter:'none', filterAmt:80, adj:defAdj(), lut:'', lutAmt:100, mask:defMask(), fx:defFx(), bfx:defBfx(),
@@ -125,6 +125,18 @@ const SR_LANGS = [['kn-IN','ಕನ್ನಡ'],['en-IN','English (India)'],['hi-I
 const KF_CLIP = ['tf.scale','tf.x','tf.y','tf.rot','opacity'];
 const KF_OV = ['x','y','size','rot','opacity'];
 const KF_EPS = 1/30;
+const EASE = {
+  smooth: f => f<.5 ? 2*f*f : 1-Math.pow(-2*f+2,2)/2,
+  linear: f => f,
+  easeIn: f => f*f*f,
+  easeOut: f => 1-Math.pow(1-f,3),
+  strong: f => f<.5 ? 16*Math.pow(f,5) : 1-Math.pow(-2*f+2,5)/2,
+  back: f => 1+2.70158*Math.pow(f-1,3)+1.70158*Math.pow(f-1,2),
+  bounce: f => { const n=7.5625,d=2.75; if(f<1/d) return n*f*f; if(f<2/d) return n*(f-=1.5/d)*f+.75; if(f<2.5/d) return n*(f-=2.25/d)*f+.9375; return n*(f-=2.625/d)*f+.984375; },
+  elastic: f => f<=0?0:f>=1?1:Math.pow(2,-10*f)*Math.sin((f*10-.75)*2.0944)+1,
+  hold: f => f < 1 ? 0 : 1
+};
+const EASE_LIST = [['smooth','Smooth'],['linear','Linear'],['easeIn','Ease in'],['easeOut','Ease out'],['strong','Strong'],['back','Overshoot'],['bounce','Bounce'],['elastic','Elastic'],['hold','Hold']];
 const kfList = it => it.type === 'audio' ? [] : it.type ? KF_OV : KF_CLIP;
 function kfTime(it){ if(it.type) return S.time - it.start; const d = derived[it.id]; return d ? localToSrc(it, S.time - d.start) : 0; }
 function ev(it,path,t){
@@ -134,7 +146,7 @@ function ev(it,path,t){
   if(t <= kf[0].t) return kf[0].v[path];
   const last = kf[kf.length-1]; if(t >= last.t) return last.v[path];
   for(let i=0;i<kf.length-1;i++) if(t < kf[i+1].t){
-    const a=kf[i], b=kf[i+1], f=(t-a.t)/(b.t-a.t), e=f<.5?2*f*f:1-Math.pow(-2*f+2,2)/2;
+    const a=kf[i], b=kf[i+1], f=(t-a.t)/(b.t-a.t), e=(EASE[a.ease]||EASE.smooth)(f);
     return a.v[path] + (b.v[path]-a.v[path])*e;
   }
   return last.v[path];
@@ -1077,7 +1089,8 @@ function drawText(ctx,o,an,u,size,maxW,lt){
   const w = Math.max(px*.5, ...lines.map(l => ctx.measureText(l).width)), h = lh*lines.length;
   const padX = px*.35, padY = px*.18, color = an.hue ? `hsl(${an.hue},95%,62%)` : o.color;
   if(an.wipe < 1){ ctx.save(); ctx.beginPath(); ctx.rect(-w/2-padX,-h/2-padY,(w+padX*2)*an.wipe,h+padY*2); ctx.clip(); }
-  if(o.bgOn){ ctx.fillStyle = hexA(o.bgColor, o.bgAlpha/100); rr(ctx,-w/2-padX,-h/2-padY,w+padX*2,h+padY*2,px*.22); ctx.fill(); }
+  if(o.bubble && typeof drawBubble === 'function') drawBubble(ctx, o.bubble, w+padX*2, h+padY*2, px, o.bubColor||'#ffffff', o.bubStroke||'#111111');
+  else if(o.bgOn){ ctx.fillStyle = hexA(o.bgColor, o.bgAlpha/100); rr(ctx,-w/2-padX,-h/2-padY,w+padX*2,h+padY*2,px*.22); ctx.fill(); }
   ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
   const TS = o.tfx && typeof TFX_MAP !== 'undefined' ? TFX_MAP[o.tfx] : null;
   const glyph = (s,x,y) => {
@@ -1087,7 +1100,16 @@ function drawText(ctx,o,an,u,size,maxW,lt){
     ctx.fillStyle = color; ctx.fillText(s,x,y); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
   };
   const A = o.anim, inL = an.inK < 1 && LETTER_ANIMS.includes(A.in), outL = an.outK < 1 && LETTER_ANIMS.includes(A.out);
-  if(!inL && !outL && A.loop !== 'wave'){
+  if(o.curve && Math.abs(o.curve) > 1 && lines.length === 1 && !inL && !outL){   // text on an arc
+    let g = graphemes(lines[0]); if(an.ch < 1) g = g.slice(0, Math.ceil(g.length*an.ch));
+    const ang = o.curve/100*Math.PI*1.6, R = w/Math.max(.05, Math.abs(ang)), dir = Math.sign(ang);
+    ctx.textAlign = 'center'; let pos = -w/2;
+    for(const ch of g){
+      const cw = ctx.measureText(ch).width, th = (pos + cw/2)/R;
+      ctx.save(); ctx.translate(Math.sin(th)*R, dir*(R - Math.cos(th)*R) - dir*R*(1-Math.cos(ang/2))/2); ctx.rotate(th*dir); glyph(ch, 0, 0); ctx.restore();
+      pos += cw;
+    }
+  } else if(!inL && !outL && A.loop !== 'wave'){
     let show = lines;
     if(an.ch < 1){
       let n = Math.ceil(graphemes(lines.join('\n')).length*an.ch); show = [];
@@ -1168,6 +1190,19 @@ function drawMediaLayer(ctx,o,an,cx,cy,rot,size,opacity,u){
   geo[o.id] = {cx:cx+fm.dx, cy:cy+fm.dy, rot, hw, hh, flip:!!o.flip};
   return {hw:w/2, hh:h/2};
 }
+// adjustment / filter layer: re-grades everything below it on the timeline
+let adjTex = null;
+function drawAdjustLayer(ctx,o,an,OP){
+  const W = cv.width, H = cv.height, a = clamp(OP/100*an.a, 0, 1); if(a <= .001) return;
+  gl.viewport(0,0,W,H); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+  if(!adjTex) adjTex = mkTex();
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, adjTex);
+  try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,out); }catch(e){ return; }
+  gl.uniform2f(U.u_px,1/W,1/H); setFx(o); gl.uniform1f(U.u_mT,0); gl.uniform1f(U.u_ck,0); setEffect(o); setSeg({},null);
+  gl.uniform1f(U.u_trT,0); gl.uniform2f(U.u_half,W/2,H/2); gl.uniform2f(U.u_off,0,0); gl.uniform1f(U.u_rot,0); gl.uniform1f(U.u_alpha,1); gl.uniform1f(U.u_blur,0);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  ctx.save(); ctx.globalAlpha = a; ctx.globalCompositeOperation = 'source-over'; ctx.drawImage(cv,0,0); ctx.restore();
+}
 function drawSel(ctx,h,u){
   ctx.save(); ctx.translate(h.cx,h.cy); ctx.rotate(h.rot); ctx.scale(h.s||.001,h.s||.001);
   ctx.strokeStyle = '#1fd1d1'; ctx.lineWidth = Math.max(2,u/360)/Math.max(.2,h.s); ctx.setLineDash([8,6]);
@@ -1183,6 +1218,7 @@ function drawOverlays(ctx){
     const X=ev(o,'x',lt), Y=ev(o,'y',lt), SZ=ev(o,'size',lt), R=ev(o,'rot',lt), OP=ev(o,'opacity',lt);
     const cx = X/100*W + an.dx, cy = Y/100*H + an.dy, rot = R*Math.PI/180 + an.r;
     let box = null;
+    if(o.type === 'adjust'){ drawAdjustLayer(ctx,o,an,OP); continue; }
     if(isMediaOv(o)) box = drawMediaLayer(ctx,o,an,cx,cy,rot,SZ,OP,u);
     else if(o.type==='gfx'){ box = typeof drawGfxItem === 'function' ? drawGfxItem(ctx,o,an,cx,cy,rot,SZ,OP,u,lt) : null; }
     else {
