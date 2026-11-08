@@ -1928,24 +1928,47 @@ function recordTimeline(o){
   });
 }
 const expName = ext => (S.project ? S.project.name.replace(/[^\wಀ-೿ -]/g,'') : 'ChitraCut') + '_' + Date.now() + ext;
+/* ---- where exported files go: chosen folder / "Save as" dialog / browser Downloads ---- */
+const FS_SAVE = typeof window.showSaveFilePicker === 'function', FS_DIR = typeof window.showDirectoryPicker === 'function';
+function setDB(){ return new Promise((res, rej) => { const r = indexedDB.open('cc_settings', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function setSetting(k, v){ try{ const db = await setDB(); await new Promise((res, rej) => { const t = db.transaction('kv','readwrite'); v == null ? t.objectStore('kv').delete(k) : t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); }); }catch(e){} }
+async function getSetting(k){ try{ const db = await setDB(); return await new Promise(res => { const r = db.transaction('kv').objectStore('kv').get(k); r.onsuccess = () => res(r.result); r.onerror = () => res(null); }); }catch(e){ return null; } }
+let saveDir = null; getSetting('saveDir').then(h => { if(h) saveDir = h; });
+function chooseMime(opt){
+  if(opt.gif) return {mime:'image/gif', ext:'.gif'};
+  if(opt.audioOnly){ const mime = ['audio/webm;codecs=opus','audio/mp4;codecs=mp4a.40.2','audio/webm'].find(t => MediaRecorder.isTypeSupported(t)); return {mime, ext:mime.includes('mp4') ? '.m4a' : '.webm'}; }
+  const mime = pickMime(opt.fmt, opt.codec, opt.q) || pickMime('mp4','h264',opt.q) || pickMime('webm','vp9',opt.q) || pickMime('webm','vp8',opt.q) || 'video/webm';
+  return {mime, ext:mime.startsWith('video/mp4') ? '.mp4' : '.webm'};
+}
+const cleanName = n => (n || 'ChitraCut').replace(/[\\/:*?"<>|]/g,'').trim() || 'ChitraCut';
+async function writeOut(blob, name, opt){
+  const url = URL.createObjectURL(blob);
+  try{
+    if(opt && opt.fileHandle){ const w = await opt.fileHandle.createWritable(); await w.write(blob); await w.close(); return {url, where:'📁 ' + opt.fileHandle.name}; }
+    if(opt && opt.dirHandle){
+      let nm = name, i = 1; const dot = name.lastIndexOf('.'), base = name.slice(0, dot), ext = name.slice(dot);
+      while(true){ try{ await opt.dirHandle.getFileHandle(nm); nm = `${base} (${i++})${ext}`; }catch(e){ break; } }
+      const fh = await opt.dirHandle.getFileHandle(nm, {create:true}), w = await fh.createWritable(); await w.write(blob); await w.close();
+      return {url, where:'📁 ' + opt.dirHandle.name + ' / ' + nm};
+    }
+  }catch(e){ console.warn('save failed, falling back to download', e); }
+  const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  return {url, where:'⬇ Downloads / ' + name};
+}
 function saveBlob(blob, name){ const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; a.click(); return url; }
 async function exportVideo(opt){
   if(!S.total) return alert('ಮೊದಲು video / photo import ಮಾಡಿ');
   if(!window.MediaRecorder) return alert('ಈ browser export support ಮಾಡುವುದಿಲ್ಲ. Chrome ಬಳಸಿ.');
   opt = Object.assign({q:1080, fps:30, bitrate:0, fmt:'mp4', codec:'h264', audioOnly:false, gif:false, name:''}, opt||{});
   if(opt.gif) return exportGif(opt);
-  let mime, ext;
-  if(opt.audioOnly){ mime = ['audio/webm;codecs=opus','audio/mp4;codecs=mp4a.40.2','audio/webm'].find(t => MediaRecorder.isTypeSupported(t)); ext = mime.includes('mp4') ? '.m4a' : '.webm'; }
-  else {
-    mime = pickMime(opt.fmt, opt.codec, opt.q) || pickMime('mp4','h264',opt.q) || pickMime('webm','vp9',opt.q) || pickMime('webm','vp8',opt.q) || 'video/webm';
-    ext = mime.startsWith('video/mp4') ? '.mp4' : '.webm';
-  }
+  const {mime, ext} = chooseMime(opt);
   const px = opt.q*opt.q*16/9, br = opt.bitrate || Math.round(px*opt.fps*.1);   // "recommended" ≈ 0.1 bit / pixel / frame
   showOverlay('Exporting…', `${opt.audioOnly ? 'Audio' : opt.q+'p · '+opt.fps+'fps · '+(br/1e6).toFixed(1)+' Mbps'} — ಈ tab ತೆರೆದಿಡಿ, real-time ನಲ್ಲಿ render ಆಗುತ್ತದೆ`, '<button id="ovCancel">Cancel</button>');
   try{
     const blob = await recordTimeline({t0:0, t1:S.total, q:opt.q, fps:opt.fps, bitrate:br, mime, audioOnly:opt.audioOnly});
-    const name = (opt.name ? opt.name.replace(/[\\/:*?"<>|]/g,'') + ext : expName(ext)), url = saveBlob(blob, name);
-    showOverlay('✅ Export ಮುಗಿಯಿತು', name+' ('+(blob.size/1048576).toFixed(1)+' MB · '+mime.split(';')[0]+')', `<a href="${url}" download="${name}"><button class="primary">Download again</button></a><button id="ovClose">Close</button>`);
+    const name = opt.name ? cleanName(opt.name) + ext : expName(ext), r = await writeOut(blob, name, opt);
+    showOverlay('✅ Export ಮುಗಿಯಿತು', r.where + '  ('+(blob.size/1048576).toFixed(1)+' MB · '+mime.split(';')[0]+')', `<a href="${r.url}" download="${name}"><button>⬇ Download copy</button></a><button class="primary" id="ovClose">Close</button>`);
+    return true;
   }catch(e){ if(e && e.message === 'cancel') return false; showOverlay('⚠ Export ಆಗಲಿಲ್ಲ', (e && e.message) || String(e), '<button id="ovClose">Close</button>'); }
 }
 // wait until every visible video has the frame for S.time, then render it
@@ -1972,8 +1995,8 @@ async function exportGif(opt){
       if(i % 4 === 0) await new Promise(r => setTimeout(r));
     }
     if(!exporting) return;
-    exporting = false; const blob = g.end(), name = (opt.name || 'ChitraCut') + '.gif', url = saveBlob(blob, name);
-    showOverlay('✅ GIF ಮುಗಿಯಿತು', name+' ('+(blob.size/1048576).toFixed(1)+' MB)', `<a href="${url}" download="${name}"><button class="primary">Download again</button></a><button id="ovClose">Close</button>`);
+    exporting = false; const blob = g.end(), name = cleanName(opt.name) + '.gif', r = await writeOut(blob, name, opt);
+    showOverlay('✅ GIF ಮುಗಿಯಿತು', r.where + '  ('+(blob.size/1048576).toFixed(1)+' MB)', `<a href="${r.url}" download="${name}"><button>⬇ Download copy</button></a><button class="primary" id="ovClose">Close</button>`);
   }catch(e){ exporting = false; showOverlay('⚠ GIF ಆಗಲಿಲ್ಲ', e.message, '<button id="ovClose">Close</button>'); }
 }
 // tiny GIF89a encoder (fixed 6×7×6 colour cube + ordered dithering, LZW)
