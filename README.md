@@ -51,7 +51,7 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 | Phase 8 – Voice | 48 voices: Voice filters (Crisp Mic, Live Stage, Divine Echo, 8D, Vinyl, Old Phone…) + Voice characters (Chipmunk, Giant, Alien, Ghost, Old Man, Villain, 8-bit…) · Search · Fine tune |
 | Phase 8 – Text | 33 **Text effects** (Neon, Gold, Chrome, Fire, 3D, Comic, Retro 80s, Glitch, Sticker…) · 🗣 **Text to speech** (ಕನ್ನಡ / English / हिन्दी, 10 voice styles, speed) · ಕನ್ನಡ captions English ಅಕ್ಷರದಲ್ಲಿ ಬಂದರೆ ತಾನಾಗಿ ಕನ್ನಡ ಲಿಪಿಗೆ |
 | Phase 9 | ✨ **Templates** (ಶಾಲಾ ಕಾರ್ಯಕ್ರಮ, Birthday, ಹಬ್ಬ, YouTube Intro/Outro, Reels, Memories, Travel, ಪಾಠದ ಪರಿಚಯ, Status) · 🥁 **Beat sync** (music beats ಗುರುತಿಸಿ clips cut) · ✂ **Auto silence cut** · ✏️ **Captions editor** (find/replace, merge) · 💬 Text **Bubble** (12) + **Curve text** + 12 **Text templates** · ◆ Keyframe **easing** (9) · 🎚 **Adjustment / Filter layer** · 🖼 **Cover / Thumbnail maker** (PNG, video ಆರಂಭಕ್ಕೆ ಸೇರಿಸಬಹುದು) |
-| Export – Save to | 📁 ಎಲ್ಲಿ save ಆಗಬೇಕು: ಪ್ರತಿ ಬಾರಿ **Save as…** ಕೇಳು / ಒಂದು **folder** ಆರಿಸಿ ನೆನಪಿಡು (ಅದೇ ಹೆಸರಿದ್ದರೆ (1), (2)…) / Downloads (PC ಯ Chrome / Edge ನಲ್ಲಿ; phone ನಲ್ಲಿ Downloads) |
+| Export – Export to | CapCut ತರಹ ಒಂದೇ ಸಾಲು: 📁 ಒತ್ತಿ folder ಆರಿಸಿ (ನೆನಪಿನಲ್ಲಿರುತ್ತದೆ) · folder ಇಲ್ಲದಿದ್ದರೆ Export ಒತ್ತಿದಾಗ Save as ಕೇಳುತ್ತದೆ · Desktop/Documents ನೇರವಾಗಿ ಆರಿಸಲು browser ಬಿಡುವುದಿಲ್ಲ — ಅದರೊಳಗಿನ folder ಆರಿಸಿ |
 | Export | Name, Resolution 480p–**2K–4K**, Bit rate (Lower/Recommended/Higher/Custom), Codec (H.264 / HEVC / VP9 / AV1 / VP8 — browser support ಆಧರಿಸಿ), Format MP4/WebM, Frame rate 24–60, Audio only, **GIF export** |
 
 > Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ — 1 ನಿಮಿಷದ video ಗೆ ಸುಮಾರು 1 ನಿಮಿಷ. ಆ ಸಮಯದಲ್ಲಿ tab ತೆರೆದಿಡಿ. 2K/4K export ಗೆ ಶಕ್ತಿಶಾಲಿ PC ಬೇಕು — ನಿಧಾನದ device ನಲ್ಲಿ frames ಕಡಿಮೆಯಾಗಬಹುದು.

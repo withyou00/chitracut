@@ -596,3 +596,7 @@ body.resizing iframe,body.resizing canvas{pointer-events:none}
 #xSave .xchk{margin:6px 0;flex-wrap:wrap;font-size:12.5px}
 #xSave .xchk input[type=radio]{accent-color:var(--acc);margin:0}
 #xSave button{padding:3px 9px;font-size:11.5px;margin-left:4px}
+.xto{flex:1;min-width:0;display:flex;align-items:center;gap:4px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:2px 2px 2px 8px}
+.xto .xpath{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.xto .ib{padding:4px 6px}
+#xSaveHint .xhint{margin:0 0 6px 102px;line-height:1.5}

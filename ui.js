@@ -1290,13 +1290,13 @@ function openExport(){
   showModal(`<div class="xwrap"><div class="xprev"><img src="${prev}"><div class="xmeta"><b>${fmtTC(S.total)}</b><span>${S.ratio==='orig'?'Original':S.ratio}</span></div></div>
     <div class="xform"><h3 style="margin:0 0 12px">${ic('export')} Export</h3>
     <div class="xrow"><span>Name</span><input type="text" id="xName" value="${esc(E.name)}"></div>
+    <div class="xrow"><span>Export to</span><div class="xto" id="xSave"></div></div><div id="xSaveHint"></div>
     <div class="xsec"><label class="xchk"><input type="checkbox" id="xVideo" ${E.video?'checked':''}> <b>Video</b></label>
       <div class="xbody" id="xVBody"></div></div>
     <div class="xsec"><label class="xchk"><input type="checkbox" id="xAudio" ${E.audio?'checked':''}> <b>Audio</b></label>
       <div class="xbody"><div class="xrow"><span>Format</span><b class="xval">${MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')?'AAC / M4A':'Opus / WebM'} · 192 kbps</b></div><div class="xhint">Video ಆಯ್ಕೆ ಇಲ್ಲದೆ Audio ಮಾತ್ರ ಆರಿಸಿದರೆ audio file ಮಾತ್ರ ಬರುತ್ತದೆ.</div></div></div>
     <div class="xsec"><label class="xchk"><input type="checkbox" id="xGif" ${E.gif?'checked':''}> <b>Export GIF</b></label>
       <div class="xbody"><div class="xrow"><span>Resolution</span><select id="xGifRes">${[[240,'240p'],[320,'320p'],[480,'480p']].map(([v,n])=>`<option value="${v}" ${E.gifRes===v?'selected':''}>${n}</option>`).join('')}</select></div></div></div>
-    <div class="xsec"><b>Save to</b><div class="xbody" id="xSave"></div></div>
     <div class="xfoot"><span id="xSize"></span><div class="btns" style="margin:0"><button id="xCancel">Cancel</button><button class="primary" id="xGo">${ic('export')} Export</button></div></div>
     </div></div>`);
   $('#modalBox').classList.add('wide'); renderSaveTo();
@@ -1324,29 +1324,26 @@ $('#modal').addEventListener('change', e => {
   const map = {xRes:['q',+v], xBr:['br',v], xCbr:['cbr',+v], xCodec:['codec',v], xFmt:['fmt',v], xFps:['fps',+v], xVideo:['video',v], xAudio:['audio',v], xGif:['gif',v], xGifRes:['gifRes',+v], xName:['name',v]};
   if(map[id]){ E[map[id][0]] = map[id][1]; if(id !== 'xName') renderExpVideo(); }
 });
-function renderSaveTo(){
-  const box = $('#xSave'); if(!box) return; const E = S.exp;
-  if(!FS_SAVE && !FS_DIR){ box.innerHTML = `<div class="xrow"><span>Location</span><b class="xval">⬇ Downloads folder</b></div><div class="xhint">ಈ browser ನಲ್ಲಿ folder ಆರಿಸಲು ಆಗುವುದಿಲ್ಲ (phone / Firefox). File <b>Downloads</b> ಗೆ ಹೋಗುತ್ತದೆ. PC ಯಲ್ಲಿ Chrome / Edge ಬಳಸಿದರೆ folder ಆರಿಸಬಹುದು. ಅಥವಾ Chrome Settings › Downloads › <i>"Ask where to save each file"</i> ON ಮಾಡಿ.</div>`; return; }
-  box.innerHTML = `<label class="xchk"><input type="radio" name="xSaveM" value="ask" ${E.saveMode==='ask'?'checked':''}> ಪ್ರತಿ ಬಾರಿ ಕೇಳು (<b>Save as…</b> — folder ಮತ್ತು ಹೆಸರು ನೀವೇ ಆರಿಸಿ)</label>
-    <label class="xchk"><input type="radio" name="xSaveM" value="folder" ${E.saveMode==='folder'?'checked':''} ${FS_DIR?'':'disabled'}> ಈ folder ಗೆ: <b class="xval">${saveDir ? '📁 ' + esc(saveDir.name) : '— ಇನ್ನೂ ಆರಿಸಿಲ್ಲ'}</b> <button id="xPickDir" type="button">📁 ${saveDir?'ಬದಲಿಸಿ':'Folder ಆರಿಸಿ'}</button></label>
-    <label class="xchk"><input type="radio" name="xSaveM" value="downloads" ${E.saveMode==='downloads'?'checked':''}> Browser ನ <b>Downloads</b> folder</label>`;
+function renderSaveTo(hint){
+  const box = $('#xSave'); if(!box) return;
+  const label = saveDir ? '📁 ' + esc(saveDir.name) : FS_SAVE ? 'Export ಒತ್ತಿದಾಗ ಕೇಳುತ್ತದೆ (Save as…)' : '⬇ Downloads';
+  box.innerHTML = `<span class="xpath" title="${saveDir ? 'Folder: ' + esc(saveDir.name) : ''}">${label}</span>${saveDir ? '<button class="ib sm" id="xClrDir" type="button" title="Folder ತೆಗೆ (ಪ್ರತಿ ಬಾರಿ ಕೇಳು)">✕</button>' : ''}${FS_DIR ? `<button class="ib" id="xPickDir" type="button" title="Folder ಆರಿಸಿ">${ic('folder')}</button>` : ''}`;
+  const h = $('#xSaveHint'); if(h) h.innerHTML = hint || (!FS_DIR && !FS_SAVE ? '<div class="xhint">ಈ browser ನಲ್ಲಿ (phone / Firefox) file <b>Downloads</b> ಗೆ ಹೋಗುತ್ತದೆ.</div>' : '');
 }
-$('#modal').addEventListener('change', e => { if(e.target.name === 'xSaveM'){ S.exp.saveMode = e.target.value; setSetting('saveMode', S.exp.saveMode); if(e.target.value === 'folder' && !saveDir) pickSaveDir(); } });
-getSetting('saveMode').then(m => { S.exp = Object.assign(S.exp || {}, {saveMode: m || (FS_SAVE ? 'ask' : 'downloads')}); });
 async function pickSaveDir(){
-  try{ const h = await showDirectoryPicker({id:'chitracut-export', mode:'readwrite', startIn:'videos'}); saveDir = h; await setSetting('saveDir', h); S.exp.saveMode = 'folder'; setSetting('saveMode','folder'); }
-  catch(err){ if(!saveDir){ S.exp.saveMode = FS_SAVE ? 'ask' : 'downloads'; } }
-  renderSaveTo();
+  try{ const h = await showDirectoryPicker({id:'chitracut-export', mode:'readwrite', startIn:'videos'}); saveDir = h; await setSetting('saveDir', h); renderSaveTo(); }
+  catch(err){ renderSaveTo(err && err.name === 'AbortError' ? '<div class="xhint">💡 <b>Desktop, Documents, Downloads</b> ಅಂತಹ ಮುಖ್ಯ folder ಗಳನ್ನು browser ನೇರವಾಗಿ ಆರಿಸಲು ಬಿಡುವುದಿಲ್ಲ (ಅವುಗಳಲ್ಲಿ system files ಇರುತ್ತವೆ). ಅದರೊಳಗೆ ಒಂದು ಹೊಸ folder ಮಾಡಿ (ಉದಾ: <b>Desktop › ChitraCut</b>) ಅದನ್ನು ಆರಿಸಿ. ಅಥವಾ folder ಆರಿಸದೆ Export ಒತ್ತಿದರೆ Save as ವಿಂಡೋದಲ್ಲಿ ನೇರವಾಗಿ Desktop ಗೆ save ಮಾಡಬಹುದು.</div>' : ''); }
 }
 $('#modal').addEventListener('click', async e => {
   if(e.target.closest('#xPickDir')){ e.preventDefault(); pickSaveDir(); return; }
+  if(e.target.closest('#xClrDir')){ e.preventDefault(); saveDir = null; setSetting('saveDir', null); renderSaveTo(); return; }
   if(e.target.closest('#xCancel')){ hideModal(); $('#modalBox').classList.remove('wide'); return; }
   if(!e.target.closest('#xGo')) return;
   const E = S.exp; E.name = ($('#xName')||{}).value || E.name;
   if(!E.video && !E.audio && !E.gif) return alert('Video, Audio ಅಥವಾ GIF ಯಾವುದಾದರೂ ಒಂದು ಆರಿಸಿ');
   // choose where to save NOW (the browser only allows these dialogs right after a click)
   const vopt = {q:E.q, fps:E.fps, bitrate:expBitrate(E), fmt:E.fmt, codec:E.codec, audioOnly:!E.video, name:E.name}, gopt = {gif:true, q:E.gifRes, fps:12, name:E.name};
-  const mode = (FS_SAVE || FS_DIR) ? (E.saveMode || 'ask') : 'downloads';
+  const mode = saveDir ? 'folder' : FS_SAVE ? 'ask' : 'downloads';
   try{
     if(mode === 'ask' && FS_SAVE){
       const first = (E.video || E.audio) ? vopt : gopt, {mime, ext} = chooseMime(first), base = mime.split(';')[0];
