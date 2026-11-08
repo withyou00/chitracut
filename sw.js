@@ -1,6 +1,6 @@
 // Network-first service worker: online ಇದ್ದಾಗ ಹೊಸ version, offline ಇದ್ದಾಗ cache
-const CACHE = 'chitracut-v3';
-const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'chitracut-v5';
+const FILES = ['./', './index.html', './style.css', './core.js', './ui.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
