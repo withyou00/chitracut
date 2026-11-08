@@ -611,3 +611,322 @@ async function reverseAudioItem(it){
   const f = new File([wavMulti(chans, ab.sampleRate)], `${m.name.replace(/\.[^.]+$/,'')} (reversed).wav`, {type:'audio/wav'});
   return addAudioMedia(f, n/ab.sampleRate);
 }
+
+/* =====================================================================
+   ANIMATION LIBRARY (v8) — in / out / loop, grouped like CapCut
+   fn(R, k, e, W, H): k = 0→1 progress (1 = fully visible), e = eased k
+   ===================================================================== */
+const elasticO = k => k <= 0 ? 0 : k >= 1 ? 1 : Math.pow(2,-10*k)*Math.sin((k*10-.75)*2.0944) + 1;
+const aBlur = (R,x) => { R.blur = (R.blur||0) + x*18; if(!R.fx) R.fx = ['blur', x]; };
+const aFx = (R,t,x) => { R.fx = [t, clamp(x,0,1)]; };
+const sgnMax = v => (v < 0 ? -1 : 1)*Math.max(.001, Math.abs(v));
+const ANIM_LIB = [
+  // Basic
+  ['fadeUp','Fade Up','Basic',(R,k,e,W,H)=>{ R.a*=e; R.dy+=(1-e)*H*.08; }],
+  ['fadeDown','Fade Down','Basic',(R,k,e,W,H)=>{ R.a*=e; R.dy-=(1-e)*H*.08; }],
+  ['fadeLeft','Fade Left','Basic',(R,k,e,W)=>{ R.a*=e; R.dx+=(1-e)*W*.12; }],
+  ['fadeRight','Fade Right','Basic',(R,k,e,W)=>{ R.a*=e; R.dx-=(1-e)*W*.12; }],
+  ['zoomFade','Zoom Fade','Basic',(R,k,e)=>{ R.a*=e; R.s*=1+.3*(1-e); }],
+  ['popUp','Pop Up','Basic',(R,k)=>{ R.s*=Math.max(.001,backOut(k)); R.a*=Math.min(1,k*3); }],
+  ['elastic','Elastic','Basic',(R,k)=>{ R.s*=Math.max(.001,elasticO(k)); }],
+  ['squeeze','Squeeze','Basic',(R,k,e)=>{ R.sx*=Math.max(.001,backOut(k)); R.sy*=1+.25*(1-e); }],
+  ['stretch','Stretch','Basic',(R,k,e)=>{ R.sy*=Math.max(.001,backOut(k)); R.sx*=1+.2*(1-e); }],
+  ['unfold','Unfold','Basic',(R,k,e)=>{ R.sy*=Math.max(.001,e); }],
+  ['bounceUp','Bounce Up','Basic',(R,k,e,W,H)=>{ R.dy+=(1-bounceOut(k))*H*.35; R.a*=Math.min(1,k*5); }],
+  ['swingDrop','Swing Drop','Basic',(R,k,e,W,H)=>{ R.dy-=(1-e)*H*.3; R.r+=Math.sin(k*Math.PI*3)*(1-k)*.4; }],
+  // Light
+  ['flashFade','Flash Fade','Light',(R,k,e)=>{ aFx(R,'bright',1-e); R.a*=Math.min(1,k*2); }],
+  ['glowIn','Glow In','Light',(R,k,e)=>{ aFx(R,'glow',1-e*.6); R.a*=e; }],
+  ['leakIn','Light Leak','Light',(R,k,e)=>{ aFx(R,'lightleak',1-e); R.a*=Math.min(1,k*2); }],
+  ['flashZoom','Flash Zoom','Light',(R,k,e)=>{ aFx(R,'bright',1-e); R.s*=1+.25*(1-e); }],
+  ['strobeIn','Strobe','Light',(R,k)=>{ if(k < .75 && Math.floor(k*16)%2) R.a*=.1; }],
+  ['exposeIn','Over-expose','Light',(R,k,e)=>{ aFx(R,'bright',(1-e)*.9); aBlur(R,(1-e)*.4); }],
+  ['beamIn','Beam Fade','Light',(R,k,e)=>{ aFx(R,'bright',(1-e)*.8); R.sy*=Math.max(.02,e); }],
+  // Glitch
+  ['glitchSlide','Glitch Slide','Glitch',(R,k,e,W)=>{ aFx(R,'rgbsplit',1-k); R.dx+=(1-e)*W*.3 + Math.sin(k*80)*W*.02*(1-k); }],
+  ['digital','Digital Glitch','Glitch',(R,k)=>{ aFx(R,'glitch',(1-k)*.9+.1*(k<.9)); R.a*=k>.08?1:k/.08; }],
+  ['vhsIn','VHS On','Glitch',(R,k,e)=>{ aFx(R,'vhs',1-k); R.a*=e; }],
+  ['rgbShake','RGB Shake','Glitch',(R,k,e,W,H)=>{ aFx(R,'rgbsplit',1-k); R.dx+=Math.sin(k*90)*W*.03*(1-k); R.dy+=Math.cos(k*70)*H*.01*(1-k); }],
+  ['pixelZoom','Pixel Zoom','Glitch',(R,k,e)=>{ aFx(R,'pixelate',1-e); R.s*=1+.2*(1-e); }],
+  ['chromaIn','Chromatic','Glitch',(R,k,e)=>{ aFx(R,'chroma',1-e); R.s*=1+.1*(1-e); }],
+  ['tvOn','TV Turn On','Glitch',(R,k)=>{ if(k < .4){ R.sy*=.01+k/.4*.04; R.sx*=Math.max(.001,k/.4); } else R.sy*=.05+(k-.4)/.6*.95; aFx(R,'bright',(1-k)*.8); }],
+  ['jitter','Jitter','Glitch',(R,k,e,W)=>{ R.dx+=(hsh(Math.floor(k*20))-.5)*W*.06*(1-k); aFx(R,'rgbsplit',.6*(1-k)); }],
+  ['scanIn','Scanline','Glitch',(R,k,e)=>{ aFx(R,'crt',1-e*.7); R.mT=13; R.mP=e; }],
+  // Mask (shapes reveal the clip)
+  ['circleReveal','Circle Reveal','Mask',(R,k,e)=>{ R.mT=1; R.mP=e; }],
+  ['irisIn','Iris In','Mask',(R,k,e)=>{ R.mT=2; R.mP=e; }],
+  ['diamondIn','Diamond','Mask',(R,k,e)=>{ R.mT=3; R.mP=e; }],
+  ['clockIn','Clock Wipe','Mask',(R,k,e)=>{ R.mT=4; R.mP=e; }],
+  ['blindsIn','Blinds','Mask',(R,k,e)=>{ R.mT=5; R.mP=e; }],
+  ['blindsVIn','Blinds V','Mask',(R,k,e)=>{ R.mT=6; R.mP=e; }],
+  ['dissolveIn','Pixel Dissolve','Mask',(R,k)=>{ R.mT=7; R.mP=k; }],
+  ['doorsIn','Doors Open','Mask',(R,k,e)=>{ R.mT=8; R.mP=e; }],
+  ['barnIn','Barn Door','Mask',(R,k,e)=>{ R.mT=9; R.mP=e; }],
+  ['heartIn','Heart','Mask',(R,k,e)=>{ R.mT=10; R.mP=e; }],
+  ['starIn','Star','Mask',(R,k,e)=>{ R.mT=11; R.mP=e; }],
+  ['lumaIn','Luma Fade','Mask',(R,k)=>{ R.mT=12; R.mP=k; }],
+  // 3D
+  ['flip3dX','3D Flip X','3D',(R,k,e)=>{ R.sx*=Math.max(.001,Math.sin(e*Math.PI/2)); R.s*=.9+.1*e; }],
+  ['flip3dY','3D Flip Y','3D',(R,k,e)=>{ R.sy*=Math.max(.001,Math.sin(e*Math.PI/2)); R.s*=.9+.1*e; }],
+  ['cubeIn','Cube','3D',(R,k,e,W)=>{ R.sx*=Math.max(.001,e); R.dx+=(1-e)*W*.5; }],
+  ['tilt3d','Tilt Back','3D',(R,k,e,W,H)=>{ R.sy*=Math.max(.001,.3+.7*e); R.dy+=(1-e)*H*.15; R.a*=e; }],
+  ['spinFlip','Spin Flip','3D',(R,k,e)=>{ R.sx*=sgnMax(Math.cos((1-e)*Math.PI*2)); }],
+  ['rollIn','Roll In','3D',(R,k,e,W)=>{ R.r-=(1-e)*Math.PI*2; R.dx-=(1-e)*W*.6; }],
+  ['doorSwing','Door Swing','3D',(R,k,e,W)=>{ R.sx*=Math.max(.001,e); R.dx-=(1-e)*W*.25; }],
+  ['cardIn','Card Turn','3D',(R,k,e)=>{ R.sx*=Math.max(.001,e); R.r+=(1-e)*.3; R.s*=.85+.15*e; }],
+  // Vibration
+  ['shakeHard','Hard Shake','Vibration',(R,k,e,W)=>{ R.dx+=Math.sin(k*60)*(1-k)*W*.06; }],
+  ['quake','Earthquake','Vibration',(R,k,e,W,H)=>{ const f=Math.floor(k*30); R.dx+=(hsh(f)-.5)*W*.08*(1-k); R.dy+=(hsh(f+7)-.5)*H*.05*(1-k); }],
+  ['wobbleIn','Wobble','Vibration',(R,k)=>{ R.r+=Math.sin(k*25)*(1-k)*.25; }],
+  ['jelloIn','Jello','Vibration',(R,k)=>{ R.sx*=1+Math.sin(k*20)*(1-k)*.3; R.sy*=1-Math.sin(k*20)*(1-k)*.3; }],
+  ['pulseIn','Pulse','Vibration',(R,k)=>{ R.s*=1+Math.sin(k*Math.PI*4)*(1-k)*.15; R.a*=Math.min(1,k*3); }],
+  ['heartbeatIn','Heartbeat','Vibration',(R,k)=>{ R.s*=k<.6 ? Math.max(.001,backOut(k/.6)) : 1+.1*Math.sin((k-.6)/.4*Math.PI*2); }],
+  ['rubber','Rubber Band','Vibration',(R,k)=>{ R.sx*=1+.35*Math.sin(k*Math.PI*3)*(1-k); R.sy*=1-.25*Math.sin(k*Math.PI*3)*(1-k); }],
+  // Zoom
+  ['zoomBlurIn','Zoom Blur','Zoom',(R,k,e)=>{ R.s*=1+(1-e); aBlur(R,1-e); }],
+  ['punchIn','Punch In','Zoom',(R,k)=>{ R.s*=k<.6 ? .6+.55*(k/.6) : 1.15-.15*((k-.6)/.4); }],
+  ['crashZoom','Crash Zoom','Zoom',(R,k)=>{ R.s*=1+2*Math.pow(1-k,4); R.a*=Math.min(1,k*4); }],
+  ['zoomRotate','Zoom Rotate','Zoom',(R,k,e)=>{ R.s*=.4+.6*e; R.r+=(1-e)*.8; R.a*=e; }],
+  ['dollyIn','Dolly In','Zoom',(R,k,e)=>{ R.s*=1+.25*(1-e); }],
+  ['zoomBounce','Zoom Bounce','Zoom',(R,k)=>{ R.s*=Math.max(.001,bounceOut(k)); }],
+  // Blur
+  ['focusIn','Focus In','Blur',(R,k,e)=>{ aBlur(R,1-e); R.s*=1+.08*(1-e); }],
+  ['motionL','Motion Left','Blur',(R,k,e,W)=>{ R.dx+=(1-e)*W*.4; aBlur(R,1-e); }],
+  ['motionR','Motion Right','Blur',(R,k,e,W)=>{ R.dx-=(1-e)*W*.4; aBlur(R,1-e); }],
+  ['motionU','Motion Up','Blur',(R,k,e,W,H)=>{ R.dy+=(1-e)*H*.4; aBlur(R,1-e); }],
+  ['dreamIn','Dreamy','Blur',(R,k,e)=>{ aFx(R,'glow',1-e); R.blur=(R.blur||0)+(1-e)*8; R.a*=e; }],
+  // Rotate
+  ['rotateHalf','Rotate 180','Rotate',(R,k,e)=>{ R.r+=(1-e)*Math.PI; R.s*=.5+.5*e; R.a*=e; }],
+  ['spiral','Spiral','Rotate',(R,k,e)=>{ R.r+=(1-e)*Math.PI*4; R.s*=Math.max(.001,e); }],
+  ['twirlIn','Twirl','Rotate',(R,k,e)=>{ aFx(R,'swirl',1-e); R.a*=e; }],
+  ['pendulum','Pendulum','Rotate',(R,k)=>{ R.r+=Math.sin(k*Math.PI*4)*(1-k)*.5; }],
+  ['rotateCCW','Rotate Left','Rotate',(R,k,e)=>{ R.r+=(1-e)*Math.PI/2; R.s*=.7+.3*e; R.a*=e; }],
+  // Distort
+  ['waveIn','Wave','Distort',(R,k,e)=>{ aFx(R,'wave',1-e); R.a*=e; }],
+  ['fisheyeIn','Fisheye','Distort',(R,k,e)=>{ aFx(R,'fisheye',1-e); R.s*=.8+.2*e; }],
+  ['rippleIn','Ripple','Distort',(R,k)=>{ aFx(R,'wave',1-k); R.s*=1+.05*Math.sin(k*30)*(1-k); }],
+];
+const ANIM_MAP = {}; ANIM_LIB.forEach(a => ANIM_MAP[a[0]] = a);
+function animLibApply(name, k, R, W, H){ const a = ANIM_MAP[name]; if(!a) return; k = clamp(k,0,1); a[3](R, k, 1-Math.pow(1-k,3), W, H); }
+const LOOP_LIB = [
+  ['breathe','Breathe',(R,t)=>{ R.s*=1+.035*Math.sin(t*2.2); }],
+  ['float3d','Float 3D',(R,t,d,W,H)=>{ R.dy+=Math.sin(t*1.8)*H*.015; R.sx*=1+.04*Math.sin(t*1.3); }],
+  ['glowPulse','Glow Pulse',(R,t)=>{ aFx(R,'glow',.35+.35*Math.sin(t*4)); }],
+  ['rgbLoop','RGB Drift',(R,t)=>{ aFx(R,'rgbsplit',.3+.25*Math.sin(t*5)); }],
+  ['strobeLoop','Strobe',(R,t)=>{ aFx(R,'bright',(t*4%1)<.15 ? .8 : 0); }],
+  ['orbit','Orbit',(R,t,d,W,H)=>{ R.dx+=Math.cos(t*1.5)*W*.02; R.dy+=Math.sin(t*1.5)*H*.012; }],
+  ['wiggle','Wiggle',(R,t,d,W)=>{ R.r+=(hsh(Math.floor(t*6))-.5)*.08; R.dx+=(hsh(Math.floor(t*6)+3)-.5)*W*.02; }],
+  ['vhsLoop','VHS',(R)=>{ aFx(R,'vhs',.7); }],
+  ['crtLoop','Old TV',(R)=>{ aFx(R,'crt',.8); }],
+  ['waveLoop','Wavy',(R)=>{ aFx(R,'wave',.45); }],
+  ['leakLoop','Light Leak',(R)=>{ aFx(R,'lightleak',.75); }],
+  ['tilt3dLoop','3D Tilt',(R,t)=>{ R.sx*=.92+.08*Math.cos(t*1.6); R.r+=.03*Math.sin(t*1.6); }],
+];
+const LOOP_MAP = {}; LOOP_LIB.forEach(a => LOOP_MAP[a[0]] = a);
+function loopLibApply(name, t, dur, R, W, H){ const a = LOOP_MAP[name]; if(a) a[2](R, t, dur, W, H); }
+// categories for the old built-ins
+const ANIM_OLD_CAT = {fade:'Basic',zoomIn:'Zoom',zoomOut:'Zoom',slideL:'Basic',slideR:'Basic',slideU:'Basic',slideD:'Basic',spin:'Rotate',shake:'Vibration',rotateIn:'Rotate',flipX:'3D',flipY:'3D',dropIn:'Basic',riseUp:'Basic',blurIn:'Blur',glitchIn:'Glitch',swingIn:'Rotate',shrinkIn:'Zoom',growIn:'Zoom',wipeIn:'Mask',circleIn:'Mask',flashIn:'Light',pixelIn:'Glitch',tiltIn:'3D',
+  pop:'Basic',zoom:'Zoom',slideUp:'Basic',slideDown:'Basic',typewriter:'Text',bounce:'Basic',blur:'Blur',letterPop:'Text',letterFade:'Text',letterBounce:'Text',wordPop:'Text'};
+const ANIM_CATS = ['Trending','Basic','Text','Light','Glitch','Mask','3D','Vibration','Zoom','Blur','Rotate','Distort'];
+const ANIM_TREND = ['popUp','zoomBlurIn','glitchSlide','flashZoom','punchIn','circleReveal','flip3dX','motionL','letterPop','typewriter','crashZoom','rgbShake','elastic','dreamIn','spinFlip','fadeUp','tvOn','leakIn'];
+
+/* =====================================================================
+   VOICE CHANGER LIBRARY (v8)
+   ===================================================================== */
+const VOICE_LIB = [
+  // Voice filters
+  ['orig','Original','filters',{}],
+  ['michog','Mic Hog','filters',{voice:'michog'}],
+  ['crispmic','Crisp Mic','filters',{voice:'studio',eq:[-2,-1,0,0,0,1,3,4,3,2]}],
+  ['studio','Studio Voice','filters',{voice:'studio'}],
+  ['podcast','Podcast','filters',{voice:'podcast'}],
+  ['sharpener','Sound Sharpener','filters',{eq:[-3,-2,-1,0,0,2,4,5,4,3],comp:true,compThr:-22,compRatio:3}],
+  ['energetic','Energetic','filters',{eq:[3,3,1,0,0,1,2,3,3,2],comp:true,compThr:-26,compRatio:5,amp:2}],
+  ['deepclear','Deep & Clear','filters',{pitch:-2,eq:[3,3,2,0,-1,0,2,3,2,1],comp:true,compThr:-24,compRatio:3}],
+  ['fmradio','Classic FM Radio','filters',{voice:'radio',reverb:12,reverbSize:'room'}],
+  ['lofi','Lo-Fi','filters',{voice:'lofi',vinyl:25}],
+  ['vinyl','Vinyl','filters',{vinyl:60,lp:7000,hp:120,eq:[0,0,1,2,2,1,0,-2,-4,-6]}],
+  ['oldphone','Old Phone','filters',{voice:'telephone',crush:35}],
+  ['telephone','Telephone','filters',{voice:'telephone'}],
+  ['megaphone','Megaphone','filters',{voice:'megaphone'}],
+  ['distorted','Distorted','filters',{dist:55,eq:[0,0,0,2,3,3,2,0,-2,-4]}],
+  ['practice','Practice Room','filters',{reverb:30,reverbSize:'room'}],
+  ['livestage','Live Stage','filters',{reverb:40,reverbSize:'hall',echo:12,echoTime:.12,echoFb:20,comp:true,compThr:-20,compRatio:3}],
+  ['emptyhall','Empty Hall','filters',{reverb:65,reverbSize:'church'}],
+  ['divineecho','Divine Echo','filters',{reverb:45,reverbSize:'church',echo:35,echoTime:.42,echoFb:45,chorus:20}],
+  ['souljourney','Soul Journey','filters',{reverb:50,reverbSize:'plate',chorus:35,echo:15,echoTime:.35}],
+  ['echo','Echo','filters',{echo:55,echoTime:.32,echoFb:40}],
+  ['bighouse','Big House','filters',{reverb:65,reverbSize:'stadium'}],
+  ['cave','Cave','filters',{voice:'cave'}],
+  ['underwater','Underwater','filters',{voice:'underwater'}],
+  ['tremble','Tremble','filters',{trem:70,vibrato:40}],
+  ['ninedee','8D / 9D Sound','filters',{pan8d:100,reverb:25,reverbSize:'hall'}],
+  ['airlight','Air Light','filters',{hp:180,eq:[-4,-3,-2,0,0,1,2,3,4,5],reverb:15,reverbSize:'plate'}],
+  ['muted','Muted','filters',{lp:1200,eq:[2,2,1,0,0,-2,-4,-6,-8,-10]}],
+  ['chorus','Chorus','filters',{chorus:70}],
+  // Voice characters
+  ['chipmunk','Chipmunk','chars',{voice:'chipmunk'}],
+  ['squirrel','Squirrel','chars',{pitch:12}],
+  ['kid','Kid','chars',{pitch:5,eq:[-4,-3,-1,0,1,2,2,1,0,0]}],
+  ['female','Female Tone','chars',{pitch:4,eq:[-3,-2,-1,0,0,1,2,2,1,1]}],
+  ['male','Male Tone','chars',{pitch:-4,eq:[2,3,2,0,0,0,-1,-1,0,0]}],
+  ['giant','Giant','chars',{pitch:-7,reverb:30,reverbSize:'hall',eq:[4,4,2,0,0,-1,-2,-2,-2,-3]}],
+  ['monster','Monster','chars',{voice:'monster'}],
+  ['villain','Villain','chars',{pitch:-6,dist:20,reverb:25,reverbSize:'church',ring:30}],
+  ['robot','Robot','chars',{voice:'robot'}],
+  ['alien','Alien','chars',{pitch:3,ring:180,chorus:40}],
+  ['synth','Synth','chars',{ring:440,chorus:50,crush:20}],
+  ['ghost','Ghost','chars',{pitch:-3,reverb:60,reverbSize:'church',chorus:45,vibrato:30}],
+  ['oldman','Old Man','chars',{pitch:-2,vibrato:45,trem:25,lp:6000}],
+  ['elf','Elf','chars',{pitch:7,reverb:20,reverbSize:'plate',chorus:25}],
+  ['cartoon','Cartoon','chars',{pitch:8,vibrato:15}],
+  ['announcer','Announcer','chars',{pitch:-2,voice:'podcast',reverb:18,reverbSize:'hall'}],
+  ['deep','Deep','chars',{voice:'deep'}],
+  ['bot8bit','8-bit','chars',{crush:80,pitch:2}],
+];
+const VOICE_MAP = {}; VOICE_LIB.forEach(v => VOICE_MAP[v[0]] = v);
+const VOICE_KEEP = ['enhance','isolate','norm','eq'];
+function applyVoicePreset(it, id){
+  const v = VOICE_MAP[id]; if(!v) return;
+  const a = it.audio, keep = {}; for(const k of ['enhance','isolate','norm']) keep[k] = a[k];
+  const fresh = Object.assign(defAudio(), keep, deep(v[3])); fresh.vpreset = id; if(!v[3].eq) fresh.eq = a.vpreset ? defAudio().eq : a.eq;
+  it.audio = fresh;
+}
+
+/* =====================================================================
+   TEXT EFFECTS (v8) — styled lettering
+   st: {fill: color | [c1,c2,c3], strokes:[[width,color]...], extrude:[depth,color], glow:[blur,color], shadow:[x,y,blur,color], dbl:[dx,dy,color]}
+   ===================================================================== */
+const TFX = [
+  ['neonPink','Neon Pink','Neon',{fill:'#fff',strokes:[[3,'#ff2bd6']],glow:[26,'#ff2bd6']}],
+  ['neonBlue','Neon Blue','Neon',{fill:'#e9fdff',strokes:[[3,'#19c8ff']],glow:[26,'#19c8ff']}],
+  ['neonGreen','Neon Green','Neon',{fill:'#f2fff2',strokes:[[3,'#39ff6a']],glow:[26,'#39ff6a']}],
+  ['neonYellow','Neon Gold','Neon',{fill:'#fffbe0',strokes:[[3,'#ffc400']],glow:[24,'#ffb000']}],
+  ['neonRed','Neon Red','Neon',{fill:'#fff0f0',strokes:[[3,'#ff2d2d']],glow:[28,'#ff1a1a']}],
+  ['gold','Gold','Gradient',{fill:['#fff3b0','#f7c843','#a8690e'],strokes:[[5,'#4a2a00']],shadow:[0,4,6,'#0008']}],
+  ['silver','Silver','Gradient',{fill:['#ffffff','#c9d1d9','#6b7480'],strokes:[[5,'#1d2229']],shadow:[0,4,6,'#0008']}],
+  ['chrome','Chrome','Gradient',{fill:['#ffffff','#9fb3c8','#1f2d3d','#d7e6f5'],strokes:[[3,'#0b1622']],glow:[10,'#7fd3ff']}],
+  ['fire','Fire','Gradient',{fill:['#fff36b','#ff9a1f','#e31b0c'],strokes:[[5,'#3a0700']],glow:[22,'#ff5a00']}],
+  ['ice','Ice','Gradient',{fill:['#ffffff','#a8ecff','#2aa4e8'],strokes:[[5,'#05324d']],glow:[16,'#7fe3ff']}],
+  ['sunset','Sunset','Gradient',{fill:['#ffd86b','#ff6b8b','#7a3cff'],strokes:[[4,'#22093a']]}],
+  ['ocean','Ocean','Gradient',{fill:['#7fffd4','#1fb6ff','#173b9c'],strokes:[[4,'#041433']]}],
+  ['candy','Candy','Gradient',{fill:['#ffd1f0','#ff5fb6'],strokes:[[8,'#ffffff'],[11,'#c2187a']]}],
+  ['rainbow','Rainbow','Gradient',{fill:['#ff4d4d','#ffd84d','#4dff88','#4dc3ff','#b84dff'],strokes:[[5,'#111']]}],
+  ['toxic','Toxic','Gradient',{fill:['#eaff7a','#5bff3a','#0f8f2a'],strokes:[[5,'#062b00']],glow:[18,'#7dff3a']}],
+  ['lava','Lava','Gradient',{fill:['#ffb347','#ff3d00','#5a0000'],strokes:[[5,'#1a0000']],shadow:[0,0,18,'#ff3d00']}],
+  ['red3d','3D Red','3D',{fill:'#ffffff',strokes:[[5,'#e3122b']],extrude:[9,'#7a0010']}],
+  ['blue3d','3D Blue','3D',{fill:'#ffffff',strokes:[[5,'#1f6bff']],extrude:[9,'#0a2766']}],
+  ['gold3d','3D Gold','3D',{fill:['#fff6c4','#f2c33a'],strokes:[[4,'#7a4c00']],extrude:[10,'#4a2c00']}],
+  ['comic','Comic','3D',{fill:'#ffe600',strokes:[[7,'#111']],extrude:[7,'#111']}],
+  ['popart','Pop Art','3D',{fill:'#ff3b6b',strokes:[[7,'#fff'],[10,'#111']],extrude:[6,'#111']}],
+  ['retro80','Retro 80s','Retro',{fill:['#ffe36e','#ff4fa8','#6a2cff'],strokes:[[4,'#fff']],extrude:[7,'#2b0a5c'],glow:[14,'#ff4fa8']}],
+  ['vapor','Vaporwave','Retro',{fill:['#8ef6ff','#ff9ff3'],dbl:[5,4,'#ff3df5'],strokes:[[2,'#2a0050']]}],
+  ['glitchT','Glitch','Retro',{fill:'#ffffff',dbl:[-5,0,'#00f0ff'],dbl2:[5,0,'#ff0055']}],
+  ['longshadow','Long Shadow','Retro',{fill:'#ffffff',extrude:[16,'#00000066']}],
+  ['sticker','Sticker','Outline',{fill:'#111111',strokes:[[10,'#ffffff']],shadow:[0,5,10,'#0009']}],
+  ['dblOutline','Double Outline','Outline',{fill:'#ffffff',strokes:[[6,'#111'],[11,'#ffd400']]}],
+  ['marker','Marker','Outline',{fill:'#ffffff',strokes:[[6,'#e3122b']]}],
+  ['bubble','Bubble','Outline',{fill:['#ffffff','#bfe9ff'],strokes:[[9,'#2a7bd6']],shadow:[0,6,8,'#0007']}],
+  ['minimalShadow','Soft Shadow','Outline',{fill:'#ffffff',shadow:[0,6,18,'#000c']}],
+  ['kannadaGold','ಕನ್ನಡ ಹಳದಿ-ಕೆಂಪು','Trending',{fill:['#ffe600','#ffb800'],strokes:[[6,'#c8102e']],shadow:[0,4,8,'#0009']}],
+  ['royal','Royal','Trending',{fill:['#f9e7a1','#d4a017'],strokes:[[5,'#3d0a54']],glow:[12,'#d4a017']}],
+  ['mint','Mint','Trending',{fill:'#c9ffe9',strokes:[[6,'#0b6e4f']],shadow:[4,4,0,'#0b6e4f']}],
+];
+const TFX_MAP = {}; TFX.forEach(t => TFX_MAP[t[0]] = {id:t[0], name:t[1], cat:t[2], st:t[3]});
+const TFX_CATS = ['All','Trending','Neon','Gradient','3D','Retro','Outline'];
+function drawStyledText(ctx, s, x, y, px, st){
+  const k = px/60;
+  const grad = () => { if(!Array.isArray(st.fill)) return st.fill; const g = ctx.createLinearGradient(0, y - px*.55, 0, y + px*.45); st.fill.forEach((c,i) => g.addColorStop(i/(st.fill.length-1), c)); return g; };
+  ctx.save(); ctx.lineJoin = 'round'; ctx.miterLimit = 2;
+  if(st.extrude){ const [d, c] = st.extrude, n = Math.max(1, Math.round(d*k)); ctx.fillStyle = c; ctx.strokeStyle = c;
+    const sw = st.strokes ? Math.max(...st.strokes.map(q => q[0]))*k*2 : 0; ctx.lineWidth = sw;
+    for(let i=n;i>=1;i--){ if(sw) ctx.strokeText(s, x+i, y+i); ctx.fillText(s, x+i, y+i); } }
+  if(st.shadow){ const [sx, sy, b, c] = st.shadow; ctx.shadowOffsetX = sx*k; ctx.shadowOffsetY = sy*k; ctx.shadowBlur = b*k; ctx.shadowColor = c; }
+  if(st.glow){ ctx.shadowBlur = st.glow[0]*k; ctx.shadowColor = st.glow[1]; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
+  for(const d of [st.dbl, st.dbl2]) if(d){ ctx.fillStyle = d[2]; ctx.fillText(s, x + d[0]*k, y + d[1]*k); }
+  if(st.strokes) [...st.strokes].sort((a,b) => b[0]-a[0]).forEach(([w,c]) => { ctx.strokeStyle = c; ctx.lineWidth = w*k*2; ctx.strokeText(s, x, y); ctx.shadowColor = 'transparent'; });
+  ctx.fillStyle = grad(); ctx.fillText(s, x, y);
+  if(st.glow){ ctx.shadowBlur = st.glow[0]*k*.5; ctx.shadowColor = st.glow[1]; ctx.fillText(s, x, y); }
+  ctx.restore();
+}
+
+/* =====================================================================
+   TEXT TO SPEECH (v8) — Meta MMS voices running in the browser
+   ===================================================================== */
+const TTS_LANGS = [['kan','ಕನ್ನಡ','onnx-community/mms-tts-kan-ONNX'],['eng','English','Xenova/mms-tts-eng'],['hin','हिन्दी','Xenova/mms-tts-hin']];
+const TTS_STYLES = [['natural','Natural',{}],['deep','Deep',{pitch:-3,eq:[2,3,2,0,0,0,-1,-1,0,0]}],['bright','Bright',{pitch:3}],['child','Child',{pitch:6}],['announcer','Announcer',{pitch:-2,voice:'podcast',reverb:15,reverbSize:'hall'}],
+  ['radio','Radio',{voice:'radio'}],['robot','Robot',{voice:'robot'}],['monster','Monster',{voice:'monster'}],['echo','Echo',{echo:40,echoTime:.3,echoFb:35}],['studio','Studio',{voice:'studio'}]];
+const TTS_SRC = `
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
+env.allowLocalModels = false;
+const cache = {};
+self.onmessage = async e => {
+  const { model, parts } = e.data;
+  try {
+    if (!cache[model]) cache[model] = await pipeline('text-to-speech', model, { progress_callback: p => self.postMessage({ type: 'progress', p }) });
+    const out = []; let sr = 16000;
+    for (let i = 0; i < parts.length; i++) {
+      self.postMessage({ type: 'status', i, n: parts.length });
+      const r = await cache[model](parts[i]); sr = r.sampling_rate; out.push(r.audio);
+    }
+    self.postMessage({ type: 'done', out, sr });
+  } catch (err) { self.postMessage({ type: 'error', msg: String(err && err.message || err) }); }
+};`;
+let ttsWorker = null;
+async function synthSpeech(text, lang, onProg){
+  const L = TTS_LANGS.find(l => l[0] === lang) || TTS_LANGS[0];
+  const parts = text.replace(/\s+/g,' ').split(/(?<=[.!?।|\n])\s+/).map(s => s.trim()).filter(Boolean).flatMap(s => s.length > 220 ? s.match(/.{1,200}(\s|$)/g) : [s]);
+  if(!parts.length) throw new Error('Text ಖಾಲಿ ಇದೆ');
+  if(!ttsWorker) ttsWorker = new Worker(URL.createObjectURL(new Blob([TTS_SRC],{type:'text/javascript'})),{type:'module'});
+  const files = {};
+  const res = await new Promise((resolve, reject) => {
+    ttsWorker.onmessage = e => { const d = e.data;
+      if(d.type === 'progress' && d.p && d.p.status === 'progress' && d.p.total){ files[d.p.file] = [d.p.loaded, d.p.total]; const a = Object.values(files).reduce((s,x)=>s+x[0],0), b = Object.values(files).reduce((s,x)=>s+x[1],0); onProg && onProg(`⬇ Voice model: ${(a/1048576).toFixed(0)} / ${(b/1048576).toFixed(0)} MB`, a/b); }
+      else if(d.type === 'status') onProg && onProg(`🗣 ಧ್ವನಿ ತಯಾರಾಗುತ್ತಿದೆ… ${d.i+1}/${d.n}`, (d.i+1)/d.n);
+      else if(d.type === 'done') resolve(d); else if(d.type === 'error') reject(new Error(d.msg)); };
+    ttsWorker.onerror = e => reject(new Error(e.message || 'TTS worker error (internet ಬೇಕು)'));
+    ttsWorker.postMessage({model:L[2], parts});
+  });
+  const gap = Math.round(res.sr*.22), total = res.out.reduce((s,a) => s + a.length + gap, 0), all = new Float32Array(total); let o = 0;
+  for(const a of res.out){ all.set(a, o); o += a.length + gap; }
+  let pk = 0; for(let i=0;i<all.length;i++) pk = Math.max(pk, Math.abs(all[i])); if(pk > 0) for(let i=0;i<all.length;i++) all[i] *= .89/pk;
+  const name = 'TTS ' + text.trim().slice(0,24).replace(/[\\/:*?"<>|]/g,'') + '.wav';
+  return addAudioMedia(new File([wavMulti([all], res.sr)], name, {type:'audio/wav'}), all.length/res.sr);
+}
+async function ttsToTimeline(text, lang, style, start, speed, onProg){
+  const m = await synthSpeech(text, lang, onProg);
+  pushUndo();
+  const sp = speed || 1, preset = (TTS_STYLES.find(s => s[0] === style) || TTS_STYLES[0])[2];
+  const a = newAudioItem(m, {kind:'tts', start, dur:m.duration/sp, speed:sp});
+  a.audio = Object.assign(defAudio(), deep(preset)); if(sp !== 1) a.audio.pitch = (a.audio.pitch||0) - 12*Math.log2(sp);
+  S.audios.push(a); S.sel = a.id; afterEdit(); renderMediaPanel(); return a;
+}
+
+/* =====================================================================
+   KANNADA: romanised Whisper output → Kannada script (best-effort)
+   ===================================================================== */
+const KN_V = [['aa','ಆ','ಾ'],['ii','ಈ','ೀ'],['ee','ಈ','ೀ'],['uu','ಊ','ೂ'],['oo','ಊ','ೂ'],['ai','ಐ','ೈ'],['au','ಔ','ೌ'],['ou','ಔ','ೌ'],['a','ಅ',''],['i','ಇ','ಿ'],['u','ಉ','ು'],['e','ಎ','ೆ'],['o','ಒ','ೊ'],['ru','ಋ','ೃ']];
+const KN_C = [['chh','ಛ'],['ksh','ಕ್ಷ'],['kh','ಖ'],['gh','ಘ'],['ch','ಚ'],['jh','ಝ'],['th','ಥ'],['dh','ಧ'],['ph','ಫ'],['bh','ಭ'],['sh','ಶ'],['ng','ಙ'],['k','ಕ'],['g','ಗ'],['c','ಕ'],['j','ಜ'],['t','ತ'],['d','ದ'],['n','ನ'],['p','ಪ'],['b','ಬ'],['m','ಮ'],['y','ಯ'],['r','ರ'],['l','ಲ'],['v','ವ'],['w','ವ'],['s','ಸ'],['h','ಹ'],['f','ಫ'],['z','ಜ'],['q','ಕ'],['x','ಕ್ಸ']];
+function translitKn(text){
+  return text.replace(/[A-Za-z]+/g, word => {
+    let w = word.toLowerCase(), out = '', i = 0, prevC = false;
+    const vAt = j => KN_V.find(v => w.startsWith(v[0], j)), cAt = j => KN_C.find(c => w.startsWith(c[0], j));
+    while(i < w.length){
+      const c = cAt(i);
+      if(c){
+        // n / m before another consonant → anusvara (ಂ)
+        if((c[0] === 'n' || c[0] === 'm') && !prevC && out && i+1 < w.length && cAt(i+1) && !vAt(i+1) && w[i+1] !== c[0] && w[i+1] !== 'y'){ out += 'ಂ'; i += 1; prevC = false; continue; }
+        if(prevC) out += '್';
+        out += c[1]; i += c[0].length; prevC = true;
+        const v = vAt(i); if(v){ out += v[2]; i += v[0].length; prevC = false; }
+        continue;
+      }
+      const v = vAt(i);
+      if(v){ out += v[1]; i += v[0].length; prevC = false; continue; }
+      out += w[i]; i++; prevC = false;
+    }
+    if(prevC) out += 'ು';   // Kannada words rarely end in a bare consonant
+    return out;
+  });
+}
+const latinRatio = s => { const L = (s.match(/[A-Za-z]/g)||[]).length, K = (s.match(/[ಀ-೿]/g)||[]).length; return L/Math.max(1, L+K); };

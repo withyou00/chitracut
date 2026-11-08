@@ -55,6 +55,9 @@ const IC = {
   edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   target:'<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><circle cx="12" cy="12" r="3"/>',
   library:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M15 15.5v5l4.5-2.5z" fill="currentColor"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  unlock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
+  sticker2:'<path d="M4 4h10l6 6v10H4z"/><path d="M14 4v6h6"/>',
   music2:'<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>'
 };
 const ic = n => `<svg class="i" viewBox="0 0 24 24">${IC[n]||''}</svg>`;
@@ -105,8 +108,8 @@ const FILTER_CSS = {none:'',vivid:'saturate(1.45) contrast(1.15)',warm:'sepia(.3
    LEFT PANEL
    ===================================================================== */
 const LTABS = [['media','Media','media'],['audio','Audio','audio'],['text','Text','text'],['stickers','Stickers','sticker'],['effects','Effects','effects'],['transitions','Transitions','trans'],['captions','Captions','captions'],['filters','Filters','filters'],['adjust','Adjustment','adjust']];
-const LSUB = {media:[['all','All'],['video','Videos'],['image','Photos'],['audio','Audio'],['library','Library']], audio:[['sfx','Sound effects'],['yours','Yours'],['voice','Voice-over']],
-  text:[['add','Add text'],['styles','Text styles']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[['video','Video effects'],['body','Body effects']], transitions:[['all','Transitions']],
+const LSUB = {media:[['all','All'],['video','Videos'],['image','Photos'],['audio','Audio'],['library','Library']], audio:[['sfx','Sound effects'],['yours','Yours'],['voice','Voice-over'],['tts','Text to speech']],
+  text:[['add','Add text'],['styles','Text styles'],['effects','Text effects']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[['video','Video effects'],['body','Body effects']], transitions:[['all','Transitions']],
   captions:[['auto','Auto captions'],['srt','SRT file']], filters:[['filters','Filters']], adjust:[['lut','LUT'],['adjust','Adjust']]};
 const TEXT_ADD = [
   ['default','Default text',{text:'ನಿಮ್ಮ ಪಠ್ಯ ಇಲ್ಲಿ'}],
@@ -121,7 +124,7 @@ function renderLeft(){
   $('#ltabs').innerHTML = LTABS.map(([k,n,i])=>`<button data-ltab="${k}" class="${S.ltab===k?'on':''}">${ic(i)}<span>${n}</span></button>`).join('');
   const subs = LSUB[S.ltab], sub = subs.some(s=>s[0]===S.lsub[S.ltab]) ? S.lsub[S.ltab] : subs[0][0];
   $('#lsub').innerHTML = subs.map(([k,n])=>`<button data-lsub="${k}" class="${sub===k?'on':''}">${n}</button>`).join('');
-  LC.innerHTML = leftContent(S.ltab, sub); fillRanges(LC); paintGfxTiles();
+  LC.innerHTML = leftContent(S.ltab, sub); fillRanges(LC); paintGfxTiles(); paintV8(LC, visTarget());
 }
 function renderMediaPanel(){ renderLeft(); }
 let gfxAnim = null;
@@ -181,10 +184,12 @@ function leftContent(tab, sub){
         return `<div class="lhead"><button class="primary" data-l="audioimp">${ic('import')} Import music</button></div>
           ${list.length ? list.map(m=>`<div class="srow"><button class="sico" data-ap="${m.id}" title="ಕೇಳಿ">${ic(apEl&&apEl.dataset.id===m.id&&!apEl.paused?'pause':'play')}</button><div class="sinfo"><b>${esc(m.name)}</b><span>${fmtT(m.duration)}</span></div><button class="sadd" data-addm="${m.id}" title="Playhead ನಲ್ಲಿ ಸೇರಿಸಿ">${ic('plus')}</button><button class="sadd" data-delm="${m.id}" title="Delete">${ic('trash')}</button></div>`).join('') : '<div class="lnote">ನಿಮ್ಮ music / audio files ಇಲ್ಲಿ ಕಾಣುತ್ತವೆ. MP3, WAV, M4A support ಆಗುತ್ತವೆ.</div>'}`;
       }
+      if(sub === 'tts') return ttsBody(null);
       return `<div class="dropzone" data-l="rec"><b>🎙 Voice-over record</b>Playhead (${fmtTC(S.time)}) ಇರುವ ಜಾಗದಿಂದ ನಿಮ್ಮ ಧ್ವನಿ record ಆಗುತ್ತದೆ</div>
         <div class="lnote">Record ಆಗುವಾಗ video play ಆಗುತ್ತದೆ. Headphone ಬಳಸಿದರೆ ಉತ್ತಮ. Live captions ON ಮಾಡಿದರೆ ಮಾತು ತಕ್ಷಣ ಕನ್ನಡ captions ಆಗುತ್ತದೆ (Chrome).</div>`;
     }
     case 'text': {
+      if(sub === 'effects'){ const o = selOv(); return `<div class="ltitle" style="margin-top:0">${o && o.type==='text' ? 'Selected text ಗೆ effect ಹಾಕಿ' : 'Click = ಹೊಸ text ಸೇರಿಸಿ'}</div>` + tfxGrid(o && o.type === 'text' ? o.tfx : null); }
       if(sub === 'styles'){
         const o = selOv(), on = o && o.type === 'text';
         return `<div class="ltitle" style="margin-top:0">${on ? 'Selected text ಗೆ style ಹಾಕಿ' : 'Click = ಹೊಸ text ಸೇರಿಸಿ'}</div>
@@ -341,7 +346,7 @@ LC.addEventListener('click', async e => {
   const it = visTarget();
   if(doClick(t, it)) return;
 });
-LC.addEventListener('input', e => { if(e.target.id === 'cLang' || e.target.id === 'cModel') return; onParamInput(e, visTarget()); });
+LC.addEventListener('input', e => { if(v8Input(e)) return; if(e.target.id === 'cLang' || e.target.id === 'cModel') return; onParamInput(e, visTarget()); });
 LC.addEventListener('change', e => {
   if(e.target.id === 'cLang') S.capLang = e.target.value;
   else if(e.target.id === 'cModel') S.capModel = e.target.value;
@@ -365,7 +370,7 @@ const RT = {
   ovvideo:[['video','Video'],['audio','Audio'],['speed','Speed'],['anim','Animation'],['track','Tracking'],['adjust','Adjust']],
   ovimage:[['video','Image'],['anim','Animation'],['track','Tracking'],['adjust','Adjust']],
   gfx:[['gfx','Graphic'],['anim','Animation'],['track','Tracking']],
-  text:[['text','Text'],['anim','Animation'],['track','Tracking']], sticker:[['sticker','Sticker'],['anim','Animation'],['track','Tracking']], audio:[['audio','Audio']]
+  text:[['text','Text'],['anim','Animation'],['tts','Text to speech'],['track','Tracking']], sticker:[['sticker','Sticker'],['anim','Animation'],['track','Tracking']], audio:[['audio','Audio']]
 };
 function rsubFor(tab, kind){
   switch(tab){
@@ -374,7 +379,7 @@ function rsubFor(tab, kind){
     case 'speed': return kind === 'clip' ? [['normal','Normal'],['curve','Curve']] : null;
     case 'anim': return [['in','In'],['out','Out'],['combo',(kind==='clip'||kind==='clipimg')?'Combo':'Loop']];
     case 'adjust': return null;
-    case 'text': return [['basic','Basic'],['style','Style']];
+    case 'text': return [['basic','Basic'],['style','Style'],['effects','Effects']];
   }
   return null;
 }
@@ -394,7 +399,7 @@ function renderInspector(){
     sub = S.rs[tab]; if(!subs.some(s => s[0] === sub)) sub = S.rs[tab] = subs[0][0];
     $('#rsub').innerHTML = `<div class="seg">${subs.map(([k,n])=>`<button data-rsub="${k}" class="${k===sub?'on':''}">${n}</button>`).join('')}</div>`;
   } else $('#rsub').innerHTML = '';
-  normItem(it); IB.innerHTML = inspBody(it, kind, tab, sub); fillRanges(IB); updKfBtn(); refreshLeftLive();
+  normItem(it); IB.innerHTML = inspBody(it, kind, tab, sub); fillRanges(IB); updKfBtn(); refreshLeftLive(); paintV8(IB, it);
 }
 const KF_NOTE = '<div class="note">◆ <b>Keyframe:</b> playhead ಇಡಿ → ◆ ಒತ್ತಿ → playhead ಮುಂದೆ ಸರಿಸಿ → ಮೌಲ್ಯ ಬದಲಿಸಿ. ಎರಡರ ನಡುವೆ ತಾನಾಗಿ animation ಆಗುತ್ತದೆ.</div>';
 function transformSec(it){
@@ -467,7 +472,8 @@ function audioFxBody(it){
 }
 function audioBody(it, kind, sub){
   if(sub === 'fx') return audioFxBody(it);
-  if(sub === 'voice'){
+  if(sub === 'voice') return voiceBody(it);
+  if(sub === 'voiceOld'){
     const cv_ = curVoice(it);
     return `<div style="height:8px"></div><div class="vtiles">${VOICE_TILES.map(([k,n])=>`<button class="vtile ${cv_===k?'on':''}" data-voice="${k}">${n}</button>`).join('')}</div>
       ${sec('vfx','Fine tune', sl(it,'Echo','audio.echo',0,100)+sl(it,'Reverb','audio.reverb',0,100))}
@@ -496,15 +502,31 @@ function audioBody(it, kind, sub){
   if(kind === 'clip') h += '<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>';
   return h;
 }
+function animList(it, sub){
+  const clipLike = !it.type, txt = it.type === 'text';
+  if(sub === 'combo'){ const base = clipLike ? ANIM_LOOP : OV_LOOP; return [...base.filter(x=>x[0]!=='none').map(([k,n])=>[k,n,'Loop']), ...LOOP_LIB.map(([k,n])=>[k,n,'Loop'])]; }
+  const base = sub === 'in' ? (clipLike ? ANIM_IN : OV_IN) : (clipLike ? ANIM_OUT : OV_OUT);
+  const lib = ANIM_LIB.map(([k,n,c]) => [k, sub === 'out' ? n.replace(/ In$/,' Out').replace(/^Pop Up$/,'Pop Down') : n, c]);
+  return [...base.filter(x=>x[0]!=='none').map(([k,n])=>[k,n,ANIM_OLD_CAT[k]||'Basic']), ...lib].filter(x => txt || x[2] !== 'Text');
+}
+function animGrid(it, sub){
+  const path = sub === 'in' ? 'anim.in' : sub === 'out' ? 'anim.out' : 'anim.loop', cur = getP(it, path), q = (S.animQ||'').toLowerCase().trim();
+  let list = animList(it, sub), cat = sub === 'combo' ? 'All' : (S.animCat || 'Trending');
+  if(q) list = list.filter(x => x[1].toLowerCase().includes(q));
+  else if(cat === 'Trending') list = ANIM_TREND.map(id => list.find(x => x[0] === id)).filter(Boolean);
+  else if(cat !== 'All') list = list.filter(x => x[2] === cat);
+  return `<button class="tile ${cur==='none'?'on':''}" data-set="${path}" data-val="none"><div class="tth">${ic('ban')}</div><span>None</span></button>` +
+    list.map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-set="${path}" data-val="${k}" data-prev="${sub}"><div class="tth"><canvas class="apv" data-an="${k}" data-sub="${sub}" width="96" height="64"></canvas></div><span>${n}</span></button>`).join('');
+}
 function animBody(it, kind, sub){
-  const clipLike = !it.type, txt = it.type === 'text' || it.type === 'sticker';
-  const opts = sub === 'in' ? (clipLike ? ANIM_IN : OV_IN) : sub === 'out' ? (clipLike ? ANIM_OUT : OV_OUT) : (clipLike ? ANIM_LOOP : OV_LOOP);
-  const path = sub === 'in' ? 'anim.in' : sub === 'out' ? 'anim.out' : 'anim.loop', cur = getP(it, path), th = thumbFor(it);
-  const face = k => txt ? `<div class="pv txt a-${k} ${sub==='out'?'rev':''}">${it.type==='sticker'?it.text:'Aa'}</div>` : `<div class="pv a-${k} ${sub==='out'?'rev':''}" style="background-image:url(${th})"></div>`;
-  let h = `<div class="tiles" style="margin-top:8px">${opts.map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-set="${path}" data-val="${k}" data-prev="${sub}"><div class="tth">${k==='none'?ic('ban'):face(k)}</div><span>${n}</span></button>`).join('')}</div><div style="height:12px"></div>`;
+  const clipLike = !it.type, txt = it.type === 'text', path = sub === 'in' ? 'anim.in' : sub === 'out' ? 'anim.out' : 'anim.loop', cur = getP(it, path);
+  const cats = ['All', ...ANIM_CATS.filter(c => txt || c !== 'Text')], cat = S.animCat || 'Trending';
+  let h = `<div class="srch">${ic('target')}<input type="text" id="animQ" placeholder="Search animations" value="${esc(S.animQ||'')}"></div>`;
+  if(sub !== 'combo') h += `<div class="chiprow scrollx">${cats.map(c=>`<button data-anicat="${c}" class="${c===cat&&!S.animQ?'on':''}">${c}</button>`).join('')}</div>`;
+  h += `<div class="tiles atiles" id="animGrid">${animGrid(it, sub)}</div><div style="height:12px"></div>`;
   if(sub === 'in' && cur !== 'none') h += sl(it,'Duration','anim.inDur',.1,3,.1);
   if(sub === 'out' && cur !== 'none') h += sl(it,'Duration','anim.outDur',.1,3,.1);
-  h += `<div class="note">▶ Tile ಮೇಲೆ mouse ಇಟ್ಟರೆ preview; click ಮಾಡಿದರೆ Player ನಲ್ಲಿ ನೋಡಬಹುದು.</div>`;
+  h += `<div class="note">▶ Tile ಮೇಲೆ mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview; click ಮಾಡಿದರೆ Player ನಲ್ಲಿ ನೋಡಬಹುದು. ${ANIM_LIB.length + 25}+ animations.</div>`;
   h += clipLike ? '<div class="btns"><button data-all="anim">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : '<div class="btns"><button data-all="ovanim">ಇದೇ ತರಹದ ಎಲ್ಲಕ್ಕೂ ಹಾಕಿ</button></div>';
   return h;
 }
@@ -632,7 +654,9 @@ function inspBody(it, kind, tab, sub){
         `<div class="btns"><button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`; }
     case 'track': return trackBody(it);
     case 'adjust': return adjustBody(normItem(it), true);
+    case 'tts': return ttsBody(it);
     case 'text':
+      if(sub === 'effects') return '<div style="height:8px"></div>' + tfxGrid(it.tfx) + (it.tfx ? '<div class="note">Effect ಹಾಕಿದಾಗ ಬಣ್ಣ/outline/shadow effect ನಿಂದಲೇ ಬರುತ್ತವೆ. ಸಾಮಾನ್ಯ style ಗೆ ✕ None ಒತ್ತಿ.</div>' : '');
       if(sub === 'style') return `<div style="height:10px"></div><div class="tiles tstyle">${TEXT_PRESETS.map((p,i)=>`<button class="tile" data-preset="${i}"><div class="tth" style="${presetCss(p)}">Aa</div></button>`).join('')}</div><div style="height:6px"></div>` +
         sec('ol','Outline', colorRow(it,'Color','stroke')+sl(it,'Width','strokeW',0,20)) +
         sec('bx','Background', `<div class="crow"><span>Background box</span><input type="checkbox" data-p="bgOn" ${it.bgOn?'checked':''}></div>`+colorRow(it,'Color','bgColor')+sl(it,'Opacity','bgAlpha',0,100)) +
@@ -781,6 +805,7 @@ function doAct(a, it, btn){
 }
 function doClick(t, it){
   const d = t.dataset;
+  if(v8Click(t, it)) return true;
   if(d.tog){ S.closed[d.tog] = !S.closed[d.tog]; t.closest('.sec').classList.toggle('closed'); return true; }
   if(!it) return false;
   if(d.kf){ if(d.kf === 'toggle') toggleKf(); else jumpKf(d.kf === 'next' ? 1 : -1); return true; }
@@ -802,6 +827,7 @@ function doClick(t, it){
 $('#rtabs').addEventListener('click', e => { const b = e.target.closest('[data-rtab]'); if(!b) return; S.rt[kindOf(selItem())] = b.dataset.rtab; renderInspector(); });
 $('#rsub').addEventListener('click', e => { const b = e.target.closest('[data-rsub]'); if(!b) return; const tab = $('#rtabs .on'); if(tab) S.rs[tab.dataset.rtab] = b.dataset.rsub; renderInspector(); });
 IB.addEventListener('input', e => {
+  if(v8Input(e)) return;
   const el = e.target, it = selItem();
   if(el.dataset.dnlvl != null){ S.dnLvl = +el.value; return; }
   if(el.dataset.dn){ doDenoise(it, el.checked); return; }
@@ -892,7 +918,7 @@ function ovItemHTML(o){
   const fx = [o.mask&&o.mask.type!=='none'?'◐':'', o.ck&&o.ck.on?'🟩':'', o.rmbg?'✂':'', o.blend&&o.blend!=='source-over'?'⧉':'', o.fx&&o.fx.type!=='none'&&isMediaOv(o)?'⚡':''].join('');
   const bg = o.type==='image' && m && m.thumb ? `background-image:url(${m.thumb});background-size:auto 100%;background-repeat:repeat-x;` : '';
   const strip = o.type==='video' && m ? ovStrip(o, m) : '';
-  return `<div class="it ${o.type} ${o.caption?'cap':''} ${S.sel===o.id?'sel':''}" data-oid="${o.id}" style="left:${o.start*S.pps}px;width:${Math.max(14,o.dur*S.pps-2)}px;${bg}">${strip}<span class="lbl">${fx} ${label}${o.type==='video'&&o.volume===0?' 🔇':''}</span>${kfDots(o)}<div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
+  return `<div class="it ${o.type} ${o.caption?'cap':''} ${S.sel===o.id?'sel':''} ${selMulti.has(o.id)?'msel':''}" data-oid="${o.id}" style="left:${o.start*S.pps}px;width:${Math.max(14,o.dur*S.pps-2)}px;${bg}">${strip}<span class="lbl">${fx} ${label}${o.type==='video'&&o.volume===0?' 🔇':''}</span>${kfDots(o)}<div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
 }
 function ovStrip(o, m){
   const TH = 30, wpx = Math.max(14, o.dur*S.pps - 2);
@@ -921,6 +947,17 @@ function clipHTML(c, i){
     <div class="cn">${badges} ${esc(m.name||'missing')} &nbsp;${fmtTC(d.dur)}</div>${filmstrip(c,m,d)}${wv}${kfDots(c)}
     <div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>${tm}`;
 }
+function trackHead(kind, t, items){
+  const ts = (S.trk && S.trk[kind] && S.trk[kind][t]) || {};
+  let icon = 'layers', name = 'Overlay';
+  if(kind === 'au'){ icon = 'music2'; name = items.some(a => a.kind === 'voice') ? 'Voice' : items.every(a => a.kind === 'sfx') ? 'Sound FX' : 'Audio'; }
+  else if(items.length && items.every(o => o.caption)){ icon = 'captions'; name = 'Captions'; }
+  else if(items.length && items.every(o => o.type === 'text')){ icon = 'text'; name = 'Text'; }
+  else if(items.length && items.every(o => o.type === 'sticker' || o.type === 'gfx')){ icon = 'sticker'; name = 'Sticker'; }
+  const B = (k,on,i,t2) => `<button class="ib ${on?'off':''}" data-tk="${kind}:${t}:${k}" title="${t2}">${ic(i)}</button>`;
+  const hasA = kind === 'au' || items.some(o => o.type === 'video');
+  return `<div class="thead">${ic(icon)}<span class="tl">${name} ${t+1}</span>${kind==='ov'?B('hide',ts.hide,ts.hide?'eyeoff':'eye','ತೋರಿಸು / ಮರೆಮಾಡು'):''}${hasA?B('mute',ts.mute,ts.mute?'volx':'vol','Mute'):''}${B('lock',ts.lock,ts.lock?'lock':'unlock','Lock')}</div>`;
+}
 function renderTimeline(){
   const pps = S.pps;
   const w = Math.max(S.total*pps + 400, TL.clientWidth - HEADW);
@@ -929,25 +966,25 @@ function renderTimeline(){
   let r = '';
   for(let t=0; t*pps<w; t+=step) r += `<div class="tick" style="left:${t*pps}px">${fmtT(t)}</div>`;
   for(let t=minor; t*pps<w; t+=minor) if(Math.abs(t/step - Math.round(t/step)) > 1e-6) r += `<div class="tick m" style="left:${t*pps}px"></div>`;
-  const L = lanes(S.overlays), A = lanes(S.audios);
+  const nOv = S.overlays.length ? Math.max(...S.overlays.map(o => o.track|0)) + 1 : 0, nAu = S.audios.length ? Math.max(...S.audios.map(a => a.track|0)) + 1 : 0;
   let h = `<div class="trow ruler"><div class="thead"></div><div class="tbody" id="rulerBody">${r}</div></div>`;
-  h += `<div class="trow drop ovz" data-zone="overlay"><div class="thead"></div><div class="tbody">⬆ Overlay: video / photo ಇಲ್ಲಿ ಹಾಕಿ (video ಮೇಲೆ video)</div></div>`;
-  for(let l = L.n-1; l >= 0; l--){
-    const items = S.overlays.filter(o => L.lane[o.id] === l);
-    h += `<div class="trow ovrow" data-zone="overlay"><div class="thead">${ic('layers')}<span class="tl">Overlay ${l+1}</span></div><div class="tbody">${items.map(ovItemHTML).join('')}</div></div>`;
+  h += `<div class="trow drop ovz" data-zone="overlay"><div class="thead"></div><div class="tbody">⬆ ಹೊಸ track: video / photo / text ಇಲ್ಲಿ ಹಾಕಿ</div></div>`;
+  for(let t = nOv-1; t >= 0; t--){
+    const items = S.overlays.filter(o => o.track === t), ts = (S.trk && S.trk.ov[t]) || {};
+    h += `<div class="trow ovrow ${ts.hide?'thide':''} ${ts.lock?'tlock':''}" data-zone="overlay" data-track="${t}">${trackHead('ov',t,items)}<div class="tbody">${items.map(ovItemHTML).join('')}</div></div>`;
   }
   h += `<div class="trow main" data-zone="main"><div class="thead"><button class="ib ${S.mainHide?'off':''}" data-th="hide" title="Main track ತೋರಿಸು / ಮರೆಮಾಡು">${ic(S.mainHide?'eyeoff':'eye')}</button><button class="ib ${S.mainMute?'off':''}" data-th="mute" title="Main track mute">${ic(S.mainMute?'volx':'vol')}</button><span class="tl">Main</span></div>
     <div class="tbody" id="track">${S.clips.length ? S.clips.map(clipHTML).join('') : '<div style="padding:24px 14px;color:var(--mute)">🎬 Video / photo ಅನ್ನು ಇಲ್ಲಿಗೆ ಎಳೆದು ಹಾಕಿ</div>'}</div></div>`;
-  for(let l = 0; l < A.n; l++){
-    const items = S.audios.filter(a => A.lane[a.id] === l);
-    h += `<div class="trow aurow" data-zone="audio"><div class="thead">${ic('music2')}<span class="tl">Audio ${l+1}</span></div><div class="tbody">${items.map(a => {
-      const m = media(a.mediaId), icon = {voice:'🎙',extract:'🔊',sfx:'🔔'}[a.kind] || '🎵';
-      const fx = (a.audio.voice!=='none'||a.audio.echo||a.audio.reverb||a.audio.bass||a.audio.treble) ? ' 🎛' : '';
-      return `<div class="it audio ${a.kind} ${S.sel===a.id?'sel':''}" data-oid="${a.id}" style="left:${a.start*pps}px;width:${Math.max(14,a.dur*pps-2)}px;${waveStyle(m,a.in,a.speed)}">${icon} ${esc(m?m.name:'')}${fx}<div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
+  for(let t = 0; t < nAu; t++){
+    const items = S.audios.filter(a => a.track === t), ts = (S.trk && S.trk.au[t]) || {};
+    h += `<div class="trow aurow ${ts.mute?'thide':''} ${ts.lock?'tlock':''}" data-zone="audio" data-track="${t}">${trackHead('au',t,items)}<div class="tbody">${items.map(a => {
+      const m = media(a.mediaId), icon = {voice:'🎙',extract:'🔊',sfx:'🔔',tts:'🗣'}[a.kind] || '🎵';
+      const fx = (a.audio.voice!=='none'||a.audio.echo||a.audio.reverb||a.audio.bass||a.audio.treble||a.audio.pitch) ? ' 🎛' : '';
+      return `<div class="it audio ${a.kind} ${S.sel===a.id?'sel':''} ${selMulti.has(a.id)?'msel':''}" data-oid="${a.id}" style="left:${a.start*pps}px;width:${Math.max(14,a.dur*pps-2)}px;${waveStyle(m,a.in,a.speed)}"><span class="lbl">${icon} ${esc(m?m.name:'')}${fx}${a.volume===0?' 🔇':''}</span><div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
     }).join('')}</div></div>`;
   }
   h += `<div class="trow drop auz" data-zone="audio"><div class="thead"></div><div class="tbody">🎵 Audio: music / sound ಇಲ್ಲಿ ಹಾಕಿ</div></div>`;
-  $('#tlRows').innerHTML = h;
+  $('#tlRows').innerHTML = h + '<div id="snapL"></div><div id="marq"></div>';
   updatePH();
 }
 function updatePH(){
@@ -959,18 +996,27 @@ const tAt = x => { const rb = $('#rulerBody'); return rb ? (x - rb.getBoundingCl
 function zoneAt(y){ const m = $('.trow.main'); if(!m) return 'main'; const r = m.getBoundingClientRect(); return y < r.top ? 'overlay' : y <= r.bottom ? 'main' : 'audio'; }
 function setZone(z){ TL.classList.remove('z-overlay','z-main','z-audio'); if(z) TL.classList.add('z-' + z); }
 
+const isLocked = it => !!(it && it.type && S.trk && S.trk[it.type === 'audio' ? 'au' : 'ov'][it.track] && S.trk[it.type === 'audio' ? 'au' : 'ov'][it.track].lock);
 TL.addEventListener('pointerdown', e => {
   if(exporting || recState || e.button > 0) return;
+  const tk = e.target.closest('[data-tk]');
+  if(tk){ const [kind,t,key] = tk.dataset.tk.split(':'), st = trkState(kind, +t); st[key] = !st[key]; renderTimeline(); seek(S.time); return; }
   const th = e.target.closest('[data-th]');
   if(th){ if(th.dataset.th === 'hide') S.mainHide = !S.mainHide; else { S.mainMute = !S.mainMute; } renderTimeline(); return; }
   if(e.target.closest('.thead')) return;
+  if(e.target.closest('.ruler')){ drag = {type:'seek'}; seek(tAt(e.clientX)); TL.setPointerCapture(e.pointerId); e.preventDefault(); return; }
   const tm = e.target.closest('.tmark');
   if(tm){ S.sel = tm.dataset.tid; S.rt[kindOf(selItem())] = 'trans'; renderTimeline(); renderInspector(); return; }
   const itEl = e.target.closest('.it'), h = e.target.closest('.h'), cl = e.target.closest('.clip');
+  const multiKey = e.ctrlKey || e.metaKey || e.shiftKey;
   if(itEl){
-    const o = findFree(itEl.dataset.oid); select(o.id);
+    const o = findFree(itEl.dataset.oid); if(!o || isLocked(o)) return;
+    if(multiKey){ if(S.sel && !selMulti.size) selMulti.add(S.sel); selMulti.has(o.id) ? selMulti.delete(o.id) : selMulti.add(o.id); S.sel = o.id; renderTimeline(); renderInspector(); return; }
+    if(!selMulti.has(o.id)) selMulti.clear();
+    select(o.id);
+    const group = selMulti.size > 1 ? [...S.overlays, ...S.audios].filter(x => selMulti.has(x.id)).map(x => [x, x.start]) : null;
     drag = h ? {type:'ovtrim', side:h.dataset.h, o, x0:e.clientX, start0:o.start, dur0:o.dur, in0:o.in, undo:false}
-             : {type:'ovmove', o, x0:e.clientX, y0:e.clientY, start0:o.start, undo:false};
+             : {type:'ovmove', o, x0:e.clientX, y0:e.clientY, start0:o.start, track0:o.track, group, undo:false};
     TL.setPointerCapture(e.pointerId); e.preventDefault(); return;
   }
   if(h && cl){
@@ -980,20 +1026,38 @@ TL.addEventListener('pointerdown', e => {
   }
   if(cl){
     const c = S.clips.find(x => x.id === cl.dataset.id);
-    if(e.ctrlKey || e.metaKey || e.shiftKey){
-      if(selClip() && !selMulti.size) selMulti.add(S.sel);
+    if(multiKey){
+      if(S.sel && !selMulti.size) selMulti.add(S.sel);
       if(e.shiftKey && selClip()){ const a = S.clips.indexOf(selClip()), b = S.clips.indexOf(c); for(let k=Math.min(a,b);k<=Math.max(a,b);k++) selMulti.add(S.clips[k].id); }
       else if(selMulti.has(c.id)) selMulti.delete(c.id); else selMulti.add(c.id);
       S.sel = c.id; renderTimeline(); renderInspector(); return;
     }
-    selMulti.clear(); select(c.id);
+    if(!selMulti.has(c.id)) selMulti.clear(); select(c.id);
     drag = {type:'clipmaybe', c, x0:e.clientX, y0:e.clientY, start0:derived[c.id].start};
     TL.setPointerCapture(e.pointerId); return;
   }
-  if(selMulti.size){ selMulti.clear(); renderTimeline(); }
-  drag = {type:'seek'}; seek(tAt(e.clientX));
+  // empty area: rubber-band selection (a simple click = move playhead)
+  drag = {type:'marquee', x0:e.clientX, y0:e.clientY, add:multiKey, base:new Set(multiKey ? selMulti : []), moved:false};
   TL.setPointerCapture(e.pointerId); e.preventDefault();
 });
+function snapTime(t, skip){
+  const th = 8/S.pps; let best = null, bd = th;
+  const cands = [S.time, 0];
+  for(const c of S.clips){ const d = derived[c.id]; if(d) cands.push(d.start, d.start + d.dur); }
+  for(const x of [...S.overlays, ...S.audios]) if(!skip.has(x.id)) cands.push(x.start, x.start + x.dur);
+  for(const c of cands){ const d = Math.abs(c - t); if(d < bd){ bd = d; best = c; } }
+  return best;
+}
+function showSnap(t){ const l = $('#snapL'); if(!l) return; if(t == null){ l.style.display = 'none'; return; } l.style.display = 'block'; l.style.left = (HEADW + t*S.pps) + 'px'; }
+function trackAtY(y, cls){
+  const rows = [...TL.querySelectorAll('.trow.' + cls)];
+  for(const r of rows){ const b = r.getBoundingClientRect(); if(y >= b.top && y <= b.bottom) return +r.dataset.track; }
+  if(!rows.length) return 0;
+  const n = rows.length;
+  if(cls === 'ovrow'){ const top = rows[0].getBoundingClientRect().top; if(y < top) return n; }
+  else { const bot = rows[rows.length-1].getBoundingClientRect().bottom; if(y > bot) return n; }
+  return null;
+}
 TL.addEventListener('pointermove', e => {
   if(!drag) return;
   const pps = S.pps;
@@ -1007,26 +1071,58 @@ TL.addEventListener('pointermove', e => {
     const el = TL.querySelector(`.clip[data-id="${drag.c.id}"]`);
     if(el){ el.classList.add('dragging'); el.style.transform = `translate(${dx}px,${dy}px)`; }
     setZone(zoneAt(e.clientY) === 'audio' ? null : zoneAt(e.clientY));
+  } else if(drag.type === 'marquee'){
+    const x0 = Math.min(drag.x0, e.clientX), x1 = Math.max(drag.x0, e.clientX), y0 = Math.min(drag.y0, e.clientY), y1 = Math.max(drag.y0, e.clientY);
+    if(!drag.moved && x1 - x0 < 5 && y1 - y0 < 5) return;
+    drag.moved = true;
+    const mq = $('#marq'), tb = $('#tlInner').getBoundingClientRect();
+    if(mq){ mq.style.display = 'block'; mq.style.left = (x0 - tb.left) + 'px'; mq.style.top = (y0 - tb.top) + 'px'; mq.style.width = (x1 - x0) + 'px'; mq.style.height = (y1 - y0) + 'px'; }
+    const sel = new Set(drag.base);
+    TL.querySelectorAll('.clip,.it').forEach(el => { const b = el.getBoundingClientRect(), id = el.dataset.id || el.dataset.oid;
+      const hit = b.right > x0 && b.left < x1 && b.bottom > y0 && b.top < y1 && !isLocked(findFree(id));
+      if(hit) sel.add(id); el.classList.toggle('msel', sel.has(id)); });
+    selMulti.clear(); sel.forEach(id => selMulti.add(id));
   } else if(drag.type === 'ovmove' || drag.type === 'ovtrim'){
     const dt = (e.clientX - drag.x0)/pps, o = drag.o;
     if(!drag.undo){ if(Math.abs(e.clientX - drag.x0) < 3 && Math.abs(e.clientY - (drag.y0||e.clientY)) < 3) return; pushUndo(); drag.undo = true; }
     const timed = o.type === 'video' || o.type === 'audio', mdur = timed ? media(o.mediaId).duration : Infinity;
     if(drag.type === 'ovmove'){
-      o.start = Math.max(0, drag.start0 + dt);
-      setZone(isMediaOv(o) && zoneAt(e.clientY) === 'main' ? 'main' : null);
+      if(drag.group){
+        const mn = Math.min(...drag.group.map(g => g[1])), d2 = Math.max(-mn, dt);
+        drag.group.forEach(([x,s0]) => x.start = s0 + d2);
+      } else {
+        let ns = Math.max(0, drag.start0 + dt), sn = null;
+        if(!e.altKey){ const skip = new Set([o.id]), a = snapTime(ns, skip), b = snapTime(ns + o.dur, skip);
+          if(a != null && (b == null || Math.abs(a-ns) <= Math.abs(b-ns-o.dur))){ ns = a; sn = a; } else if(b != null){ ns = Math.max(0, b - o.dur); sn = b; } }
+        o.start = ns; showSnap(sn);
+        const z = zoneAt(e.clientY);
+        if(!(isMediaOv(o) && z === 'main')){ const t = trackAtY(e.clientY, o.type === 'audio' ? 'aurow' : 'ovrow'); if(t != null && t !== o.track){ o.track = t; } o._pri = true; }
+        setZone(isMediaOv(o) && z === 'main' ? 'main' : null);
+      }
     } else if(drag.side === 'l'){
       const minS = timed ? Math.max(0, drag.start0 - drag.in0/o.speed) : 0;
       const ns = clamp(drag.start0 + dt, minS, drag.start0 + drag.dur0 - .2), sh = ns - drag.start0;
       o.dur = drag.dur0 - sh; o.start = ns;
       if(timed) o.in = drag.in0 + sh*o.speed;
       if(o.kf) o.kf.forEach(k => { if(k._t0 === undefined) k._t0 = k.t; k.t = k._t0 - sh; });
-    } else o.dur = clamp(drag.dur0 + dt, .2, (mdur - o.in)/o.speed);
+    } else {
+      let ne = drag.start0 + clamp(drag.dur0 + dt, .2, (mdur - o.in)/o.speed); const sn = e.altKey ? null : snapTime(ne, new Set([o.id]));
+      if(sn != null && sn - drag.start0 >= .2 && sn - drag.start0 <= (mdur - o.in)/o.speed){ ne = sn; showSnap(sn); } else showSnap(null);
+      o.dur = ne - drag.start0;
+    }
     layout(); renderTimeline();
   } else if(drag.type === 'seek' && e.buttons) seek(tAt(e.clientX));
 });
 function endDrag(e){
   const d = drag; drag = null; if(!d) return;
-  TL.classList.remove('dragging'); setZone(null);
+  TL.classList.remove('dragging'); setZone(null); showSnap(null);
+  if(d.type === 'marquee'){
+    const mq = $('#marq'); if(mq) mq.style.display = 'none';
+    if(!d.moved){ if(selMulti.size){ selMulti.clear(); renderTimeline(); } seek(tAt(e.clientX)); return; }
+    if(selMulti.size === 1){ select([...selMulti][0]); selMulti.clear(); }
+    else if(selMulti.size){ S.sel = [...selMulti][0]; }
+    renderTimeline(); renderInspector(); return;
+  }
   if(d.type === 'trim') afterEdit();
   else if(d.type === 'clipdrag'){
     const z = zoneAt(e.clientY), t = d.start0 + (e.clientX - d.x0)/S.pps;
@@ -1037,6 +1133,8 @@ function endDrag(e){
   else if(d.type === 'ovmove' || d.type === 'ovtrim'){
     if(d.o.kf) d.o.kf.forEach(k => delete k._t0);
     if(d.type === 'ovmove' && isMediaOv(d.o) && e && zoneAt(e.clientY) === 'main'){ d.o.start = d.start0; overlayToClip(d.o, tAt(e.clientX)); return; }
+    if(d.type === 'ovmove') d.o._pri = true;
+    layout(); renderTimeline();
     if(d.undo){ renderInspector(); seek(S.time); }
   }
 }
@@ -1082,6 +1180,18 @@ $('#tools').addEventListener('click', e => {
     tZo:()=>setZoom(S.pps/1.4), tZi:()=>setZoom(S.pps*1.4)}[b.id] || (()=>{}))();
 });
 $('#tools').addEventListener('input', e => { if(e.target.id === 'zoom') setZoom(+e.target.value); });
+function delMulti(){
+  if(!selMulti.size) return; pushUndo();
+  for(const c of S.clips) if(selMulti.has(c.id) && vids[c.id]) vids[c.id].pause();
+  S.clips = S.clips.filter(c => !selMulti.has(c.id)); S.overlays = S.overlays.filter(o => !selMulti.has(o.id)); S.audios = S.audios.filter(a => !selMulti.has(a.id));
+  active = null; dropAllChains(); pairKey = ''; selMulti.clear(); S.sel = S.clips[0] ? S.clips[0].id : null; afterEdit();
+}
+TL.addEventListener('wheel', e => {   // Ctrl + wheel = zoom around the mouse
+  if(!(e.ctrlKey || e.metaKey)) return; e.preventDefault();
+  const t = tAt(e.clientX), px = e.clientX - TL.getBoundingClientRect().left;
+  setZoom(S.pps * (e.deltaY < 0 ? 1.15 : 1/1.15));
+  TL.scrollLeft = Math.max(0, HEADW + t*S.pps - px);
+}, {passive:false});
 function setZoom(v){ S.pps = clamp(v, 8, 200); const z = $('#zoom'); if(z){ z.value = S.pps; setFill(z); } renderTimeline(); }
 
 /* =====================================================================
@@ -1239,7 +1349,8 @@ document.addEventListener('keydown', e => {
   else if(!mod && k === 't'){ e.preventDefault(); addTextPreset('default'); }
   else if(!mod && k === 'k'){ e.preventDefault(); toggleKf(); }
   else if(k === 'escape'){ setPick(false); renderInspector(); }
-  else if(k === 'delete' || k === 'backspace'){ del(); }
+  else if(k === 'delete' || k === 'backspace'){ selMulti.size > 1 ? delMulti() : del(); }
+  else if(mod && k === 'a'){ e.preventDefault(); selMulti.clear(); [...S.clips, ...S.overlays, ...S.audios].forEach(x => { if(!isLocked(x)) selMulti.add(x.id); }); renderTimeline(); }
   else if(k === 'arrowleft'){ seek(S.time - 1/30); }
   else if(k === 'arrowright'){ seek(S.time + 1/30); }
   else if(k === 'home'){ seek(0); }
@@ -1410,3 +1521,165 @@ LC.addEventListener('contextmenu', e => {
     '-', ['Delete from project', () => deleteMedia(m.id), {icon:'trash'}]]);
 });
 $('#out').addEventListener('contextmenu', e => { const it = selItem(); if(!it) return; e.preventDefault(); showCtx(e.clientX, e.clientY, ctxForItem(it)); });
+
+/* =====================================================================
+   RESIZABLE PANELS (drag the gaps between left / player / right / timeline)
+   ===================================================================== */
+const SPL = ['spL','spR','spB'].map(id => { const d = document.createElement('div'); d.id = id; d.className = 'split ' + (id === 'spB' ? 'h' : 'v'); document.body.appendChild(d); return d; });
+function applyLayout(L){
+  const a = $('#app');
+  if(L.lw) a.style.setProperty('--lw', L.lw + 'px'); if(L.rw) a.style.setProperty('--rw', L.rw + 'px'); if(L.th) a.style.setProperty('--th', L.th + 'px');
+}
+function placeSplitters(){
+  const l = $('#left').getBoundingClientRect(), p = $('#player').getBoundingClientRect(), r = $('#right').getBoundingClientRect(), b = $('#bottom').getBoundingClientRect();
+  const hidden = $('#home').style.display === 'flex';
+  SPL.forEach(s => s.style.visibility = hidden ? 'hidden' : '');
+  Object.assign(SPL[0].style, {left:(l.right)+'px', top:l.top+'px', height:l.height+'px'});
+  Object.assign(SPL[1].style, {left:(p.right)+'px', top:p.top+'px', height:p.height+'px'});
+  Object.assign(SPL[2].style, {left:b.left+'px', top:(b.top-6)+'px', width:b.width+'px'});
+}
+let LAY = {}; try{ LAY = JSON.parse(localStorage.getItem('cc_layout') || '{}'); }catch(e){}
+applyLayout(LAY);
+SPL.forEach(sp => sp.addEventListener('pointerdown', e => {
+  e.preventDefault(); sp.setPointerCapture(e.pointerId); sp.classList.add('on'); document.body.classList.add('resizing'); if(sp.id === 'spB') document.body.classList.add('hz');
+  const app = $('#app').getBoundingClientRect(), top = $('#player').getBoundingClientRect().top;
+  const mv = ev2 => {
+    if(sp.id === 'spL') LAY.lw = clamp(ev2.clientX - app.left - 5, 240, app.width*.5);
+    else if(sp.id === 'spR') LAY.rw = clamp(app.right - ev2.clientX - 5, 240, app.width*.45);
+    else LAY.th = clamp(ev2.clientY - top - 3, 180, app.height - 200);
+    applyLayout(LAY); placeSplitters();
+  };
+  const up = () => { sp.classList.remove('on'); document.body.classList.remove('resizing','hz'); sp.removeEventListener('pointermove', mv); sp.removeEventListener('pointerup', up);
+    try{ localStorage.setItem('cc_layout', JSON.stringify(LAY)); }catch(e){} fitCanvas(); renderTimeline(); };
+  sp.addEventListener('pointermove', mv); sp.addEventListener('pointerup', up);
+}));
+SPL.forEach(sp => sp.addEventListener('dblclick', () => { LAY = {}; const a = $('#app'); ['--lw','--rw','--th'].forEach(v => a.style.removeProperty(v)); try{ localStorage.removeItem('cc_layout'); }catch(e){} setTimeout(placeSplitters, 30); }));
+new ResizeObserver(placeSplitters).observe($('#app'));
+['#left','#right','#bottom','#player'].forEach(q => new ResizeObserver(placeSplitters).observe($(q)));
+setInterval(() => { const h = $('#home').style.display === 'flex'; if(SPL[0].style.visibility !== (h ? 'hidden' : '')) placeSplitters(); }, 500);
+placeSplitters();
+
+/* =====================================================================
+   v8 PANELS: voice library, text effects, text-to-speech, animation previews
+   ===================================================================== */
+const VCOL = id => { let h = 0; for(const c of id) h = (h*31 + c.charCodeAt(0)) % 360; return h; };
+function voiceBody(it){
+  const a = it.audio, cat = S.vcat || 'filters', q = (S.vq||'').toLowerCase().trim();
+  let list = VOICE_LIB.filter(v => q ? v[1].toLowerCase().includes(q) : v[2] === cat);
+  const cur = a.vpreset || (a.voice === 'none' && !a.echo && !a.reverb && !a.pitch ? 'orig' : '');
+  return `<div style="height:8px"></div><div class="seg">${[['filters','Voice filters'],['chars','Voice characters']].map(([k,n])=>`<button data-vcat="${k}" class="${cat===k&&!q?'on':''}">${n}</button>`).join('')}</div>
+    <div class="srch">${ic('target')}<input type="text" id="vQ" placeholder="Search voices" value="${esc(S.vq||'')}"></div>
+    <div class="vgrid" id="vGrid">${list.map(([id,n])=>`<button class="vt2 ${cur===id?'on':''}" data-vp="${id}"><i style="--h:${VCOL(id)}">${id==='orig'?'✕':'♪'}</i><span>${n}</span></button>`).join('')}</div>
+    ${sec('vfx','Fine tune', sl(it,'Pitch','audio.pitch',-12,12,1)+sl(it,'Echo','audio.echo',0,100)+sl(it,'Reverb','audio.reverb',0,100)+
+      `<div class="crow"><span>Room</span><select data-p="audio.reverbSize">${REVERBS.map(([k,n])=>`<option value="${k}" ${a.reverbSize===k?'selected':''}>${n}</option>`).join('')}</select></div>`+
+      sl(it,'Chorus','audio.chorus',0,100)+sl(it,'Vibrato','audio.vibrato',0,100)+sl(it,'Tremolo','audio.trem',0,100)+sl(it,'Distortion','audio.dist',0,100)+sl(it,'8D pan','audio.pan8d',0,100))}
+    <div class="note">🎧 Voice ಮೇಲೆ click ಮಾಡಿದರೆ 3 ಸೆಕೆಂಡ್ preview ಕೇಳಿಸುತ್ತದೆ. ${VOICE_LIB.length} voices — ಎಲ್ಲವೂ ನಿಮ್ಮ browser ನಲ್ಲೇ, download ಇಲ್ಲ.</div>
+    ${!it.type?'<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}`;
+}
+function tfxGrid(cur){
+  const cat = S.tfxCat || 'All', list = TFX.filter(t => cat === 'All' || t[2] === cat);
+  return `<div class="chiprow scrollx">${TFX_CATS.map(c=>`<button data-tfxcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>
+    <div class="tiles tfxtiles"><button class="tile ${!cur?'on':''}" data-tfx="none"><div class="tth">${ic('ban')}</div><span>None</span></button>${list.map(([id,n])=>`<button class="tile ${cur===id?'on':''}" data-tfx="${id}"><div class="tth tfxth"><canvas data-tfxc="${id}" width="132" height="72"></canvas></div><span>${n}</span></button>`).join('')}</div>`;
+}
+function ttsBody(it){
+  const L = S.ttsLang || 'kan', st = S.ttsStyle || 'natural', sp = S.ttsSpeed || 1;
+  return `<div style="height:8px"></div>${it ? `<div class="note">🗣 ಈ text ಅನ್ನು ಧ್ವನಿಯಾಗಿ ಬದಲಿಸಿ audio track ಗೆ ಸೇರಿಸುತ್ತದೆ: <b>${esc((it.text||'').slice(0,60))}</b></div>` : `<div class="ltitle" style="margin-top:0">🗣 Text to speech</div><textarea id="ttsText" rows="4" placeholder="ಇಲ್ಲಿ ಬರೆಯಿರಿ… (ಕನ್ನಡ / English / हिन्दी)">${esc(S.ttsText||'')}</textarea>`}
+    <div class="ltitle">ಭಾಷೆ</div><div class="chiprow">${TTS_LANGS.map(([k,n])=>`<button data-ttsl="${k}" class="${L===k?'on':''}">${n}</button>`).join('')}</div>
+    <div class="ltitle">Voice style</div><div class="vgrid">${TTS_STYLES.map(([k,n])=>`<button class="vt2 ${st===k?'on':''}" data-ttss="${k}"><i style="--h:${VCOL(k)}">🗣</i><span>${n}</span></button>`).join('')}</div>
+    <div class="prow"><div class="plab">Speed</div><input type="range" id="ttsSpeed" min="0.7" max="1.5" step="0.05" value="${sp}"><input class="num" type="number" id="ttsSpeedN" min="0.7" max="1.5" step="0.05" value="${sp}"></div>
+    <div id="ttsStat" style="color:var(--mute);min-height:18px;margin-top:6px"></div><div class="prog"><div id="ttsBar"></div></div>
+    <button class="primary" data-tts="gen" style="width:100%;padding:9px">🗣 Generate speech</button>
+    <div class="lnote">AI voice ನಿಮ್ಮ browser ನಲ್ಲೇ ತಯಾರಾಗುತ್ತದೆ. ಮೊದಲ ಬಾರಿ voice model download (ಕನ್ನಡ ~38 MB) — ನಂತರ cache. ⚠ ಈ voice models (Meta MMS) <b>non-commercial license</b> ನಲ್ಲಿ ಇವೆ.</div>`;
+}
+const imgCache = {};
+function imgOf(url){ if(!imgCache[url]){ const i = new Image(); i.src = url; imgCache[url] = i; } return imgCache[url]; }
+function animProbe(it, sub, name, p){
+  const f = {anim:{in:'none',out:'none',loop:'none',inDur:1,outDur:1}, dur:10};
+  if(sub === 'in') f.anim.in = name; else if(sub === 'out') f.anim.out = name; else f.anim.loop = name;
+  const lt = sub === 'in' ? p : sub === 'out' ? 10 - (1-p) : p*3;
+  if(!it.type) return {R:animState(f, lt, 10), W:cv.width, H:cv.height};
+  const u = Math.min(out.width, out.height); return {R:ovAnim(f, lt, u), W:u, H:u};
+}
+function drawAnimTile(c, it, sub, name, p){
+  const x = c.getContext('2d'), w = c.width, h = c.height, {R, W, H} = animProbe(it, sub, name, p);
+  x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,w,h); x.fillStyle = '#1c1c20'; x.fillRect(0,0,w,h);
+  const isTxt = it.type === 'text' || it.type === 'sticker', img = isTxt ? null : imgOf(thumbFor(it));
+  const draw = (ox, oy) => { if(isTxt){ x.fillStyle = '#fff'; x.font = '800 26px Inter,"Noto Sans Kannada",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(it.type === 'sticker' && !String(it.text).startsWith('svg:') ? it.text : 'Aa', ox, oy); }
+    else if(img && img.complete && img.naturalWidth){ const k = Math.max(w*.8/img.naturalWidth, h*.8/img.naturalHeight), iw = img.naturalWidth*k, ih = img.naturalHeight*k; x.drawImage(img, ox - iw/2, oy - ih/2, iw, ih); } };
+  x.save();
+  if(R.mT){ const m = R.mT, q = clamp(R.mP,0,1); x.beginPath();
+    if(m === 13) x.rect(0,0,w*q,h); else if(m === 8 || m === 9){ m === 8 ? x.rect(w/2*(1-q),0,w*q,h) : x.rect(0,h/2*(1-q),w,h*q); }
+    else if(m === 5 || m === 6){ for(let i=0;i<8;i++) m === 5 ? x.rect(0,i*h/8,w,h/8*q) : x.rect(i*w/8,0,w/8*q,h); }
+    else if(m === 2){ x.rect(0,0,w,h); x.arc(w/2,h/2,Math.max(.1,(1-q)*w*.7),0,7,true); }
+    else if(m === 1 || m === 3 || m === 10 || m === 11 || m === 4) x.arc(w/2,h/2,Math.max(.1,q*w*.7),0,7);
+    else x.rect(0,0,w,h);
+    x.clip(); if(m === 7 || m === 12) x.globalAlpha = q; }
+  const sc = w/W;
+  x.translate(w/2 + R.dx*sc, h/2 + R.dy*(h/H)); x.rotate(R.r||0); x.scale((R.s||1)*(R.sx||1), (R.s||1)*(R.sy||1));
+  x.globalAlpha *= clamp(R.a, 0, 1);
+  const fx = R.fx || [], fa = fx[1] || 0, bl = (R.blur ? R.blur*w/720 : 0) + (fx[0] === 'blur' ? fa*6 : 0);
+  let f = ''; if(bl > .3) f += `blur(${bl}px) `; if(fx[0] === 'bright' || fx[0] === 'glow' || fx[0] === 'lightleak') f += `brightness(${1+fa*1.6}) `; if(fx[0] === 'vhs' || fx[0] === 'crt') f += `contrast(1.3) saturate(.7) `;
+  x.filter = f || 'none';
+  if(fx[0] === 'pixelate' && fa > .05) x.filter = f + `blur(${fa*3}px) contrast(1.25)`;
+  draw(0, 0);
+  if(['rgbsplit','glitch','chroma'].includes(fx[0]) && fa > .05){ x.globalCompositeOperation = 'screen'; x.globalAlpha *= .6; x.filter = 'hue-rotate(160deg) saturate(3)'; draw(fa*6, 0); }
+  x.restore();
+}
+let aTile = null;
+function paintV8(root, it){
+  if(it) root.querySelectorAll('canvas.apv').forEach(c => { const sub = c.dataset.sub; drawAnimTile(c, it, sub, c.dataset.an, sub === 'combo' ? .3 : sub === 'in' ? .4 : .5); });
+  root.querySelectorAll('canvas[data-tfxc]').forEach(c => { const t = TFX_MAP[c.dataset.tfxc]; if(!t) return; const x = c.getContext('2d'); x.clearRect(0,0,c.width,c.height);
+    x.font = '900 40px Anton,"Baloo Tamma 2",Inter,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; drawStyledText(x, t.id === 'kannadaGold' ? 'ಕನ್ನಡ' : 'ART', c.width/2, c.height/2+2, 40, t.st); });
+  // images may still be loading the first time
+  if(it && root.querySelector('canvas.apv')){ const im = imgOf(thumbFor(it)); if(!im.complete) im.onload = () => paintV8(root, it); }
+}
+function hoverAnim(root, getIt){
+  root.addEventListener('mouseover', e => {
+    const c = e.target.closest('.tile') && e.target.closest('.tile').querySelector('canvas.apv'); if(!c || (aTile && aTile.c === c)) return;
+    if(aTile) cancelAnimationFrame(aTile.raf);
+    const it = getIt(); if(!it) return; const t0 = performance.now(), sub = c.dataset.sub;
+    const loop = () => { const t = (performance.now() - t0)/1000, p = sub === 'combo' ? t/3 % 1 : Math.min(1, (t % 1.6)/1.0); drawAnimTile(c, it, sub, c.dataset.an, p); aTile.raf = requestAnimationFrame(loop); };
+    aTile = {c, raf:requestAnimationFrame(loop)};
+  });
+  root.addEventListener('mouseout', e => { const tl = e.target.closest('.tile'); if(!tl || tl.contains(e.relatedTarget) || !aTile) return; cancelAnimationFrame(aTile.raf); const c = aTile.c; aTile = null; const it = getIt(); if(it) drawAnimTile(c, it, c.dataset.sub, c.dataset.an, c.dataset.sub === 'combo' ? .3 : c.dataset.sub === 'in' ? .4 : .5); });
+}
+hoverAnim(IB, () => selItem());
+function v8Input(e){
+  const el = e.target, it = selItem();
+  if(el.id === 'animQ'){ S.animQ = el.value; const g = $('#animGrid'); if(g && it){ const sub = S.rs.anim || 'in'; g.innerHTML = animGrid(it, sub); paintV8(g, it); } IB.querySelectorAll('[data-anicat]').forEach(b => b.classList.toggle('on', !S.animQ && b.dataset.anicat === (S.animCat||'Trending'))); return true; }
+  if(el.id === 'vQ'){ S.vq = el.value; const pos = el.selectionStart; renderInspector(); const n = $('#vQ'); if(n){ n.focus(); n.setSelectionRange(pos,pos); } return true; }
+  if(el.id === 'ttsText'){ S.ttsText = el.value; return true; }
+  if(el.id === 'ttsSpeed' || el.id === 'ttsSpeedN'){ S.ttsSpeed = clamp(+el.value || 1, .7, 1.5); const o = el.id === 'ttsSpeed' ? $('#ttsSpeedN') : $('#ttsSpeed'); if(o) o.value = S.ttsSpeed; if(el.type === 'range') setFill(el); return true; }
+  return false;
+}
+async function runTTS(it, btn){
+  const text = it ? it.text : (S.ttsText || ($('#ttsText')||{}).value || ''); if(!text.trim()) return alert('ಮೊದಲು text ಬರೆಯಿರಿ');
+  const st = $('#ttsStat'), bar = $('#ttsBar'); btn.disabled = true;
+  try{
+    await ttsToTimeline(text, S.ttsLang || 'kan', S.ttsStyle || 'natural', it ? it.start : S.time, S.ttsSpeed || 1, (m,p) => { if(st) st.textContent = m; if(bar) bar.style.width = (p*100) + '%'; });
+    const st2 = $('#ttsStat'); if(st2) st2.textContent = '✅ Audio track ಗೆ ಸೇರಿಸಲಾಗಿದೆ';
+  }catch(err){ const st2 = $('#ttsStat'); if(st2) st2.textContent = '❌ ' + err.message; else alert(err.message); }
+  btn.disabled = false;
+}
+function v8Click(t, it){
+  const d = t.dataset;
+  if(d.anicat){ S.animCat = d.anicat; S.animQ = ''; renderInspector(); return true; }
+  if(d.vcat){ S.vcat = d.vcat; S.vq = ''; renderInspector(); return true; }
+  if(d.tfxcat){ S.tfxCat = d.tfxcat; t.closest('#lcontent') ? renderLeft() : renderInspector(); return true; }
+  if(d.ttsl){ S.ttsLang = d.ttsl; t.closest('#lcontent') ? renderLeft() : renderInspector(); return true; }
+  if(d.ttss){ S.ttsStyle = d.ttss; t.closest('#lcontent') ? renderLeft() : renderInspector(); return true; }
+  if(d.tts){ runTTS(t.closest('#lcontent') ? null : (selOv() && selOv().type === 'text' ? selOv() : null), t); return true; }
+  if(d.tfx){
+    const o = selOv();
+    if(o && o.type === 'text'){ pushUndo(); o.tfx = d.tfx === 'none' ? '' : d.tfx; if(o.tfx && !o.size0){ o.bgOn = false; } renderInspector(); renderLeft(); }
+    else if(d.tfx !== 'none') addOverlay(newOverlay('text', {text:'ನಿಮ್ಮ ಪಠ್ಯ', size:80, font:'Anton', tfx:d.tfx, shadow:0}), 'text');
+    return true;
+  }
+  if(d.vp){
+    const x = it && it.audio ? it : null; if(!x) return true;
+    pushUndo(); applyVoicePreset(x, d.vp); x.type === 'audio' ? rebuildAudChain(x) : rebuildChain(x); renderInspector(); renderTimeline();
+    const st = itemStart(x), du = itemDur(x); previewPlay(S.time >= st && S.time < st + du - .5 ? S.time : st, Math.min(3, du));
+    return true;
+  }
+  return false;
+}

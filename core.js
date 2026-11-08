@@ -45,7 +45,8 @@ const defAdj = () => ({exposure:0,brightness:0,contrast:0,highlights:0,shadows:0
 const defFx = () => ({type:'none',amount:60,speed:50});
 const defAudio = () => ({voice:'none',bass:0,treble:0,echo:0,reverb:0,enhance:false,isolate:false,norm:false,
   eq:[0,0,0,0,0,0,0,0,0,0], comp:false, compThr:-24, compRatio:4, limiter:false, gate:false, gateThr:-45, pitch:0,
-  echoTime:.3, echoFb:35, reverbSize:'hall', dist:0, phaser:0, wah:0, trem:0, hp:0, lp:0, amp:0});
+  echoTime:.3, echoFb:35, reverbSize:'hall', dist:0, phaser:0, wah:0, trem:0, hp:0, lp:0, amp:0,
+  chorus:0, vibrato:0, ring:0, crush:0, pan8d:0, vinyl:0, vpreset:''});
 const defBfx = () => ({type:'none',amount:70,color:'#20d5ec'});
 const EQ_F = [31,62,125,250,500,1000,2000,4000,8000,16000];
 // fill fields that older projects / older items don't have
@@ -180,7 +181,25 @@ function curveAt(c,p){
 }
 const curvePairs = arr => arr.map((v,i)=>[i/(arr.length-1), v]);
 function rateAt(c,p){ return clamp(c.speed*curveAt(c,p), 0.1, 10); }
+/* ---- tracks: every overlay / audio item lives on a fixed track (like CapCut). Higher track = drawn on top ---- */
+const EPS_T = .04;
+const overlapT = (a,b) => a.start < b.start + b.dur - EPS_T && b.start < a.start + a.dur - EPS_T;
+function normTracks(){
+  for(const arr of [S.overlays, S.audios]){
+    const placed = [];
+    const fresh = arr.filter(x => x.track == null || x.track < 0);
+    const order = arr.filter(x => !(x.track == null || x.track < 0)).sort((a,b) => (a.track - b.track) || ((a._pri?1:0) - (b._pri?1:0)) || (a.start - b.start));
+    const put = it => { let t = Math.max(0, it.track|0); while(placed.some(p => p.track === t && overlapT(p,it))) t++; it.track = t; placed.push(it); };
+    order.forEach(put);
+    fresh.forEach(it => { it.track = 0; put(it); });
+    const used = [...new Set(arr.map(x => x.track))].sort((a,b)=>a-b), map = {};   // remove empty tracks
+    used.forEach((t,i) => map[t] = i); arr.forEach(x => { x.track = map[x.track]; delete x._pri; });
+  }
+}
+const zOrder = () => S.overlays.map((o,i) => [o,i]).sort((a,b) => (a[0].track - b[0].track) || (a[1] - b[1])).map(x => x[0]);
+const trkState = (kind, t) => ((S.trk = S.trk || {ov:{},au:{}})[kind][t] = S.trk[kind][t] || {});
 function layout(){
+  normTracks();
   let t = 0, prev = null;
   for(const c of S.clips){
     const len = Math.max(0.05, c.out - c.in), cum = new Float64Array(N+1);
@@ -363,6 +382,14 @@ function buildChain(c){
     cur.connect(dry); dry.connect(sum); cur.connect(bp); bp.connect(wet); wet.connect(sum); lfo(1.8,700,bp.frequency); nodes.push(sum,dry,bp,wet); cur = sum;
   }
   if(a.trem > 0){ const g = gain(1 - a.trem/200); lfo(5.5, a.trem/200, g.gain); link(g); }
+  if(a.vibrato > 0){ const d = AC.createDelay(.05); d.delayTime.value = .006; lfo(5.5, .0035*a.vibrato/100, d.delayTime); link(d); }
+  if(a.chorus > 0){
+    const sum = gain(1), dry = gain(1 - a.chorus/300); cur.connect(dry); dry.connect(sum); nodes.push(sum,dry);
+    [[.017,.7],[.025,1.1],[.031,.45]].forEach(([dt,f]) => { const d = AC.createDelay(.1), w = gain(a.chorus/100*.45); d.delayTime.value = dt; lfo(f, .004, d.delayTime); cur.connect(d); d.connect(w); w.connect(sum); nodes.push(d,w); });
+    cur = sum;
+  }
+  if(a.ring > 0){ const sum = gain(1), dry = gain(.35), rg = gain(0); lfo(a.ring, 1, rg.gain); cur.connect(dry); cur.connect(rg); dry.connect(sum); rg.connect(sum); nodes.push(sum,dry,rg); cur = sum; }
+  if(a.crush > 0){ const sh = AC.createWaveShaper(), n = 2048, c2 = new Float32Array(n), steps = Math.pow(2, 12 - a.crush/100*9); for(let i=0;i<n;i++){ const x = i*2/n - 1; c2[i] = Math.round(x*steps)/steps; } sh.curve = c2; link(sh); link(filt('lowpass', 9000 - a.crush*55, .7)); }
   // 6. dynamics
   if(a.comp){ link(comp(a.compThr, a.compRatio, .005, .2, 6)); link(gain(Math.pow(10, Math.min(12, -a.compThr*(1-1/a.compRatio)*.5)/20))); }
   if(a.amp) link(gain(Math.pow(10, a.amp/20)));
@@ -380,8 +407,17 @@ function buildChain(c){
     dry.gain.value = 1 - a.reverb/100*.35;
     cur.connect(cv); cv.connect(wet); wet.connect(vol); nodes.push(cv,wet);
   }
-  if(a.limiter){ const lm = comp(-1.5, 20, .001, .08, 0); vol.connect(lm); lm.connect(master); nodes.push(lm); }
-  else vol.connect(master);
+  if(a.vinyl > 0){   // record crackle + hiss
+    const len = AC.sampleRate*2, b = AC.createBuffer(1, len, AC.sampleRate), d = b.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = (Math.random()*2-1)*.015 + (Math.random() < .0007 ? (Math.random()*2-1)*.6 : 0);
+    const src = AC.createBufferSource(); src.buffer = b; src.loop = true; const g = gain(a.vinyl/100*.5), lp = filt('lowpass', 6000, .7);
+    src.connect(lp); lp.connect(g); g.connect(vol); src.start(); nodes.push(src, g, lp);
+    const tone = filt('bandpass', 1800, .6); cur.connect(tone); const tw = gain(a.vinyl/100*.6); tone.connect(tw); tw.connect(vol); dry.gain.value *= 1 - a.vinyl/250; nodes.push(tone, tw);
+  }
+  let last = vol;
+  if(a.pan8d > 0){ const pn = AC.createStereoPanner(); lfo(.12, a.pan8d/100, pn.pan); vol.connect(pn); last = pn; nodes.push(pn); }
+  if(a.limiter){ const lm = comp(-1.5, 20, .001, .08, 0); last.connect(lm); lm.connect(master); nodes.push(lm); }
+  else last.connect(master);
   return {input, vol, nodes};
 }
 function killChain(ch){
@@ -470,7 +506,8 @@ function syncOvVideos(){
     if(o.type !== 'video') continue;
     const v = ovVid(o), on = S.time >= o.start && S.time < o.start + o.dur;
     if(AC) ensureOvAudio(o,v);
-    if(ovAud[o.id]) ovAud[o.id].gain.value = on && !soloMain ? o.volume/100 : 0;
+    const th = S.trk && S.trk.ov[o.track] && (S.trk.ov[o.track].hide || S.trk.ov[o.track].mute);
+    if(ovAud[o.id]) ovAud[o.id].gain.value = on && !soloMain && !th ? o.volume/100 : 0;
     syncEl(v,o,on);
   }
   for(const id in ovVids) if(!S.overlays.some(o => o.id === id)){ ovVids[id].pause(); if(ovAud[id]) ovAud[id].gain.value = 0; }
@@ -482,6 +519,7 @@ function syncAudItems(){
       const lt = S.time - a.start; let g = on && !soloMain ? a.volume/100*(a.audio.norm && a.normGain ? a.normGain : 1) : 0;
       if(a.fadeIn > 0) g *= clamp(lt/a.fadeIn, 0, 1);
       if(a.fadeOut > 0) g *= clamp((a.dur-lt)/a.fadeOut, 0, 1);
+      if(S.trk && S.trk.au[a.track] && S.trk.au[a.track].mute) g = 0;
       ch.vol.gain.value = g;
     }
     syncEl(el,a,on);
@@ -830,6 +868,7 @@ function animState(c,lt,dur){
       case 'flashIn': R.fx=['bright',1-e]; break;
       case 'pixelIn': R.fx=['pixelate',1-e]; break;
       case 'tiltIn': R.r+=(1-e)*.25; R.dx+=(1-e)*W*.25; R.a*=e; break;
+      default: if(typeof animLibApply === 'function') animLibApply(name,k,R,W,H);
     }};
   if(c.anim.in!=='none' && lt < c.anim.inDur) ap(c.anim.in, lt/c.anim.inDur);
   if(c.anim.out!=='none' && lt > dur-c.anim.outDur) ap(c.anim.out, (dur-lt)/c.anim.outDur);
@@ -850,6 +889,7 @@ function animState(c,lt,dur){
     case 'heartbeat': { const p=lt%1; if(p<.5) R.s*=1+.08*Math.max(0,Math.sin(p*Math.PI*4)); break; }
     case 'bounceLoop': R.dy-=Math.abs(Math.sin(lt*4))*H*.03; break;
     case 'blurPulse': R.fx=['blur',(.5+.5*Math.sin(lt*3))*.6]; break;
+    default: if(c.anim.loop !== 'none' && typeof loopLibApply === 'function') loopLibApply(c.anim.loop,lt,dur,R,W,H);
   }
   return R;
 }
@@ -999,6 +1039,7 @@ function ovAnim(o,lt,u){
       case 'tiltIn': R.r+=(1-e)*.3; R.dx+=(1-e)*u*.2; R.a*=e; break;
       case 'wipeIn': R.wipe=Math.min(R.wipe,e); R.mT=13; R.mP=e; break;
       case 'flashIn': R.fx=['bright',1-e]; R.a*=Math.min(1,k*4); break;
+      default: if(typeof animLibApply === 'function') animLibApply(n,k,R,u,u);
     }};
   const A=o.anim, D=o.dur;
   if(A.in!=='none' && lt < A.inDur){ R.inK=clamp(lt/A.inDur,0,1); ap(A.in, R.inK); }
@@ -1017,6 +1058,7 @@ function ovAnim(o,lt,u){
     case 'zoomInOut': R.s*=1+.12*Math.sin(lt*2); break;
     case 'glitchLoop': if(Math.sin(lt*13)>.75){ R.fx=['rgbsplit',.8]; R.dx+=Math.sin(lt*91)*u*.01; } break;
     case 'rainbow': R.hue=(lt*120)%360+1; break;
+    default: if(A.loop !== 'none' && typeof loopLibApply === 'function') loopLibApply(A.loop,lt,D,R,u,u);
   }
   return R;
 }
@@ -1037,7 +1079,9 @@ function drawText(ctx,o,an,u,size,maxW,lt){
   if(an.wipe < 1){ ctx.save(); ctx.beginPath(); ctx.rect(-w/2-padX,-h/2-padY,(w+padX*2)*an.wipe,h+padY*2); ctx.clip(); }
   if(o.bgOn){ ctx.fillStyle = hexA(o.bgColor, o.bgAlpha/100); rr(ctx,-w/2-padX,-h/2-padY,w+padX*2,h+padY*2,px*.22); ctx.fill(); }
   ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  const TS = o.tfx && typeof TFX_MAP !== 'undefined' ? TFX_MAP[o.tfx] : null;
   const glyph = (s,x,y) => {
+    if(TS){ drawStyledText(ctx, s, x, y, px, TS.st); return; }
     if(o.shadow > 0){ ctx.shadowColor = o.shadowColor; ctx.shadowBlur = o.shadow*px/50; }
     if(o.strokeW > 0){ ctx.strokeStyle = o.stroke; ctx.lineWidth = o.strokeW*px/40; ctx.strokeText(s,x,y); ctx.shadowColor = 'transparent'; }
     ctx.fillStyle = color; ctx.fillText(s,x,y); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
@@ -1132,8 +1176,9 @@ function drawSel(ctx,h,u){
 function drawOverlays(ctx){
   const W=out.width, H=out.height, u=Math.min(W,H), t=S.time;
   hits.clear();
-  for(const o of S.overlays){
+  for(const o of zOrder()){
     if(t < o.start || t >= o.start+o.dur) continue;
+    if(S.trk && S.trk.ov[o.track] && S.trk.ov[o.track].hide) continue;
     const lt = t - o.start, an = ovAnim(o, lt, u);
     const X=ev(o,'x',lt), Y=ev(o,'y',lt), SZ=ev(o,'size',lt), R=ev(o,'rot',lt), OP=ev(o,'opacity',lt);
     const cx = X/100*W + an.dx, cy = Y/100*H + an.dy, rot = R*Math.PI/180 + an.r;
@@ -1144,6 +1189,7 @@ function drawOverlays(ctx){
       ctx.save(); ctx.globalCompositeOperation = o.blend || 'source-over';
       ctx.translate(cx,cy); ctx.rotate(rot); ctx.scale(an.s*an.sx, an.s*an.sy);
       ctx.globalAlpha = clamp(OP/100*an.a, 0, 1);
+      if(an.mT && an.mT !== 13){ if([1,3,10,11].includes(an.mT)){ ctx.beginPath(); ctx.arc(0,0,Math.max(.1,an.mP)*u*.75/Math.max(.05,an.s),0,7); ctx.clip(); } else ctx.globalAlpha *= clamp(an.mP,0,1); }
       if(an.blur > .5) ctx.filter = `blur(${an.blur*u/720}px)`;
       box = o.type==='text' ? drawText(ctx,o,an,u,SZ,o.caption ? W*.86/Math.max(.2,an.s) : 0,lt) : drawSticker(ctx,o,u,SZ);
       ctx.restore();
@@ -1396,9 +1442,10 @@ function ovAction(a){
   if(a==='center'){ setVal(o,'x',50); setVal(o,'y',50); }
   if(a==='fillv' && isMediaOv(o)){ const el=mediaEl(o); if(el){ const [vw,vh]=elSize(el); const W=out.width,H=out.height,u=Math.min(W,H); setVal(o,'size',Math.round(Math.max(W/u,H/u*vw/vh)*100)); setVal(o,'x',50); setVal(o,'y',50); } }
   if(a==='capall'){ const keys=['font','bold','italic','align','color','stroke','strokeW','bgOn','bgColor','bgAlpha','shadow','shadowColor','size','y','anim']; for(const x of S.overlays) if(x!==o && x.caption) for(const k of keys) x[k]=deep(o[k]); }
-  const i=S.overlays.indexOf(o);
-  if(a==='up' && i<S.overlays.length-1){ S.overlays.splice(i,1); S.overlays.splice(i+1,0,o); }
-  if(a==='down' && i>0){ S.overlays.splice(i,1); S.overlays.splice(i-1,0,o); }
+  if(a==='up' || a==='down'){   // move one layer up / down: swap with whatever overlaps on the neighbour track
+    const t0=o.track|0, t1=a==='up'?t0+1:t0-1;
+    if(t1>=0){ for(const x of S.overlays) if(x!==o && x.track===t1 && overlapT(x,o)) x.track=t0; o.track=t1; layout(); }
+  }
   renderInspector(); renderTimeline();
 }
 function extractAudio(c){
@@ -1470,8 +1517,9 @@ function fitCanvas(){
 const pts = new Map(); let wheelT = 0, wheelTimer = 0;
 function toCv(e){ const r=out.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*out.width, y:(e.clientY-r.top)/r.height*out.height}; }
 function hitAt(p){
-  for(let i=S.overlays.length-1;i>=0;i--){
-    const o=S.overlays[i], h=hits.get(o.id); if(!h) continue;
+  const zo=zOrder();
+  for(let i=zo.length-1;i>=0;i--){
+    const o=zo[i], h=hits.get(o.id); if(!h) continue; if(S.trk && S.trk.ov[o.track] && S.trk.ov[o.track].lock) continue;
     const dx=p.x-h.cx, dy=p.y-h.cy, cs=Math.cos(-h.rot), sn=Math.sin(-h.rot), s=Math.max(.05,h.s);
     const x=(dx*cs-dy*sn)/s, y=(dx*sn+dy*cs)/s;
     if(Math.abs(x)<=h.hw+8 && Math.abs(y)<=h.hh+8) return o;
@@ -1634,6 +1682,7 @@ self.onmessage = async e => {
     self.postMessage({ type: 'done', chunks: r.chunks && r.chunks.length ? r.chunks : [{ timestamp: [0, audio.length / 16000], text: r.text }] });
   } catch (err) { self.postMessage({ type: 'error', msg: String(err && err.message || err) }); }
 };`;
+let capLangNow='';
 async function runCaptions(){
   const src=capSource(); if(!src || capBusy) return;
   const st=$('#cStatus'), bar=$('#cBar'), btn=$('#cRun');
@@ -1658,19 +1707,25 @@ async function runCaptions(){
         else if(d.type==='error') reject(new Error(d.msg));
       };
       capWorker.onerror=e=>reject(new Error(e.message||'Worker error (internet ಬೇಕು)'));
-      capWorker.postMessage({audio,model:'Xenova/whisper-'+$('#cModel').value,language:$('#cLang').value},[audio.buffer]);
+      capLangNow=$('#cLang').value;
+      capWorker.postMessage({audio,model:'Xenova/whisper-'+$('#cModel').value,language:capLangNow},[audio.buffer]);
     });
     const segs=res.map(ch=>{ const a=ch.timestamp[0]||0, b=ch.timestamp[1]!=null?ch.timestamp[1]:a+2; return {start:map(from+a), end:map(from+b), text:(ch.text||'').trim()}; })
       .filter(s=>s.text && s.end>s.start).flatMap(splitSeg);
     if(!segs.length) throw new Error('ಮಾತು ಕೇಳಿಸಲಿಲ್ಲ');
+    let tr=false;   // small Whisper models often write Kannada in English letters → convert to ಕನ್ನಡ script
+    if(capLangNow==='kannada' && latinRatio(segs.map(x=>x.text).join(' '))>.4){ segs.forEach(x=>x.text=translitKn(x.text)); tr=true; }
     addCaptions(segs);
-    st.textContent=`✅ ${segs.length} captions ಸೇರಿಸಲಾಗಿದೆ`;
+    st.textContent=`✅ ${segs.length} captions ಸೇರಿಸಲಾಗಿದೆ`+(tr?' (English ಅಕ್ಷರದಲ್ಲಿ ಬಂದದ್ದನ್ನು ಕನ್ನಡ ಲಿಪಿಗೆ ಬದಲಿಸಲಾಗಿದೆ — ತಪ್ಪಿದ್ದರೆ edit ಮಾಡಿ. ಉತ್ತಮ ಕನ್ನಡಕ್ಕೆ Small model ಬಳಸಿ)':'');
   }catch(e){ st.textContent='❌ '+e.message; capWorker&&capWorker.terminate(); capWorker=null; }
   capBusy=false; if($('#cRun')) $('#cRun').disabled=false;
 }
 function addCaptions(segs){
   pushUndo();
-  for(const s of segs) S.overlays.push(newOverlay('text',{...deep(CAPTION_STYLE),text:s.text,start:s.start,dur:Math.max(.4,s.end-s.start)}));
+  segs = [...segs].sort((a,b)=>a.start-b.start);
+  const tr = S.overlays.length ? Math.max(...S.overlays.map(o=>o.track|0))+1 : 0;   // all captions on one new track
+  segs.forEach((s,i) => { const nx = segs[i+1], end = nx ? Math.min(s.end, nx.start) : s.end;
+    S.overlays.push(newOverlay('text',{...deep(CAPTION_STYLE),text:s.text,start:s.start,dur:Math.max(.3,end-s.start),track:tr})); });
   afterEdit();
 }
 const srtT = t => { const ms=Math.round(Math.max(0,t)*1000); return `${pad(Math.floor(ms/3600000))}:${pad(Math.floor(ms/60000)%60)}:${pad(Math.floor(ms/1000)%60)},${String(ms%1000).padStart(3,'0')}`; };
@@ -1723,7 +1778,7 @@ function idbDelBlobs(pid){
 function projectData(){
   return {clips:deep(S.clips), overlays:deep(S.overlays), audios:deep(S.audios),
     media:S.media.map(({id,name,type,duration,thumb,w,h,strip,stripN})=>({id,name,type,duration,thumb,w,h,strip,stripN})),
-    ratio:S.ratio, quality:S.quality, pk720:true, bg:S.bg, time:S.time, mainMute:S.mainMute, mainHide:S.mainHide,
+    ratio:S.ratio, quality:S.quality, pk720:true, trk:S.trk||{ov:{},au:{}}, bg:S.bg, time:S.time, mainMute:S.mainMute, mainHide:S.mainHide,
     luts:S.luts.filter(l=>l.custom).map(l=>({id:l.id,name:l.name,n:l.n,data:l.data}))};
 }
 function makeThumb(){
@@ -1753,7 +1808,7 @@ function resetState(){
   for(const k in images) delete images[k];
   for(const k in mediaBlobs) delete mediaBlobs[k];
   S.media=[]; S.clips=[]; S.overlays=[]; S.audios=[]; S.sel=null; S.time=0; active=null; pairKey='';
-  undoS.length=0; redoS.length=0; S.mainMute=false; S.mainHide=false;
+  undoS.length=0; redoS.length=0; S.mainMute=false; S.mainHide=false; S.trk={ov:{},au:{}};
   for(const k in segCache) delete segCache[k];
   S.luts=S.luts.filter(l=>!l.custom);
 }
@@ -1785,7 +1840,7 @@ async function openProject(id){
   [...S.clips,...S.overlays,...S.audios].forEach(normItem);
   const q0 = d.quality || 720;   // older projects stored canvas offsets in export-resolution pixels
   if(q0 !== 720 && !d.pk720){ const f = 720/q0; for(const c of S.clips){ c.tf.x = Math.round(c.tf.x*f); c.tf.y = Math.round(c.tf.y*f); (c.kf||[]).forEach(k => { if(k.v['tf.x']!=null) k.v['tf.x']*=f; if(k.v['tf.y']!=null) k.v['tf.y']*=f; }); } }
-  S.quality = 720;
+  S.quality = 720; S.trk = d.trk || {ov:{},au:{}};
   S.time=0; setCanvas(); hideHome(); layout();
   S.sel=S.clips[0]?S.clips[0].id:null;
   afterEdit(); seek(clamp(d.time||0,0,S.total)); renderMediaPanel(); updateProjName();

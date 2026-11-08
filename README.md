@@ -10,7 +10,7 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - **ಬಲ:** Video / Audio / Speed / Animation / Transition / Adjust tabs + Basic · Remove BG · Mask · Retouch (Effects ಈಗ ಎಡಗಡೆ ಮಾತ್ರ)
 - **ಕೆಳಗೆ:** Timeline — overlay tracks ಮೇಲೆ, main track ಮಧ್ಯ, audio tracks ಕೆಳಗೆ. Main ಗೆ ಎಳೆದರೆ clip, ಮೇಲೆ ಎಳೆದರೆ overlay.
 
-## ✅ Features (Phase 1 – 7)
+## ✅ Features (Phase 1 – 8)
 | ವಿಭಾಗ | Features |
 |---|---|
 | Timeline | Multi-clip, trim (clip ಅಂಚು drag), split (S), delete, duplicate, move, undo/redo, zoom |
@@ -45,6 +45,11 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 | Phase 7 – Effects | ಎಡಗಡೆ ಮಾತ್ರ: **Video effects** 28 (Fisheye, Wave, Swirl, Neon edges, Thermal, Night vision, CRT, Light leak, Cinema bars, Dreamy glow…) + **Body effects** 7 (Portrait blur, Color pop, Spotlight, Body glow, Neon outline, Color background, Ghost) |
 | Phase 7 – Audio | Audacity ತರಹ: 10-band graphic EQ + presets, Compressor, Noise gate, Limiter, Amplify, Pitch shift, Echo (delay/feedback), Reverb (Room/Hall/Church/Plate/Stadium), Phaser, Wah, Tremolo, Distortion, High/Low-pass, Reverse · ಮೃದುವಾದ **Mic Hog** + Studio, Podcast, Chipmunk, Monster, Cave, Underwater |
 | Phase 7 – Edit | Right-click menu (Extract / **Restore audio**, Mute, Freeze frame, **Compound clip** (Ctrl/Shift+click), Reverse audio, Copy/Paste attributes, Move to overlay/main…) · Media delete (✕ / right-click) · Speed curve ಗೆರೆ ಹಿಡಿದು ಎಳೆಯಬಹುದು · Scrub ಮಾಡುವಾಗ blink ಇಲ್ಲ · Overlay video filmstrip |
+| Phase 8 – Timeline | CapCut ತರಹ **ಸ್ಥಿರ tracks** (ಎಳೆದಾಗ item ಬೇರೆ track ಗೆ ಹಾರುವುದಿಲ್ಲ; ಮೇಲೆ/ಕೆಳಗೆ ಎಳೆದು track ಬದಲಿಸಬಹುದು) · ಮೇಲಿನ track ಮೇಲೆ ಕಾಣುತ್ತದೆ (video → text → video + Remove BG ಸರಿಯಾಗಿ) · Mouse ಎಳೆದು **ಹಲವು items select** (rubber-band), Ctrl/Shift+click, Ctrl+A, ಒಟ್ಟಿಗೆ move/delete · Snapping (Alt = snap ಇಲ್ಲ) · Track ಗೆ 👁 hide / 🔇 mute / 🔒 lock · Ctrl+wheel zoom |
+| Phase 8 – Layout | Left / Player / Right / Timeline ನಡುವಿನ ಅಂತರ ಎಳೆದು **ಗಾತ್ರ ಬದಲಿಸಿ** (double-click = reset) |
+| Phase 8 – Animations | 100+ (Basic, Light, Glitch, Mask, 3D, Vibration, Zoom, Blur, Rotate, Distort + Text) · Search · Mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview |
+| Phase 8 – Voice | 48 voices: Voice filters (Crisp Mic, Live Stage, Divine Echo, 8D, Vinyl, Old Phone…) + Voice characters (Chipmunk, Giant, Alien, Ghost, Old Man, Villain, 8-bit…) · Search · Fine tune |
+| Phase 8 – Text | 33 **Text effects** (Neon, Gold, Chrome, Fire, 3D, Comic, Retro 80s, Glitch, Sticker…) · 🗣 **Text to speech** (ಕನ್ನಡ / English / हिन्दी, 10 voice styles, speed) · ಕನ್ನಡ captions English ಅಕ್ಷರದಲ್ಲಿ ಬಂದರೆ ತಾನಾಗಿ ಕನ್ನಡ ಲಿಪಿಗೆ |
 | Export | Name, Resolution 480p–**2K–4K**, Bit rate (Lower/Recommended/Higher/Custom), Codec (H.264 / HEVC / VP9 / AV1 / VP8 — browser support ಆಧರಿಸಿ), Format MP4/WebM, Frame rate 24–60, Audio only, **GIF export** |
 
 > Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ — 1 ನಿಮಿಷದ video ಗೆ ಸುಮಾರು 1 ನಿಮಿಷ. ಆ ಸಮಯದಲ್ಲಿ tab ತೆರೆದಿಡಿ. 2K/4K export ಗೆ ಶಕ್ತಿಶಾಲಿ PC ಬೇಕು — ನಿಧಾನದ device ನಲ್ಲಿ frames ಕಡಿಮೆಯಾಗಬಹುದು.
@@ -68,6 +73,7 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - **Phase 6 – ಮಾರಾಟ (₹200/ವರ್ಷ):** Free version ನಲ್ಲಿ watermark + 720p; Pro ನಲ್ಲಿ 1080p/4K, no watermark, premium LUT/effects. Payment: Razorpay ಅಥವಾ Play Store billing; license check: Firebase/Supabase free tier.
 
 ## ⚠️ ಗಮನಿಸಿ
+- **Text to speech** voices (Meta MMS) *non-commercial* license ನಲ್ಲಿವೆ — ₹200 ಮಾರಾಟದ version ನಲ್ಲಿ ಬಳಸುವ ಮೊದಲು ಬೇರೆ (commercial) TTS ಬೇಕು. ಮೊದಲ ಬಾರಿ ~38 MB download.
 - Projects ಆ browser/device ನಲ್ಲಿ ಮಾತ್ರ ಇರುತ್ತವೆ. Browser data clear ಮಾಡಿದರೆ ಹೋಗುತ್ತವೆ.
 - Auto background removal ಮೊದಲ ಬಾರಿ AI model (~5 MB) download ಮಾಡುತ್ತದೆ; internet ಬೇಕು.
 - Auto captions ಮೊದಲ ಬಾರಿ AI model (40–250 MB) download ಮಾಡುತ್ತದೆ; internet ಬೇಕು.
