@@ -7,10 +7,10 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - **Home:** Create project banner, quick tools (Auto captions, Remove BG, Voice-over, Sound effects), projects grid
 - **ಎಡ:** Media · Audio · Text · Stickers · Effects · Transitions · Captions · Filters · Adjustment (sub-menu ಸಹಿತ)
 - **ಮಧ್ಯ:** Player (timecode, play, background, ratio, full screen)
-- **ಬಲ:** Video / Audio / Speed / Animation / Transition / Adjust tabs + Basic · Remove BG · Mask · Retouch · Effect
+- **ಬಲ:** Video / Audio / Speed / Animation / Transition / Adjust tabs + Basic · Remove BG · Mask · Retouch (Effects ಈಗ ಎಡಗಡೆ ಮಾತ್ರ)
 - **ಕೆಳಗೆ:** Timeline — overlay tracks ಮೇಲೆ, main track ಮಧ್ಯ, audio tracks ಕೆಳಗೆ. Main ಗೆ ಎಳೆದರೆ clip, ಮೇಲೆ ಎಳೆದರೆ overlay.
 
-## ✅ Features (Phase 1 – 6)
+## ✅ Features (Phase 1 – 7)
 | ವಿಭಾಗ | Features |
 |---|---|
 | Timeline | Multi-clip, trim (clip ಅಂಚು drag), split (S), delete, duplicate, move, undo/redo, zoom |
@@ -40,9 +40,14 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 | Auto captions | 💬 Whisper AI browser ನಲ್ಲೇ (ಕನ್ನಡ, English, ಹಿಂದಿ…), SRT import/export, ಎಲ್ಲಾ captions ಗೆ ಒಂದೇ style |
 | Phase 5 (UI) | 🤖 Auto background removal (AI, browser ನಲ್ಲೇ), 💆 Retouch (smooth, whitening, clear), 🔔 27 free sound effects (copyright ಇಲ್ಲ), 🎧 Voice changer tiles + preview, ▶ Animation/transition/effect tiles preview, Mirror, Rotate 90°, Delete left/right (Q/W), main track mute/hide |
 | Phase 6 | 📚 Library: 25 animated stock graphics (Subscribe + Bell, Like, Follow, Countdown, Lower third, Neon hearts, Fireworks, Snow, Confetti…) — copyright ಇಲ್ಲ · ⭐ 28 social/badge stickers · 🔔 62 sound effects · 🎚 Reduce noise, Enhance voice, Normalize loudness, Isolate voice · 🎯 Motion tracking · ◐ Mask ಅನ್ನು Player ನಲ್ಲಿ ನೇರವಾಗಿ ಎಳೆಯುವುದು · ⏱ Speed curve + Add point · 36 transitions · 30+ In/Out + 15 loop animations (ಅಕ್ಷರ-ಅಕ್ಷರ text animation ಸಹಿತ) · Timeline filmstrip |
-| Export | 480p / 720p / 1080p (Chrome ನಲ್ಲಿ MP4, ಇಲ್ಲದಿದ್ದರೆ WebM) |
+| Phase 7 – Filters | 🎬 48 professional cinematic filters (Teal & Orange, Blockbuster, Golden Hour, Film 400, Bleach Bypass, Moody, Cyberpunk, B&W…) — 8 categories, ನಿಮ್ಮ clip ನ frame ಮೇಲೆ ನಿಜವಾದ preview, 3D LUT ಆಗಿ GPU ನಲ್ಲಿ |
+| Phase 7 – Adjust | Exposure, Highlights, Shadows, Vibrance, Hue + ಹಳೆಯವು (Light / Color / Effects ವಿಭಾಗಗಳು) |
+| Phase 7 – Effects | ಎಡಗಡೆ ಮಾತ್ರ: **Video effects** 28 (Fisheye, Wave, Swirl, Neon edges, Thermal, Night vision, CRT, Light leak, Cinema bars, Dreamy glow…) + **Body effects** 7 (Portrait blur, Color pop, Spotlight, Body glow, Neon outline, Color background, Ghost) |
+| Phase 7 – Audio | Audacity ತರಹ: 10-band graphic EQ + presets, Compressor, Noise gate, Limiter, Amplify, Pitch shift, Echo (delay/feedback), Reverb (Room/Hall/Church/Plate/Stadium), Phaser, Wah, Tremolo, Distortion, High/Low-pass, Reverse · ಮೃದುವಾದ **Mic Hog** + Studio, Podcast, Chipmunk, Monster, Cave, Underwater |
+| Phase 7 – Edit | Right-click menu (Extract / **Restore audio**, Mute, Freeze frame, **Compound clip** (Ctrl/Shift+click), Reverse audio, Copy/Paste attributes, Move to overlay/main…) · Media delete (✕ / right-click) · Speed curve ಗೆರೆ ಹಿಡಿದು ಎಳೆಯಬಹುದು · Scrub ಮಾಡುವಾಗ blink ಇಲ್ಲ · Overlay video filmstrip |
+| Export | Name, Resolution 480p–**2K–4K**, Bit rate (Lower/Recommended/Higher/Custom), Codec (H.264 / HEVC / VP9 / AV1 / VP8 — browser support ಆಧರಿಸಿ), Format MP4/WebM, Frame rate 24–60, Audio only, **GIF export** |
 
-> Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ — 1 ನಿಮಿಷದ video ಗೆ ಸುಮಾರು 1 ನಿಮಿಷ. ಆ ಸಮಯದಲ್ಲಿ tab ತೆರೆದಿಡಿ.
+> Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ — 1 ನಿಮಿಷದ video ಗೆ ಸುಮಾರು 1 ನಿಮಿಷ. ಆ ಸಮಯದಲ್ಲಿ tab ತೆರೆದಿಡಿ. 2K/4K export ಗೆ ಶಕ್ತಿಶಾಲಿ PC ಬೇಕು — ನಿಧಾನದ device ನಲ್ಲಿ frames ಕಡಿಮೆಯಾಗಬಹುದು.
 
 ## 🚀 GitHub ನಲ್ಲಿ ಉಚಿತವಾಗಿ ಹಾಕುವುದು (5 ನಿಮಿಷ)
 1. github.com ನಲ್ಲಿ account ತೆರೆಯಿರಿ → **New repository** → ಹೆಸರು `chitracut` → **Public** → Create.
@@ -53,7 +58,7 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 6. **PC software ಆಗಿ:** Chrome/Edge ನಲ್ಲಿ address bar ನ install ⊕ icon ಒತ್ತಿ.
 
 ## ⌨️ Shortcuts
-`Space` play/pause · `T` text · `K` keyframe · `Esc` pick cancel · `Ctrl+S` save · `Q`/`W` delete left/right · `Ctrl+D` duplicate · `S` / `Ctrl+B` split · `Delete` · `Ctrl+Z` / `Ctrl+Y` · `←` `→` frame step
+`Space` play/pause · Right-click = menu · `Ctrl/Shift+click` = ಹಲವು clips ಆರಿಸಿ · `T` text · `K` keyframe · `Esc` pick cancel · `Ctrl+S` save · `Q`/`W` delete left/right · `Ctrl+D` duplicate · `S` / `Ctrl+B` split · `Delete` · `Ctrl+Z` / `Ctrl+Y` · `←` `→` frame step
 
 ## 🗺️ Roadmap (ಮುಂದಿನ ಹಂತಗಳು)
 - ~~Phase 2: Text, stickers, image clips, transitions~~ ✅

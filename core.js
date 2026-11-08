@@ -41,18 +41,32 @@ const deep = o => JSON.parse(JSON.stringify(o));
 
 /* ================= DEFAULTS ================= */
 const defMask = () => ({type:'none',x:0,y:0,w:60,h:60,rot:0,feather:5,round:0,invert:false});
-const defAdj = () => ({brightness:0,contrast:0,saturation:0,temp:0,tint:0,fade:0,vignette:0,grain:0,sharpen:0});
+const defAdj = () => ({exposure:0,brightness:0,contrast:0,highlights:0,shadows:0,saturation:0,vibrance:0,hue:0,temp:0,tint:0,fade:0,vignette:0,grain:0,sharpen:0});
 const defFx = () => ({type:'none',amount:60,speed:50});
-const defAudio = () => ({voice:'none',bass:0,treble:0,echo:0,reverb:0,enhance:false,isolate:false,norm:false});
+const defAudio = () => ({voice:'none',bass:0,treble:0,echo:0,reverb:0,enhance:false,isolate:false,norm:false,
+  eq:[0,0,0,0,0,0,0,0,0,0], comp:false, compThr:-24, compRatio:4, limiter:false, gate:false, gateThr:-45, pitch:0,
+  echoTime:.3, echoFb:35, reverbSize:'hall', dist:0, phaser:0, wah:0, trem:0, hp:0, lp:0, amp:0});
+const defBfx = () => ({type:'none',amount:70,color:'#20d5ec'});
+const EQ_F = [31,62,125,250,500,1000,2000,4000,8000,16000];
+// fill fields that older projects / older items don't have
+function normItem(it){
+  if(!it) return it;
+  if(it.adj) it.adj = Object.assign(defAdj(), it.adj);
+  if(it.audio){ it.audio = Object.assign(defAudio(), it.audio); if(!Array.isArray(it.audio.eq) || it.audio.eq.length !== 10) it.audio.eq = defAudio().eq; }
+  if(it.adj && !it.bfx) it.bfx = defBfx();
+  return it;
+}
+// canvas positions (tf.x / tf.y) are stored for a 720p canvas and scaled for other export sizes
+const PK = () => Math.min(cv.width, cv.height)/720;
 const clipDefaults = () => ({in:0, out:3, speed:1, curve:null, curveName:'none', volume:100, fadeIn:0, fadeOut:0, opacity:100,
-  tf:{scale:100,x:0,y:0,rot:0,flip:false}, kf:[], rt:{smooth:0,bright:0,clear:0}, rmbg:false, rmbgInv:false, ck:{on:false,color:'#00ff00',sim:35,smooth:10,spill:30}, filter:'none', filterAmt:80, adj:defAdj(), lut:'', lutAmt:100, mask:defMask(), fx:defFx(),
+  tf:{scale:100,x:0,y:0,rot:0,flip:false}, kf:[], rt:{smooth:0,bright:0,clear:0}, rmbg:false, rmbgInv:false, ck:{on:false,color:'#00ff00',sim:35,smooth:10,spill:30}, filter:'none', filterAmt:80, adj:defAdj(), lut:'', lutAmt:100, mask:defMask(), fx:defFx(), bfx:defBfx(),
   anim:{in:'none',out:'none',loop:'none',inDur:0.5,outDur:0.5}, trans:{type:'none',dur:0.6}, audio:defAudio()});
 const ovDefaults = type => ({text:'', mediaId:null, start:0, dur:3, x:50, y:50,
   size: type==='image' ? 40 : type==='video' ? 50 : type==='sticker' ? 90 : 48, rot:0, opacity:100, kf:[], blend:'source-over', flip:false, rt:{smooth:0,bright:0,clear:0}, rmbg:false, rmbgInv:false,
   in:0, speed:1, volume:100, caption:false,
   font:'Noto Sans Kannada', bold:true, italic:false, align:'center',
   color:'#ffffff', stroke:'#000000', strokeW:0, bgOn:false, bgColor:'#000000', bgAlpha:70, shadow:30, shadowColor:'#000000',
-  filter:'none', filterAmt:80, adj:defAdj(), lut:'', lutAmt:100, mask:defMask(), fx:defFx(),
+  filter:'none', filterAmt:80, adj:defAdj(), lut:'', lutAmt:100, mask:defMask(), fx:defFx(), bfx:defBfx(),
   ck:{on:false,color:'#00ff00',sim:35,smooth:10,spill:30},
   anim: (type==='image'||type==='video') ? {in:'none',out:'none',loop:'none',inDur:0.5,outDur:0.5} : {in:'fade',out:'fade',loop:'none',inDur:0.5,outDur:0.5}});
 const audDefaults = () => ({type:'audio', kind:'music', start:0, dur:1, in:0, speed:1, volume:100, fadeIn:0, fadeOut:0, audio:defAudio()});
@@ -75,7 +89,7 @@ const CURVE_OPTS = [['none','None'],['montage','Montage'],['hero','Hero'],['bull
 const ANIM_IN = [['none','None'],['fade','Fade In'],['zoomIn','Zoom In'],['zoomOut','Zoom Out'],['slideL','Slide Left'],['slideR','Slide Right'],['slideU','Slide Up'],['slideD','Slide Down'],['spin','Spin'],['shake','Shake'],['rotateIn','Rotate In'],['flipX','Flip X'],['flipY','Flip Y'],['dropIn','Drop'],['riseUp','Rise Up'],['blurIn','Blur In'],['glitchIn','Glitch In'],['swingIn','Swing'],['shrinkIn','Shrink'],['growIn','Grow'],['wipeIn','Wipe'],['circleIn','Circle'],['flashIn','Flash'],['pixelIn','Pixelate'],['tiltIn','Tilt']];
 const ANIM_OUT = ANIM_IN.map(([k,n]) => [k, n.replace(' In',' Out')]);
 const ANIM_LOOP = [['none','None'],['kenburns','Ken Burns'],['zoomOutSlow','Slow Zoom Out'],['pulse','Pulse'],['sway','Sway'],['zoomInOut','Zoom In-Out'],['rock','Rock'],['wobble','Wobble'],['jelly','Jelly'],['glitchLoop','Glitch'],['flashLoop','Flash'],['rotateLoop','Rotate'],['shakeLoop','Shake'],['heartbeat','Heartbeat'],['bounceLoop','Bounce'],['blurPulse','Blur Pulse']];
-const VOICES = [['none','None'],['michog','Mic Hog'],['megaphone','Megaphone'],['telephone','Telephone'],['robot','Robot'],['lofi','Lo-Fi'],['deep','Deep'],['radio','Radio']];
+const VOICES = [['none','None'],['michog','Mic Hog'],['megaphone','Megaphone'],['telephone','Telephone'],['robot','Robot'],['lofi','Lo-Fi'],['deep','Deep'],['radio','Radio'],['chipmunk','Chipmunk'],['monster','Monster'],['studio','Studio Voice'],['podcast','Podcast'],['cave','Cave'],['underwater','Underwater']];
 const TRANS = [['none','None'],['fade','Dissolve'],['black','Fade Black'],['white','Flash White'],['slideL','Slide Left'],['slideR','Slide Right'],['slideU','Slide Up'],['slideD','Slide Down'],['wipeL','Wipe Left'],['wipeR','Wipe Right'],['zoomIn','Zoom In'],['zoomOut','Zoom Out'],['spin','Spin'],['glitch','Glitch'],['circleOpen','Circle Open'],['circleClose','Circle Close'],['diamond','Diamond'],['clock','Clock Wipe'],['blinds','Blinds'],['blindsV','Blinds V'],['dissolve','Pixel Dissolve'],['doors','Doors'],['barn','Barn Door'],['heart','Heart'],['star','Star'],['luma','Luma Fade'],['blurDissolve','Blur'],['pixelT','Pixelate'],['zoomBlur','Zoom Blur'],['whipL','Whip Left'],['whipR','Whip Right'],['flashShake','Shake & Flash'],['rgbGlitch','RGB Glitch'],['spinZoom','Spin Zoom'],['flip','Flip'],['cube','Cube'],['dropIn','Drop In']];
 const FONTS = [['Noto Sans Kannada','ಕನ್ನಡ Sans'],['Baloo Tamma 2','ಬಲೂ ತಮ್ಮ'],['Anek Kannada','ಅನೇಕ್'],['Tiro Kannada','ತಿರೋ'],['Noto Serif Kannada','ಕನ್ನಡ Serif'],['Poppins','Poppins'],['Montserrat','Montserrat'],['Oswald','Oswald'],['Bebas Neue','Bebas Neue'],['Anton','Anton'],['Pacifico','Pacifico'],['Lobster','Lobster'],['Dancing Script','Dancing'],['Permanent Marker','Marker']];
 const TEXT_PRESETS = [
@@ -96,8 +110,13 @@ const OV_LOOP = [['none','None'],['pulse','Pulse'],['shake','Shake'],['float','F
 const MASKS = [['none','None'],['linear','Linear'],['mirror','Mirror'],['circle','Circle'],['rect','Rectangle'],['heart','❤ Heart'],['star','★ Star']];
 const MASK_T = {none:0,linear:1,mirror:2,circle:3,rect:4,heart:5,star:6};
 const BLENDS = [['source-over','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['color-dodge','Color Dodge'],['color-burn','Color Burn'],['hard-light','Hard Light'],['soft-light','Soft Light'],['difference','Difference'],['exclusion','Exclusion'],['hue','Hue'],['saturation','Saturation'],['color','Color'],['luminosity','Luminosity']];
-const FX = [['none','None'],['rgbsplit','RGB Split'],['glitch','Glitch'],['vhs','VHS'],['oldfilm','Old Film'],['shake','Shake'],['zoompulse','Zoom Pulse'],['flash','Flash'],['rainbow','Rainbow'],['pixelate','Pixelate'],['blur','Blur'],['mirror','Mirror'],['kaleido','4-Split'],['invert','Invert']];
-const FX_T = {none:0,rgbsplit:1,glitch:2,vhs:3,pixelate:4,mirror:5,kaleido:6,invert:7,blur:8,oldfilm:9,shake:10,zoompulse:11,flash:12,bright:13,rainbow:14};
+const FX = [['none','None'],['rgbsplit','RGB Split'],['glitch','Glitch'],['vhs','VHS'],['oldfilm','Old Film'],['shake','Shake'],['zoompulse','Zoom Pulse'],['flash','Flash'],['rainbow','Rainbow'],['pixelate','Pixelate'],['blur','Blur'],['mirror','Mirror'],['kaleido','4-Split'],['invert','Invert'],
+  ['fisheye','Fisheye'],['wave','Wave'],['swirl','Swirl'],['edgeneon','Neon Edges'],['posterize','Posterize'],['duotone','Duotone'],['thermal','Thermal'],['nightvision','Night Vision'],['crt','CRT TV'],['mirrorv','Mirror V'],['letterbox','Cinema Bars'],['lightleak','Light Leak'],['chroma','Lens Aberration'],['glow','Dreamy Glow']];
+const FX_CATS = [['Trending',['glitch','rgbsplit','shake','zoompulse','flash','lightleak','glow','letterbox']],['Retro',['vhs','oldfilm','crt','posterize','duotone']],['Distort',['fisheye','wave','swirl','pixelate','blur','chroma']],['Color',['rainbow','invert','thermal','nightvision','edgeneon']],['Split',['mirror','mirrorv','kaleido']]];
+const BFX = [['none','None'],['portraitBlur','Portrait Blur'],['colorPop','Color Pop'],['spotlight','Spotlight'],['bodyGlow','Body Glow'],['neonOutline','Neon Outline'],['bgTint','Color Background'],['ghost','Ghost Echo']];
+const BFX_T = {none:0,portraitBlur:1,colorPop:2,spotlight:3,bodyGlow:4,neonOutline:5,bgTint:6,ghost:7};
+const FX_T = {none:0,rgbsplit:1,glitch:2,vhs:3,pixelate:4,mirror:5,kaleido:6,invert:7,blur:8,oldfilm:9,shake:10,zoompulse:11,flash:12,bright:13,rainbow:14,
+  fisheye:16,wave:17,swirl:18,edgeneon:19,posterize:20,duotone:21,thermal:22,nightvision:23,crt:24,mirrorv:25,letterbox:26,lightleak:27,chroma:28,glow:29};
 const CAP_LANGS = [['kannada','ಕನ್ನಡ'],['english','English'],['hindi','हिन्दी'],['tamil','தமிழ்'],['telugu','తెలుగు'],['marathi','मराठी'],['malayalam','മലയാളം']];
 const SR_LANGS = [['kn-IN','ಕನ್ನಡ'],['en-IN','English (India)'],['hi-IN','हिन्दी'],['ta-IN','தமிழ்'],['te-IN','తెలుగు'],['mr-IN','मराठी'],['ml-IN','മലയാളം']];
 
@@ -228,47 +247,141 @@ function initAudio(){
   master = AC.createGain(); spk = AC.createGain();
   master.connect(spk); spk.connect(AC.destination);
   recDest = AC.createMediaStreamDestination(); master.connect(recDest);
+  if(AC.audioWorklet){
+    AC.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET_SRC],{type:'application/javascript'})))
+      .then(() => { WK = true; rebuildAllAudio(); }).catch(e => console.warn('worklet', e));
+  }
 }
+let WK = false;
+const WORKLET_SRC = `
+class Pitch extends AudioWorkletProcessor{
+  static get parameterDescriptors(){ return [{name:'semi',defaultValue:0,minValue:-24,maxValue:24}]; }
+  constructor(){ super(); this.N=8192; this.b=[new Float32Array(this.N),new Float32Array(this.N)]; this.w=0; this.d=0; }
+  process(ins,outs,p){
+    const i=ins[0], o=outs[0]; if(!i||!i.length) return true;
+    const r=Math.pow(2,p.semi[0]/12), W=Math.round(sampleRate*.05), N=this.N, n=i[0].length;
+    for(let k=0;k<n;k++){
+      for(let c=0;c<2;c++) this.b[c][this.w]=(i[c]||i[0])[k];
+      this.d-=(r-1); while(this.d<0) this.d+=W; while(this.d>=W) this.d-=W;
+      const d1=this.d, d2=(this.d+W/2)%W, g1=Math.pow(Math.sin(Math.PI*d1/W),2), g2=1-g1;
+      for(let c=0;c<o.length;c++){
+        const B=this.b[c%2], rd=d=>{ const pos=this.w-d-1+N*2, a=Math.floor(pos), f=pos-a; return B[a%N]*(1-f)+B[(a+1)%N]*f; };
+        o[c][k]=rd(d1)*g1+rd(d2)*g2;
+      }
+      this.w=(this.w+1)%N;
+    }
+    return true;
+  }
+}
+class Gate extends AudioWorkletProcessor{
+  static get parameterDescriptors(){ return [{name:'thr',defaultValue:-45}]; }
+  constructor(){ super(); this.env=0; this.g=0; this.hold=0; }
+  process(ins,outs,p){
+    const i=ins[0], o=outs[0]; if(!i||!i.length) return true;
+    const thr=Math.pow(10,p.thr[0]/20), n=i[0].length, sr=sampleRate;
+    const aE=Math.exp(-1/(sr*.004)), rE=Math.exp(-1/(sr*.06)), aG=Math.exp(-1/(sr*.003)), rG=Math.exp(-1/(sr*.15));
+    for(let k=0;k<n;k++){
+      let m=0; for(let c=0;c<i.length;c++) m=Math.max(m,Math.abs(i[c][k]));
+      this.env = m>this.env ? aE*this.env+(1-aE)*m : rE*this.env+(1-rE)*m;
+      let t; if(this.env>thr){ t=1; this.hold=sr*.08; } else if(this.hold>0){ this.hold--; t=1; } else t=.02;
+      this.g = t>this.g ? aG*this.g+(1-aG)*t : rG*this.g+(1-rG)*t;
+      for(let c=0;c<o.length;c++) o[c][k]=(i[c]||i[0])[k]*this.g;
+    }
+    return true;
+  }
+}
+registerProcessor('cc-pitch',Pitch); registerProcessor('cc-gate',Gate);`;
+function rebuildAllAudio(){ if(!AC) return; dropAllChains(); dropAudChains(); pairKey=''; syncAudio(); S.audios.forEach(audChain); }
 function nodeFor(el){ let n=srcNodes.get(el); if(!n){ n=AC.createMediaElementSource(el); srcNodes.set(el,n); } return n; }
 function shaperCurve(k){ const n=1024, a=new Float32Array(n); for(let i=0;i<n;i++){ const x=i*2/n-1; a[i]=(1+k)*x/(1+k*Math.abs(x)); } return a; }
-function getImpulse(){
-  if(impulse) return impulse;
-  const len=Math.floor(AC.sampleRate*2.2), b=AC.createBuffer(2,len,AC.sampleRate);
-  for(let ch=0;ch<2;ch++){ const d=b.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3); }
-  return impulse=b;
+const IMPULSES = {};
+const REVERBS = [['room','Room'],['hall','Hall'],['church','Church'],['plate','Plate'],['stadium','Stadium']];
+function getImpulse(kind){
+  kind = kind || 'hall'; if(IMPULSES[kind]) return IMPULSES[kind];
+  const cfg = {room:[.7,4,.012,.55], hall:[2.2,3,.025,.4], church:[4.2,2.4,.04,.3], plate:[1.6,3.5,.002,.7], stadium:[3.2,2,.09,.25]}[kind] || [2.2,3,.025,.4];
+  const [sec,decay,pre,bright] = cfg, sr = AC.sampleRate, len = Math.floor(sr*sec), b = AC.createBuffer(2,len,sr), p0 = Math.floor(pre*sr);
+  for(let ch=0;ch<2;ch++){
+    const d = b.getChannelData(ch); let lp = 0;
+    for(let i=p0;i<len;i++){
+      const t = (i-p0)/(len-p0), env = Math.pow(1-t, decay), k = bright*(1-t*.8);   // highs die faster (damping)
+      lp += (Math.random()*2-1 - lp)*k; d[i] = lp*env;
+    }
+    for(let e=0;e<6;e++){ const at = p0 + Math.floor(sr*(.008+Math.random()*.05)); if(at<len) d[at] += (Math.random()<.5?-1:1)*(.5-e*.06); }   // early reflections
+  }
+  let mx = 0; for(let ch=0;ch<2;ch++){ const d=b.getChannelData(ch); for(let i=0;i<len;i++) mx=Math.max(mx,Math.abs(d[i])); }
+  for(let ch=0;ch<2;ch++){ const d=b.getChannelData(ch); for(let i=0;i<len;i++) d[i]/=mx*2.2; }
+  return IMPULSES[kind] = b;
 }
 function buildChain(c){
-  const a=c.audio, nodes=[], input=AC.createGain(); let cur=input;
+  const a = normItem(c).audio, nodes=[], input=AC.createGain(); let cur=input;
   const link = n => { cur.connect(n); cur=n; nodes.push(n); return n; };
   const filt = (type,f,q,g) => { const n=AC.createBiquadFilter(); n.type=type; n.frequency.value=f; if(q!=null) n.Q.value=q; if(g!=null) n.gain.value=g; return n; };
   const shaper = k => { const s=AC.createWaveShaper(); s.curve=shaperCurve(k); s.oversample='4x'; return s; };
   const gain = v => { const g=AC.createGain(); g.gain.value=v; return g; };
-  link(filt('lowshelf',200,null,a.bass));
-  link(filt('highshelf',3500,null,a.treble));
-  if(a.isolate){ link(filt('highpass',150,.7)); link(filt('lowpass',5000,.7)); link(filt('peaking',2500,1,3)); }
-  if(a.enhance){ link(filt('highpass',85,.7)); link(filt('peaking',300,1,-3)); link(filt('peaking',3200,1.2,4)); link(filt('highshelf',9000,null,2.5));
-    const cp=AC.createDynamicsCompressor(); cp.threshold.value=-26; cp.knee.value=8; cp.ratio.value=3.5; cp.attack.value=.005; cp.release.value=.15; link(cp); link(gain(1.5)); }
+  const comp = (thr,ratio,att,rel,knee) => { const cp=AC.createDynamicsCompressor(); cp.threshold.value=thr; cp.ratio.value=ratio; cp.attack.value=att; cp.release.value=rel; cp.knee.value=knee; return cp; };
+  const lfo = (freq,depth,target) => { const o=AC.createOscillator(), g=gain(depth); o.frequency.value=freq; o.connect(g); g.connect(target); o.start(); nodes.push(o,g); };
+  const wk = (name,params) => { if(!WK) return null; try{ return new AudioWorkletNode(AC,name,{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],parameterData:params}); }catch(e){ return null; } };
+  // 1. clean-up
+  if(a.hp > 0) link(filt('highpass',a.hp,.707));
+  if(a.lp > 0) link(filt('lowpass',a.lp,.707));
+  if(a.gate){ const g=wk('cc-gate',{thr:a.gateThr}); if(g) link(g); }
+  if(a.isolate){ link(filt('highpass',120,.7)); link(filt('lowpass',7500,.7)); link(filt('peaking',250,1,-3)); link(filt('peaking',2800,.9,2.5)); }
+  if(a.enhance){ link(filt('highpass',80,.7)); link(filt('peaking',250,1,-2.5)); link(filt('peaking',3000,1,3)); link(filt('highshelf',10000,null,2));
+    link(comp(-24,3,.006,.18,10)); link(gain(1.35)); }
+  // 2. tone: bass / treble + 10-band graphic EQ
+  if(a.bass) link(filt('lowshelf',180,null,a.bass));
+  if(a.treble) link(filt('highshelf',4000,null,a.treble));
+  a.eq.forEach((g,i) => { if(g) link(filt(i===0?'lowshelf':i===9?'highshelf':'peaking',EQ_F[i],1.1,g)); });
+  // 3. voice presets (smooth — no harsh distortion)
   switch(a.voice){
-    case 'michog':   link(filt('highpass',250,.7)); link(filt('peaking',2200,1,9)); link(shaper(40)); link(filt('lowpass',5500,.7)); link(gain(.55)); break;
-    case 'megaphone':link(filt('highpass',600,1)); link(filt('lowpass',3000,1)); link(shaper(15)); link(gain(.7)); break;
-    case 'telephone':link(filt('highpass',400,1)); link(filt('lowpass',3400,1)); break;
-    case 'robot':   { const g=gain(0), o=AC.createOscillator(); o.frequency.value=60; o.connect(g.gain); o.start(); nodes.push(o); link(g); break; }
-    case 'lofi':     link(filt('lowpass',2200,.5)); link(shaper(4)); break;
-    case 'deep':     link(filt('lowshelf',150,null,10)); link(filt('highshelf',2500,null,-10)); break;
-    case 'radio':    link(filt('highpass',500,1)); link(filt('lowpass',4500,1)); link(filt('peaking',1500,1,6)); link(shaper(6)); break;
+    case 'michog':   // close-mic broadcast sound: warm low end, clear presence, glued by compression
+      link(filt('highpass',90,.7)); link(filt('lowshelf',160,null,4)); link(filt('peaking',350,1,-2.5)); link(filt('peaking',3200,.8,3.5)); link(filt('highshelf',9000,null,1.5));
+      link(comp(-26,4,.004,.2,12)); link(gain(1.5)); break;
+    case 'megaphone':link(filt('highpass',500,.9)); link(filt('lowpass',3500,.9)); link(filt('peaking',1800,1.2,5)); link(shaper(6)); link(gain(.75)); break;
+    case 'telephone':link(filt('highpass',350,.9)); link(filt('lowpass',3400,.9)); link(filt('peaking',1500,1,4)); break;
+    case 'robot':   { const g=gain(0); lfo(55,1,g.gain); link(g); link(gain(1.6)); break; }
+    case 'lofi':     link(filt('lowpass',3200,.6)); link(filt('highpass',120,.7)); link(shaper(2.5)); break;
+    case 'deep':     { const p=wk('cc-pitch',{semi:-4}); if(p) link(p); link(filt('lowshelf',150,null,4)); break; }
+    case 'chipmunk': { const p=wk('cc-pitch',{semi:7}); if(p) link(p); break; }
+    case 'monster':  { const p=wk('cc-pitch',{semi:-9}); if(p) link(p); link(filt('lowshelf',120,null,5)); link(shaper(3)); break; }
+    case 'radio':    link(filt('highpass',450,.9)); link(filt('lowpass',5000,.9)); link(filt('peaking',1500,1,4)); link(comp(-20,6,.003,.1,6)); link(gain(1.3)); break;
+    case 'studio':   link(filt('highpass',75,.7)); link(filt('peaking',200,1,1.5)); link(filt('peaking',450,1.2,-3)); link(filt('peaking',5000,.8,2.5)); link(filt('highshelf',12000,null,2.5)); link(comp(-22,3,.005,.2,10)); link(gain(1.3)); break;
+    case 'podcast':  link(filt('highpass',100,.7)); link(filt('lowshelf',140,null,3)); link(filt('peaking',300,1,-3)); link(filt('peaking',2500,1,2)); link(comp(-28,5,.003,.25,8)); link(gain(1.7)); break;
+    case 'cave': case 'underwater': if(a.voice==='underwater'){ link(filt('lowpass',600,1.5)); { const g=gain(1); lfo(.7,.25,g.gain); link(g); } } break;
   }
+  if(a.pitch){ const p=wk('cc-pitch',{semi:a.pitch}); if(p) link(p); }
+  // 4. distortion
+  if(a.dist > 0){ link(shaper(a.dist/100*30+1)); link(filt('lowpass',7000 - a.dist*40,.7)); link(gain(1/(1+a.dist/100*1.2))); }
+  // 5. modulation
+  if(a.phaser > 0){
+    const sum = gain(1), dry = gain(1 - a.phaser/250); cur.connect(dry); dry.connect(sum);
+    let p = cur; for(let k=0;k<4;k++){ const ap=filt('allpass',800+k*400,.6); p.connect(ap); p=ap; nodes.push(ap); lfo(.4,500+k*150,ap.frequency); }
+    const wet = gain(a.phaser/150); p.connect(wet); wet.connect(sum); nodes.push(sum,dry,wet); cur = sum;
+  }
+  if(a.wah > 0){
+    const sum = gain(1), dry = gain(1 - a.wah/160), bp = filt('bandpass',1000,3.5), wet = gain(a.wah/45);
+    cur.connect(dry); dry.connect(sum); cur.connect(bp); bp.connect(wet); wet.connect(sum); lfo(1.8,700,bp.frequency); nodes.push(sum,dry,bp,wet); cur = sum;
+  }
+  if(a.trem > 0){ const g = gain(1 - a.trem/200); lfo(5.5, a.trem/200, g.gain); link(g); }
+  // 6. dynamics
+  if(a.comp){ link(comp(a.compThr, a.compRatio, .005, .2, 6)); link(gain(Math.pow(10, Math.min(12, -a.compThr*(1-1/a.compRatio)*.5)/20))); }
+  if(a.amp) link(gain(Math.pow(10, a.amp/20)));
+  // 7. time effects (parallel wet paths)
   const vol=gain(1); nodes.push(vol);
   const dry=gain(1); cur.connect(dry); dry.connect(vol); nodes.push(dry);
+  if(a.voice === 'cave' || a.voice === 'underwater'){ const cv=AC.createConvolver(); cv.buffer=getImpulse(a.voice==='cave'?'church':'room'); const w=gain(a.voice==='cave'?.9:.5); cur.connect(cv); cv.connect(w); w.connect(vol); nodes.push(cv,w); }
   if(a.echo>0){
-    const d=AC.createDelay(2); d.delayTime.value=.28;
-    const fb=gain(Math.min(.75,a.echo/100*.75)), wet=gain(a.echo/100*.8);
-    cur.connect(d); d.connect(fb); fb.connect(d); d.connect(wet); wet.connect(vol); nodes.push(d,fb,wet);
+    const d=AC.createDelay(3); d.delayTime.value=clamp(a.echoTime,.05,2.5);
+    const fb=gain(Math.min(.85,a.echoFb/100)), damp=filt('lowpass',4500,.7), wet=gain(a.echo/100*.7);
+    cur.connect(d); d.connect(damp); damp.connect(fb); fb.connect(d); damp.connect(wet); wet.connect(vol); nodes.push(d,fb,damp,wet);
   }
   if(a.reverb>0){
-    const cv=AC.createConvolver(); cv.buffer=getImpulse(); const wet=gain(a.reverb/100*1.2);
+    const cv=AC.createConvolver(); cv.buffer=getImpulse(a.reverbSize); const wet=gain(a.reverb/100*1.1);
+    dry.gain.value = 1 - a.reverb/100*.35;
     cur.connect(cv); cv.connect(wet); wet.connect(vol); nodes.push(cv,wet);
   }
-  vol.connect(master);
+  if(a.limiter){ const lm = comp(-1.5, 20, .001, .08, 0); vol.connect(lm); lm.connect(master); nodes.push(lm); }
+  else vol.connect(master);
   return {input, vol, nodes};
 }
 function killChain(ch){
@@ -314,12 +427,19 @@ function activate(c,src){
   }
   if(!isImg(c)){
     const v = getVid(c);
-    if(Math.abs(v.currentTime - src) > (S.playing ? .2 : .04)) v.currentTime = src;
+    if(Math.abs((v._pend ?? v.currentTime) - src) > (S.playing ? .2 : .04)){ if(S.playing) v.currentTime = src; else scrubTo(v, src); }
   }
   const nx = S.clips[S.clips.indexOf(c)+1];
   if(nx && !isImg(nx) && S.time < derived[nx.id].start){
     const nv = getVid(nx); if(nv.paused && Math.abs(nv.currentTime-nx.in) > .1) nv.currentTime = nx.in;
   }
+}
+// while scrubbing, never interrupt a running seek: remember the newest target and jump there when the
+// current seek finishes — the picture keeps updating instead of blinking black
+function scrubTo(v, t){
+  if(!v.seeking){ v._pend = null; v.currentTime = t; return; }
+  v._pend = t;
+  if(!v._hook){ v._hook = true; v.addEventListener('seeked', () => { const p = v._pend; if(p != null){ v._pend = null; if(Math.abs(v.currentTime - p) > .02) v.currentTime = p; } }); }
 }
 function deactivate(){ if(active && !isImg(active) && vids[active.id]) vids[active.id].pause(); active = null; }
 function syncSecondary(){
@@ -330,7 +450,7 @@ function syncSecondary(){
     else if(Math.abs(v.currentTime - want) > .3) v.currentTime = want;
     const r = Math.round(rateAt(b,(v.currentTime-b.in)/derived[b.id].len)*20)/20;
     if(v.playbackRate !== r) v.playbackRate = r;
-  } else if(Math.abs(v.currentTime - want) > .04) v.currentTime = want;
+  } else if(Math.abs(v.currentTime - want) > .04) scrubTo(v, want);
 }
 // keep a free-running media element (PiP video / audio item) in sync with the timeline
 function syncEl(el,it,on){
@@ -342,7 +462,7 @@ function syncEl(el,it,on){
     else if(Math.abs(el.currentTime - want) > .3) el.currentTime = want;
   } else {
     if(!el.paused) el.pause();
-    if(Math.abs(el.currentTime - want) > .04) el.currentTime = want;
+    if(Math.abs((el._pend ?? el.currentTime) - want) > .04) scrubTo(el, want);
   }
 }
 function syncOvVideos(){
@@ -350,7 +470,7 @@ function syncOvVideos(){
     if(o.type !== 'video') continue;
     const v = ovVid(o), on = S.time >= o.start && S.time < o.start + o.dur;
     if(AC) ensureOvAudio(o,v);
-    if(ovAud[o.id]) ovAud[o.id].gain.value = on ? o.volume/100 : 0;
+    if(ovAud[o.id]) ovAud[o.id].gain.value = on && !soloMain ? o.volume/100 : 0;
     syncEl(v,o,on);
   }
   for(const id in ovVids) if(!S.overlays.some(o => o.id === id)){ ovVids[id].pause(); if(ovAud[id]) ovAud[id].gain.value = 0; }
@@ -359,7 +479,7 @@ function syncAudItems(){
   for(const a of S.audios){
     const el = audEl(a), on = S.time >= a.start && S.time < a.start + a.dur, ch = audChain(a);
     if(ch){
-      const lt = S.time - a.start; let g = on ? a.volume/100*(a.audio.norm && a.normGain ? a.normGain : 1) : 0;
+      const lt = S.time - a.start; let g = on && !soloMain ? a.volume/100*(a.audio.norm && a.normGain ? a.normGain : 1) : 0;
       if(a.fadeIn > 0) g *= clamp(lt/a.fadeIn, 0, 1);
       if(a.fadeOut > 0) g *= clamp((a.dur-lt)/a.fadeOut, 0, 1);
       ch.vol.gain.value = g;
@@ -427,7 +547,8 @@ function tick(now){
       S.time += dt;
       if(active && S.time > S.mainEnd + 1e-4) deactivate();
     }
-    if(S.time >= S.total - 1e-4){ S.time = S.total; pause(); onPlaybackEnd(); }
+    if(exporting && expEnd != null && S.time >= expEnd - 1e-3 && expEnd < S.total - 1e-4){ S.time = expEnd; pause(); onPlaybackEnd(); }
+    else if(S.time >= S.total - 1e-4){ S.time = S.total; pause(); onPlaybackEnd(); }
     else { syncSecondary(); syncOvVideos(); syncAudItems(); }
   }
   const pr = currentPair();
@@ -446,7 +567,7 @@ function tick(now){
   render(now);
   updatePH();
   syncInsp();
-  if(exporting) $('#ovBar').style.width = (S.total ? S.time/S.total*100 : 0) + '%';
+  if(exporting && rec && rec.state === 'recording') $('#ovBar').style.width = (S.total ? S.time/(expEnd || S.total)*100 : 0) + '%';
   if(recState) $('#recTime') && ($('#recTime').textContent = fmtTC((performance.now()-recState.w0)/1000));
 }
 
@@ -462,16 +583,16 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec2 uv;uniform sampler2D u_tex,u_lut;uniform vec2 u_px;
+varying vec2 uv;uniform sampler2D u_tex,u_lut,u_lut2;uniform vec2 u_px;uniform float u_lut2N,u_lut2Amt,u_ex,u_hl,u_shd,u_vib,u_hue,u_segAv,u_bfx,u_bfxA;uniform vec3 u_bcol;
 uniform float u_lutN,u_lutAmt,u_alpha,u_time,u_b,u_c,u_s,u_t,u_ti,u_f,u_v,u_g,u_sh,u_blur;
 uniform float u_mT,u_mRot,u_mF,u_mR,u_mInv,u_asp;uniform vec2 u_mC,u_mS;
 uniform float u_ck,u_ckSim,u_ckSm,u_ckSp;uniform vec3 u_ckC;
 uniform float u_fx,u_fxA,u_sec;
 uniform sampler2D u_seg;uniform float u_segOn,u_segInv,u_rtS,u_rtB,u_trT,u_trP;uniform vec2 u_res;
 const vec3 LW=vec3(.299,.587,.114);
-vec3 lut(vec3 c){float n=u_lutN;float b=c.b*(n-1.);float b0=floor(b);float b1=min(b0+1.,n-1.);float f=b-b0;
+vec3 lutS(sampler2D L,float n,vec3 c){float b=c.b*(n-1.);float b0=floor(b);float b1=min(b0+1.,n-1.);float f=b-b0;
  float x=c.r*(n-1.)+.5;float y=(c.g*(n-1.)+.5)/n;
- return mix(texture2D(u_lut,vec2((b0*n+x)/(n*n),y)).rgb,texture2D(u_lut,vec2((b1*n+x)/(n*n),y)).rgb,f);}
+ return mix(texture2D(L,vec2((b0*n+x)/(n*n),y)).rgb,texture2D(L,vec2((b1*n+x)/(n*n),y)).rgb,f);}
 float rnd(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
 float dot2(vec2 v){return dot(v,v);}
 float sdHeart(vec2 p){p.x=abs(p.x);
@@ -536,6 +657,11 @@ vec4 fetch(vec2 u){float I=u_fxA;
  if(u_fx<4.5){vec2 b=u_px*mix(2.,48.,I);return tx((floor(u/b)+.5)*b);}
  if(u_fx<5.5){u.x=u.x<.5?u.x:1.-u.x;return tx(u);}
  if(u_fx<6.5){vec2 f=floor(u*2.);vec2 v=fract(u*2.);v=mix(v,1.-v,f);return tx(v);}
+ if(u_fx>15.5&&u_fx<16.5){vec2 d=u-.5;u=.5+d*(1.+I*1.4*(dot(d,d)-.3));return tx(u);}
+ if(u_fx>16.5&&u_fx<17.5){u.x+=sin(u.y*18.+u_sec*4.)*.02*I;u.y+=cos(u.x*14.+u_sec*3.)*.012*I;return tx(u);}
+ if(u_fx>17.5&&u_fx<18.5){vec2 d=u-.5;float r=length(d);float a=I*6.*pow(max(0.,.5-r)*2.,2.)*sin(u_sec*.9+1.2);float cs=cos(a),sn=sin(a);d=vec2(d.x*cs-d.y*sn,d.x*sn+d.y*cs);return tx(.5+d);}
+ if(u_fx>24.5&&u_fx<25.5){u.y=u.y<.5?u.y:1.-u.y;return tx(u);}
+ if(u_fx>27.5&&u_fx<28.5){return split3(u,(u-.5)*.035*I);}
  if(u_fx>7.5&&u_fx<8.5){vec4 s=vec4(0.);vec2 r=u_px*(1.+I*14.);
   for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++)s+=tx(u+vec2(float(i),float(j))*r);return s/25.;}
  return tx(u);}
@@ -545,13 +671,18 @@ void main(){vec3 c;float ta=1.;float I=u_fxA;
   if(u_rtS>0.||u_rtB>0.){float sk=skin(c);if(u_rtS>0.)c=mix(c,surf(uv,c),clamp(sk*u_rtS*1.2,0.,1.));
    if(u_rtB>0.)c=mix(c,c+(1.-c)*.35,sk*u_rtB);}
   if(u_sh>0.){vec3 n=texture2D(u_tex,uv+vec2(u_px.x,0.)).rgb+texture2D(u_tex,uv-vec2(u_px.x,0.)).rgb+texture2D(u_tex,uv+vec2(0.,u_px.y)).rgb+texture2D(u_tex,uv-vec2(0.,u_px.y)).rgb;c+=(c*4.-n)*u_sh;}}
+ c*=exp2(u_ex*1.5);
  c+=u_b*.25;
+ {float l0=dot(clamp(c,0.,1.),LW);float ws=1.-smoothstep(0.,.6,l0);float wh=smoothstep(.4,1.,l0);c+=(c+.04)*u_shd*.9*ws;c+=(c+.04)*u_hl*.55*wh;}
  c=(c-.5)*(1.+u_c)+.5;
  float l=dot(c,LW);c=mix(vec3(l),c,1.+u_s);
+ if(u_vib!=0.){float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b));l=dot(c,LW);c=mix(vec3(l),c,1.+u_vib*(1.-clamp((mx-mn)*1.6,0.,1.))*1.3);}
+ if(u_hue!=0.)c=hueRot(c,u_hue*1.5708);
  c.r+=u_t*.08;c.b-=u_t*.08;c.g+=u_ti*.06;
  c=c*(1.-u_f*.3)+u_f*.15;
  c=clamp(c,0.,1.);
- if(u_lutN>0.)c=mix(c,lut(c),u_lutAmt);
+ if(u_lut2N>0.)c=mix(c,lutS(u_lut2,u_lut2N,c),u_lut2Amt);
+ if(u_lutN>0.)c=mix(c,lutS(u_lut,u_lutN,c),u_lutAmt);
  if(u_fx>2.5&&u_fx<3.5){c*=.88+.12*sin(uv.y/u_px.y*1.7);c+=(rnd(uv*500.+u_sec)-.5)*.12*I;c=mix(c,vec3(dot(c,LW)),.2*I);}
  else if(u_fx>6.5&&u_fx<7.5)c=mix(c,1.-c,I);
  else if(u_fx>8.5&&u_fx<9.5){float lm=dot(c,LW);c=mix(c,vec3(lm*1.07+.05,lm*.95+.02,lm*.75),I);
@@ -561,6 +692,28 @@ void main(){vec3 c;float ta=1.;float I=u_fxA;
  else if(u_fx>11.5&&u_fx<12.5){c+=(1.-smoothstep(0.,.3,fract(u_sec)))*.7*I;}
  else if(u_fx>12.5&&u_fx<13.5)c=c+I*.85*(1.-c*.3);
  else if(u_fx>13.5&&u_fx<14.5)c=mix(c,hueRot(c,u_sec*2.),I);
+ else if(u_fx>18.5&&u_fx<19.5){float e=0.;vec2 o=u_px*1.5;
+  e+=abs(dot(tx(uv+vec2(o.x,0.)).rgb-tx(uv-vec2(o.x,0.)).rgb,LW))+abs(dot(tx(uv+vec2(0.,o.y)).rgb-tx(uv-vec2(0.,o.y)).rgb,LW));
+  vec3 nc=hueRot(vec3(1.,.15,.75),u_sec*1.5+uv.y*3.)*clamp(e*5.,0.,1.)*1.6;c=mix(c,nc+c*.12,I);}
+ else if(u_fx>19.5&&u_fx<20.5){float lv=mix(14.,3.,I);c=floor(c*lv+.5)/lv;}
+ else if(u_fx>20.5&&u_fx<21.5){float lm=smoothstep(.05,.95,dot(c,LW));c=mix(c,mix(vec3(.12,.05,.38),vec3(1.,.62,.25),lm),I);}
+ else if(u_fx>21.5&&u_fx<22.5){float lm=dot(c,LW);vec3 th=lm<.33?mix(vec3(0.,0.,.35),vec3(.6,0.,.8),lm*3.):lm<.66?mix(vec3(.6,0.,.8),vec3(1.,.35,0.),lm*3.-1.):mix(vec3(1.,.35,0.),vec3(1.,1.,.6),lm*3.-2.);c=mix(c,th,I);}
+ else if(u_fx>22.5&&u_fx<23.5){float lm=dot(c,LW)*1.7;vec3 nv=vec3(.12,1.,.25)*lm+(rnd(uv*700.+u_sec)-.5)*.2;nv*=1.-smoothstep(.35,.75,distance(uv,vec2(.5)));nv*=.9+.1*sin(uv.y/u_px.y*1.5);c=mix(c,nv,I);}
+ else if(u_fx>23.5&&u_fx<24.5){vec3 cr=c*(.72+.28*sin(uv.y/u_px.y*3.14159));float m3=mod(gl_FragCoord.x,3.);cr*=vec3(m3<1.?1.25:.85,(m3>=1.&&m3<2.)?1.25:.85,m3>=2.?1.25:.85);cr*=1.-smoothstep(.4,.75,distance(uv,vec2(.5)))*.6;c=mix(c,cr*1.1,I);}
+ else if(u_fx>25.5&&u_fx<26.5){if(abs(uv.y-.5)>.5-.13*I)c=vec3(0.);}
+ else if(u_fx>26.5&&u_fx<27.5){vec2 p1=vec2(.15+.25*sin(u_sec*.6),.2+.2*cos(u_sec*.45)),p2=vec2(.92,.85+.12*sin(u_sec*.8));
+  vec3 lk=vec3(1.,.45,.12)*smoothstep(.65,0.,distance(uv,p1))*.9+vec3(1.,.2,.55)*smoothstep(.55,0.,distance(uv,p2))*.6;c=c+lk*I*(1.-c*.5);}
+ else if(u_fx>28.5&&u_fx<29.5){vec3 bl=vec3(0.);for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++)bl+=tx(uv+vec2(float(i),float(j))*u_px*6.).rgb;bl/=25.;
+  c=c+max(bl-.55,0.)*1.2*I;c=mix(c,c*vec3(1.03,1.,1.06)+.03,I*.5);}
+ if(u_bfx>.5&&u_segAv>.5){float m=smoothstep(.3,.7,texture2D(u_seg,uv).r);float J=u_bfxA;
+  if(u_bfx<1.5){vec3 bl=vec3(0.);for(int i=-3;i<=3;i++)for(int j=-3;j<=3;j++)bl+=texture2D(u_tex,uv+vec2(float(i),float(j))*u_px*(2.+12.*J)).rgb;bl/=49.;c=mix(bl,c,m);}
+  else if(u_bfx<2.5)c=mix(mix(c,vec3(dot(c,LW)),J),c,m);
+  else if(u_bfx<3.5)c=mix(c*(1.-.8*J),c*(1.+.12*J),m);
+  else{float mb=0.;for(int i=0;i<12;i++){float a=float(i)*.5236;mb+=texture2D(u_seg,uv+vec2(cos(a)*u_px.x/u_px.y,sin(a))*.025*(.4+J)).r;}mb=smoothstep(.2,.8,mb/12.);
+   if(u_bfx<4.5)c+=u_bcol*max(mb-m,0.)*2.2*J;
+   else if(u_bfx<5.5){vec3 nc=hueRot(u_bcol,u_sec*2.);c=mix(c,nc*1.3,clamp(abs(mb-m)*5.*J,0.,1.));}
+   else if(u_bfx<6.5)c=mix(mix(c,u_bcol*(.35+.75*dot(c,LW)),J),c,m);
+   else{vec2 o=vec2(sin(u_sec*2.3),cos(u_sec*1.7))*.035*J;float m2=smoothstep(.3,.7,texture2D(u_seg,uv-o).r);vec3 g=texture2D(u_tex,uv-o).rgb;c=mix(c,mix(g,u_bcol,.4)*1.2,m2*(1.-m)*.65*J);}}}
  c*=1.-u_v*smoothstep(.25,.85,distance(uv,vec2(.5)));
  c+=(rnd(uv*1000.+u_time)-.5)*u_g*.2;
  float A=u_alpha*ta*maskA()*trMask();
@@ -576,7 +729,7 @@ gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATI
 const aLoc = gl.getAttribLocation(prog,'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc,2,gl.FLOAT,false,0,0);
 const U = {};
 ['u_half','u_off','u_rot','u_canvas','u_tex','u_lut','u_lutN','u_lutAmt','u_alpha','u_time','u_b','u_c','u_s','u_t','u_ti','u_f','u_v','u_g','u_sh','u_px','u_blur',
- 'u_mT','u_mC','u_mS','u_mRot','u_mF','u_mR','u_mInv','u_asp','u_ck','u_ckC','u_ckSim','u_ckSm','u_ckSp','u_fx','u_fxA','u_sec','u_seg','u_segOn','u_segInv','u_rtS','u_rtB','u_trT','u_trP','u_res'].forEach(n => U[n]=gl.getUniformLocation(prog,n));
+ 'u_mT','u_mC','u_mS','u_mRot','u_mF','u_mR','u_mInv','u_asp','u_ck','u_ckC','u_ckSim','u_ckSm','u_ckSp','u_fx','u_fxA','u_sec','u_seg','u_segOn','u_segInv','u_rtS','u_rtB','u_trT','u_trP','u_res','u_lut2','u_lut2N','u_lut2Amt','u_ex','u_hl','u_shd','u_vib','u_hue','u_segAv','u_bfx','u_bfxA','u_bcol'].forEach(n => U[n]=gl.getUniformLocation(prog,n));
 gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 function mkTex(){
   const t=gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,t);
@@ -586,8 +739,16 @@ function mkTex(){
 }
 const texA = mkTex(), texB = mkTex(), texO = mkTex(), texSeg = mkTex();
 const dummy = mkTex(); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
-gl.uniform1i(U.u_tex,0); gl.uniform1i(U.u_lut,1); gl.uniform1i(U.u_seg,2);
+gl.uniform1i(U.u_tex,0); gl.uniform1i(U.u_lut,1); gl.uniform1i(U.u_seg,2); gl.uniform1i(U.u_lut2,3);
 const EX0 = {s:1,sx:1,dx:0,dy:0,a:1,r:0};
+const texOwn = new Map(), ovTex = {}, clipTex = new Map();
+function texFor(id){
+  let t = clipTex.get(id);
+  if(t){ clipTex.delete(id); clipTex.set(id, t); return t; }
+  if(clipTex.size >= 4){ const [k, old] = clipTex.entries().next().value; clipTex.delete(k); texOwn.delete(old.tex); gl.deleteTexture(old.tex); }
+  t = {tex:mkTex()}; clipTex.set(id, t); return t;
+}
+let holdT = 0;
 
 function fxParams(c){ const p={...c.adj}, f=FILTERS[c.filter]||{}, k=c.filterAmt/100; for(const key in f) p[key]=(p[key]||0)+f[key]*k; return p; }
 function setFx(c){
@@ -600,6 +761,11 @@ function setFx(c){
   const l = c.lut && S.luts.find(x => x.id === c.lut);
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, l ? l.tex : dummy); gl.activeTexture(gl.TEXTURE0);
   gl.uniform1f(U.u_lutN, l ? l.n : 0); gl.uniform1f(U.u_lutAmt, c.lutAmt/100);
+  gl.uniform1f(U.u_ex,(p.exposure||0)/100); gl.uniform1f(U.u_hl,(p.highlights||0)/100); gl.uniform1f(U.u_shd,(p.shadows||0)/100);
+  gl.uniform1f(U.u_vib,(p.vibrance||0)/100); gl.uniform1f(U.u_hue,(p.hue||0)/100);
+  const pf = c.filter && c.filter.startsWith('pf:') && typeof proLut === 'function' ? proLut(c.filter.slice(3)) : null;
+  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, pf ? pf.tex : dummy); gl.activeTexture(gl.TEXTURE0);
+  gl.uniform1f(U.u_lut2N, pf ? pf.n : 0); gl.uniform1f(U.u_lut2Amt, c.filterAmt/100);
 }
 const fxRate = f => f ? .3 + 2.7*f.speed/100 : 1;
 function setEffect(it){
@@ -737,9 +903,14 @@ function drawClip(c,tex,ex){
   const el = isImg(c) ? images[c.mediaId] : vids[c.id]; if(!el) return;
   const isI = el.tagName === 'IMG';
   const vw = isI ? el.naturalWidth : el.videoWidth, vh = isI ? el.naturalHeight : el.videoHeight;
-  if(!vw || (!isI && el.readyState < 2)) return;
+  if(!vw) return;
+  tex = texFor(c.id).tex;
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
-  try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el); }catch(e){ return; }
+  const fresh = isI || (el.readyState >= 2 && !el.seeking);
+  if(fresh || exporting || texOwn.get(tex) !== c.id){
+    if(!isI && el.readyState < 2) return;
+    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el); texOwn.set(tex, c.id); }catch(e){ return; }
+  }
   const W=cv.width, H=cv.height, d=derived[c.id], lt=S.time-d.start, st=localToSrc(c,lt);
   gl.uniform2f(U.u_px,1/vw,1/vh);
   gl.uniform1f(U.u_trT, ex.mT||0); gl.uniform1f(U.u_trP, ex.mP||0);
@@ -757,7 +928,7 @@ function drawClip(c,tex,ex){
   if(!ex.mT && an.mT){ gl.uniform1f(U.u_trT, an.mT); gl.uniform1f(U.u_trP, an.mP); }
   const k = Math.min(W/vw,H/vh)*ev(c,'tf.scale',st)/100*an.s*ex.s*fm.s;
   const hw = vw*k/2*an.sx*(ex.sx||1), hh = vh*k/2*an.sy;
-  const ox = ev(c,'tf.x',st)+an.dx+ex.dx+fm.dx, oy = ev(c,'tf.y',st)-an.dy-ex.dy-fm.dy, rot = ev(c,'tf.rot',st)*Math.PI/180+an.r+ex.r;
+  const ox = ev(c,'tf.x',st)*PK()+an.dx+ex.dx+fm.dx, oy = ev(c,'tf.y',st)*PK()-an.dy-ex.dy-fm.dy, rot = ev(c,'tf.rot',st)*Math.PI/180+an.r+ex.r;
   gl.uniform2f(U.u_half, hw*(c.tf.flip?-1:1), hh);
   gl.uniform2f(U.u_off, ox, oy);
   gl.uniform1f(U.u_rot, -rot);
@@ -770,6 +941,11 @@ function render(now){
   const W=cv.width, H=cv.height;
   gl.viewport(0,0,W,H);
   const pr = currentPair(), tr = pr && pr.b ? transState(pr.b.trans.type, pr.p, W, H) : null;
+  if(!exporting && pr && !S.mainHide){   // a clip has no picture yet (first seek) → keep showing the previous frame briefly
+    const notReady = [pr.a, pr.b].some(c => c && !isImg(c) && vids[c.id] && vids[c.id].readyState < 2 && !(clipTex.get(c.id) && texOwn.get(clipTex.get(c.id).tex) === c.id));
+    const t = performance.now();
+    if(notReady){ if(!holdT) holdT = t; if(t - holdT < 800) return; } else holdT = 0;
+  }
   const bgc = tr && tr.clear != null ? tr.clear : (S.bg==='white' ? 1 : 0);
   gl.clearColor(bgc,bgc,bgc,1); gl.clear(gl.COLOR_BUFFER_BIT);
   gl.uniform2f(U.u_canvas,W,H); gl.uniform2f(U.u_res,W,H); gl.uniform1f(U.u_trT,0); gl.uniform1f(U.u_time,((now||0)%1000)/1000);
@@ -783,7 +959,7 @@ function render(now){
   }
   octx.globalAlpha = 1; octx.filter = 'none'; octx.globalCompositeOperation = 'source-over';
   octx.drawImage(cv,0,0);
-  drawOverlays(octx);
+  if(!soloMain) drawOverlays(octx);
   if(!exporting && typeof drawGizmos === 'function') drawGizmos(octx);
 }
 
@@ -922,14 +1098,18 @@ function mediaEl(o){ return o.type === 'image' ? images[o.mediaId] : ovVids[o.id
 function elSize(el){ return el.tagName === 'IMG' ? [el.naturalWidth, el.naturalHeight] : [el.videoWidth, el.videoHeight]; }
 function drawMediaLayer(ctx,o,an,cx,cy,rot,size,opacity,u){
   const el = mediaEl(o); if(!el) return null;
-  const [vw,vh] = elSize(el);
-  if(!vw || (el.tagName === 'VIDEO' && el.readyState < 2)) return null;
+  const [vw,vh] = elSize(el), isV = el.tagName === 'VIDEO';
+  if(!vw) return null;
+  if(!ovTex[o.id]) ovTex[o.id] = {tex:mkTex(), ok:false};
+  const OT = ovTex[o.id], fresh = !isV || (el.readyState >= 2 && !el.seeking);
+  if(!fresh && !OT.ok && !exporting) return null;
+  if(isV && el.readyState < 2 && (exporting || !OT.ok)) return null;
   const W=cv.width, H=cv.height, w=u*size/100, h=w*vh/vw, a=clamp(opacity/100*an.a,0,1), fm=fxMotion(o,W,H);
   const hw = w*an.s*fm.s*an.sx/2, hh = h*an.s*fm.s*an.sy/2;
   if(a > .001){
     gl.viewport(0,0,W,H); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texO);
-    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el); }catch(e){ return null; }
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, OT.tex);
+    if(fresh || exporting){ try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el); OT.ok = true; }catch(e){ return null; } }
     gl.uniform2f(U.u_px,1/vw,1/vh); setFx(o); setMask(o,vw,vh); setChroma(o); setEffect(o); setSeg(o,el);
     if(an.fx){ gl.uniform1f(U.u_fx, FX_T[an.fx[0]]||0); gl.uniform1f(U.u_fxA, an.fx[1]); gl.uniform1f(U.u_sec, S.time); }
     gl.uniform1f(U.u_trT, an.mT||0); gl.uniform1f(U.u_trP, an.mP||0);
@@ -1149,7 +1329,7 @@ async function computeWave(m){
 function snap(){ return JSON.stringify({c:S.clips, o:S.overlays, a:S.audios}); }
 function pushUndo(){ undoS.push(snap()); if(undoS.length>80) undoS.shift(); redoS.length=0; }
 function restore(s){
-  pause(); const d=JSON.parse(s); S.clips=d.c; S.overlays=d.o||[]; S.audios=d.a||[];
+  pause(); const d=JSON.parse(s); S.clips=d.c; S.overlays=d.o||[]; S.audios=d.a||[]; [...S.clips,...S.overlays,...S.audios].forEach(normItem);
   active=null; dropAllChains(); dropAudChains(); pairKey='';
   if(!selItem()) S.sel = S.clips[0] ? S.clips[0].id : null;
   afterEdit();
@@ -1225,8 +1405,53 @@ function extractAudio(c){
   const m=media(c.mediaId); if(!m || m.type!=='video') return;
   pushUndo();
   const d=derived[c.id];
-  const a=newAudioItem(m,{kind:'extract',start:d.start,in:c.in,dur:(c.out-c.in)/c.speed,speed:c.speed,audio:deep(c.audio),volume:c.volume});
-  c.volume=0; S.audios.push(a); S.sel=a.id; afterEdit();
+  const a=newAudioItem(m,{kind:'extract',start:d.start,in:c.in,dur:(c.out-c.in)/c.speed,speed:c.speed,audio:deep(c.audio),volume:c.volume,linkClip:c.id});
+  c.prevVolume=c.volume||100; c.extracted=a.id; c.volume=0; S.audios.push(a); S.sel=a.id; afterEdit();
+}
+// undo a wrong "extract audio": remove the extracted track and give the sound back to the clip
+function restoreAudio(c){
+  if(!c) return; pushUndo();
+  S.audios = S.audios.filter(a => !(a.linkClip === c.id || a.id === c.extracted));
+  c.volume = c.prevVolume || 100; delete c.extracted; delete c.prevVolume; S.sel = c.id; afterEdit();
+}
+function toggleMuteItem(it){ if(!it) return; pushUndo(); if(it.volume > 0){ it.prevVolume = it.volume; it.volume = 0; } else it.volume = it.prevVolume || 100; afterEdit(); }
+let attrClip = null;
+const ATTR_KEYS = ['filter','filterAmt','adj','lut','lutAmt','fx','bfx','mask','rt','ck','anim','audio','opacity'];
+function copyAttrs(it){ if(!it) return; attrClip = {}; for(const k of ATTR_KEYS) if(it[k] !== undefined) attrClip[k] = deep(it[k]); }
+function pasteAttrs(it){ if(!it || !attrClip) return; pushUndo(); for(const k in attrClip) if(it[k] !== undefined) it[k] = deep(attrClip[k]); if(it.audio) (chains.has(it.id) ? rebuildChain(it) : rebuildAudChain(it)); afterEdit(); }
+// remove a media file from the project (and everything on the timeline that uses it)
+async function deleteMedia(id){
+  const m = media(id); if(!m) return;
+  const used = S.clips.filter(c=>c.mediaId===id).length + S.overlays.filter(o=>o.mediaId===id).length + S.audios.filter(a=>a.mediaId===id).length;
+  if(!confirm(`"${m.name}" ಅನ್ನು project ನಿಂದ ಅಳಿಸಬೇಕೆ?` + (used ? `\n(Timeline ನಲ್ಲಿ ${used} ಕಡೆ ಬಳಸಲಾಗಿದೆ — ಅವೂ ತೆಗೆಯಲ್ಪಡುತ್ತವೆ)` : ''))) return false;
+  pause();
+  for(const c of S.clips.filter(c=>c.mediaId===id)){ if(vids[c.id]){ dropEl(vids[c.id]); delete vids[c.id]; } dropChainFor(c.id); if(active===c) active=null; }
+  for(const o of S.overlays.filter(o=>o.mediaId===id)){ if(ovVids[o.id]){ dropEl(ovVids[o.id]); delete ovVids[o.id]; } }
+  for(const a of S.audios.filter(a=>a.mediaId===id)){ if(audEls[a.id]){ dropEl(audEls[a.id]); delete audEls[a.id]; } if(audChains[a.id]){ killChain(audChains[a.id]); delete audChains[a.id]; } }
+  S.clips = S.clips.filter(c=>c.mediaId!==id); S.overlays = S.overlays.filter(o=>o.mediaId!==id); S.audios = S.audios.filter(a=>a.mediaId!==id);
+  S.media = S.media.filter(x=>x!==m); delete mediaBlobs[id]; delete images[id];
+  if(m.url) URL.revokeObjectURL(m.url); if(m.wave) URL.revokeObjectURL(m.wave);
+  if(DB){ try{ await idbDel('blobs', id); }catch(e){} }
+  undoS.length = 0; redoS.length = 0; pairKey = '';
+  if(!selItem()) S.sel = S.clips[0] ? S.clips[0].id : null;
+  afterEdit(); renderMediaPanel(); saveProject(true); return true;
+}
+// freeze frame: split the clip at the playhead and insert a 3 s still image of that frame
+async function freezeFrame(){
+  const c = clipAt(S.time); if(!c || isImg(c)) return alert('Playhead ಅನ್ನು main track ನ video ಮೇಲೆ ಇಡಿ');
+  const v = getVid(c), src = localToSrc(c, S.time - derived[c.id].start);
+  await seekTo(v, src); await waitFrame(v);
+  const k = document.createElement('canvas'); k.width = v.videoWidth; k.height = v.videoHeight; k.getContext('2d').drawImage(v,0,0);
+  const blob = await new Promise(r => k.toBlob(r, 'image/jpeg', .95));
+  const m = await addImageMedia(new File([blob], `Freeze ${fmtT(S.time)}.jpg`, {type:'image/jpeg'}));
+  pushUndo();
+  const fr = newClip(m); fr.out = 3; for(const key of ['tf','adj','filter','filterAmt','lut','lutAmt','mask','rt']) fr[key] = deep(c[key]);
+  const lt = S.time - derived[c.id].start, i = S.clips.indexOf(c);
+  if(lt > .05 && derived[c.id].dur - lt > .05){
+    const b = deep(c); b.id = nid(); c.out = src; b.in = src; c.anim.out = 'none'; b.anim.in = 'none'; b.trans = {type:'none',dur:.6};
+    S.clips.splice(i+1, 0, fr, b);
+  } else S.clips.splice(lt <= .05 ? i : i+1, 0, fr);
+  S.sel = fr.id; afterEdit(); renderMediaPanel();
 }
 
 /* ================= UI: CANVAS ================= */
@@ -1283,7 +1508,7 @@ out.addEventListener('pointermove',e=>{
   const dx=p.x-cdrag.p0.x, dy=p.y-cdrag.p0.y;
   if(!cdrag.undo){ if(Math.hypot(dx,dy)<3) return; pushUndo(); cdrag.undo=true; }
   if(it.type){ setVal(it,'x',clamp(cdrag.x0+dx/out.width*100,-20,120)); setVal(it,'y',clamp(cdrag.y0+dy/out.height*100,-20,120)); }
-  else { setVal(it,'tf.x',Math.round(cdrag.x0+dx)); setVal(it,'tf.y',Math.round(cdrag.y0-dy)); }
+  else { setVal(it,'tf.x',Math.round(cdrag.x0+dx/PK())); setVal(it,'tf.y',Math.round(cdrag.y0-dy/PK())); }
 });
 const endCDrag=e=>{
   pts.delete(e.pointerId);
@@ -1498,7 +1723,7 @@ function idbDelBlobs(pid){
 function projectData(){
   return {clips:deep(S.clips), overlays:deep(S.overlays), audios:deep(S.audios),
     media:S.media.map(({id,name,type,duration,thumb,w,h,strip,stripN})=>({id,name,type,duration,thumb,w,h,strip,stripN})),
-    ratio:S.ratio, quality:S.quality, bg:S.bg, time:S.time, mainMute:S.mainMute, mainHide:S.mainHide,
+    ratio:S.ratio, quality:S.quality, pk720:true, bg:S.bg, time:S.time, mainMute:S.mainMute, mainHide:S.mainHide,
     luts:S.luts.filter(l=>l.custom).map(l=>({id:l.id,name:l.name,n:l.n,data:l.data}))};
 }
 function makeThumb(){
@@ -1557,6 +1782,10 @@ async function openProject(id){
   S.clips=(d.clips||[]).map(c=>({...clipDefaults(),...c})).filter(okM);
   S.overlays=(d.overlays||[]).map(o=>({...ovDefaults(o.type),...o})).filter(o=>!isMediaOv(o)||okM(o));
   S.audios=(d.audios||[]).map(a=>({...audDefaults(),...a})).filter(okM);
+  [...S.clips,...S.overlays,...S.audios].forEach(normItem);
+  const q0 = d.quality || 720;   // older projects stored canvas offsets in export-resolution pixels
+  if(q0 !== 720 && !d.pk720){ const f = 720/q0; for(const c of S.clips){ c.tf.x = Math.round(c.tf.x*f); c.tf.y = Math.round(c.tf.y*f); (c.kf||[]).forEach(k => { if(k.v['tf.x']!=null) k.v['tf.x']*=f; if(k.v['tf.y']!=null) k.v['tf.y']*=f; }); } }
+  S.quality = 720;
   S.time=0; setCanvas(); hideHome(); layout();
   S.sel=S.clips[0]?S.clips[0].id:null;
   afterEdit(); seek(clamp(d.time||0,0,S.total)); renderMediaPanel(); updateProjName();
@@ -1567,30 +1796,156 @@ async function openProject(id){
 function showOverlay(title,msg,btns){
   $('#overlay').style.display='flex'; $('#ovT').textContent=title; $('#ovMsg').textContent=msg; $('#ovBtns').innerHTML=btns;
 }
-async function exportVideo(){
+// all recording goes through recordTimeline() — plays the timeline in real time into a MediaRecorder
+let expEnd = null, soloMain = false, recDone = null, recCancel = null;
+const VCODECS = [
+  ['h264','H.264', q => q>1080 ? ['avc1.640033','avc1.640028','avc1.4d0033','avc1.42E01E','avc1'] : ['avc1.640028','avc1.4d0028','avc1.42E01E','avc1']],
+  ['hevc','HEVC (H.265)', () => ['hvc1.1.6.L153.B0','hvc1','hev1.1.6.L153.B0']],
+  ['vp9','VP9', () => ['vp09.00.51.08','vp9']],
+  ['av1','AV1', () => ['av01.0.12M.08','av01','av1']],
+  ['vp8','VP8', () => ['vp8']]];
+function pickMime(fmt, codec, q){
+  const vc = VCODECS.find(c => c[0] === codec) || VCODECS[0], ac = fmt === 'mp4' ? ['mp4a.40.2','opus'] : ['opus'];
+  if(!window.MediaRecorder) return '';
+  for(const v of vc[2](q)) for(const a of ac){ const t = `video/${fmt};codecs=${v},${a}`; if(MediaRecorder.isTypeSupported(t)) return t; }
+  return '';
+}
+function exportSupport(q){
+  const r = {};
+  for(const f of ['mp4','webm']) for(const [c] of VCODECS){ const m = pickMime(f,c,q); if(m) (r[f] = r[f] || []).push(c); }
+  return r;
+}
+function recordTimeline(o){
+  return new Promise(async (resolve, reject) => {
+    pause(); setPick(false); initAudio(); await AC.resume();
+    const prevQ = S.quality;
+    if(o.q && o.q !== S.quality){ S.quality = o.q; setCanvas(); }
+    const tracks = [...recDest.stream.getAudioTracks()];
+    if(!o.audioOnly) tracks.unshift(...out.captureStream(o.fps || 30).getVideoTracks());
+    const chunks = [], opts = {mimeType:o.mime};
+    if(!o.audioOnly) opts.videoBitsPerSecond = o.bitrate; opts.audioBitsPerSecond = o.abr || 192000;
+    try{ rec = new MediaRecorder(new MediaStream(tracks), opts); }catch(e){ S.quality = prevQ; setCanvas(); return reject(e); }
+    rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+    const finish = () => { exporting = false; expEnd = null; soloMain = false; spk.gain.value = 1; if(S.quality !== prevQ){ S.quality = prevQ; setCanvas(); seek(S.time); } };
+    rec.onstop = () => { finish(); resolve(new Blob(chunks, {type:o.mime.split(';')[0]})); };
+    rec.onerror = e => { finish(); reject(e.error || new Error('recorder error')); };
+    recCancel = () => { finish(); reject(new Error('cancel')); };
+    recDone = () => { if(rec && rec.state === 'recording') setTimeout(() => rec.stop(), 150); };
+    exporting = true; soloMain = !!o.mainOnly; expEnd = o.t1; spk.gain.value = o.monitor ? 1 : 0;
+    seek(o.t0);
+    setTimeout(() => { if(!exporting) return; rec.start(250); play(); }, 450);
+  });
+}
+const expName = ext => (S.project ? S.project.name.replace(/[^\wಀ-೿ -]/g,'') : 'ChitraCut') + '_' + Date.now() + ext;
+function saveBlob(blob, name){ const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; a.click(); return url; }
+async function exportVideo(opt){
   if(!S.total) return alert('ಮೊದಲು video / photo import ಮಾಡಿ');
   if(!window.MediaRecorder) return alert('ಈ browser export support ಮಾಡುವುದಿಲ್ಲ. Chrome ಬಳಸಿ.');
-  pause(); setPick(false); initAudio(); await AC.resume();
-  const mt=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
-  const stream=new MediaStream([...out.captureStream(30).getVideoTracks(), ...recDest.stream.getAudioTracks()]);
-  const chunks=[];
-  rec=new MediaRecorder(stream,{mimeType:mt, videoBitsPerSecond:S.quality>=1080?12e6:S.quality>=720?6e6:3e6});
-  rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
-  rec.onstop=()=>{
-    exporting=false; spk.gain.value=1;
-    const blob=new Blob(chunks,{type:mt.split(';')[0]}), url=URL.createObjectURL(blob);
-    const name=(S.project?S.project.name.replace(/[^\wಀ-೿ -]/g,''):'ChitraCut')+'_'+Date.now()+(mt.includes('mp4')?'.mp4':'.webm');
-    const a=document.createElement('a'); a.href=url; a.download=name; a.click();
-    showOverlay('✅ Export ಮುಗಿಯಿತು', name+' ('+(blob.size/1048576).toFixed(1)+' MB)', `<a href="${url}" download="${name}"><button class="primary">Download again</button></a><button id="ovClose">Close</button>`);
-  };
-  exporting=true; spk.gain.value=0;
-  showOverlay('Exporting…','ಈ tab ತೆರೆದಿಡಿ — video real-time ನಲ್ಲಿ render ಆಗುತ್ತದೆ','<button id="ovCancel">Cancel</button>');
-  seek(0);
-  setTimeout(()=>{ if(!exporting) return; rec.start(250); play(); }, 400);
+  opt = Object.assign({q:1080, fps:30, bitrate:0, fmt:'mp4', codec:'h264', audioOnly:false, gif:false, name:''}, opt||{});
+  if(opt.gif) return exportGif(opt);
+  let mime, ext;
+  if(opt.audioOnly){ mime = ['audio/webm;codecs=opus','audio/mp4;codecs=mp4a.40.2','audio/webm'].find(t => MediaRecorder.isTypeSupported(t)); ext = mime.includes('mp4') ? '.m4a' : '.webm'; }
+  else {
+    mime = pickMime(opt.fmt, opt.codec, opt.q) || pickMime('mp4','h264',opt.q) || pickMime('webm','vp9',opt.q) || pickMime('webm','vp8',opt.q) || 'video/webm';
+    ext = mime.startsWith('video/mp4') ? '.mp4' : '.webm';
+  }
+  const px = opt.q*opt.q*16/9, br = opt.bitrate || Math.round(px*opt.fps*.1);   // "recommended" ≈ 0.1 bit / pixel / frame
+  showOverlay('Exporting…', `${opt.audioOnly ? 'Audio' : opt.q+'p · '+opt.fps+'fps · '+(br/1e6).toFixed(1)+' Mbps'} — ಈ tab ತೆರೆದಿಡಿ, real-time ನಲ್ಲಿ render ಆಗುತ್ತದೆ`, '<button id="ovCancel">Cancel</button>');
+  try{
+    const blob = await recordTimeline({t0:0, t1:S.total, q:opt.q, fps:opt.fps, bitrate:br, mime, audioOnly:opt.audioOnly});
+    const name = (opt.name ? opt.name.replace(/[\\/:*?"<>|]/g,'') + ext : expName(ext)), url = saveBlob(blob, name);
+    showOverlay('✅ Export ಮುಗಿಯಿತು', name+' ('+(blob.size/1048576).toFixed(1)+' MB · '+mime.split(';')[0]+')', `<a href="${url}" download="${name}"><button class="primary">Download again</button></a><button id="ovClose">Close</button>`);
+  }catch(e){ if(e && e.message === 'cancel') return false; showOverlay('⚠ Export ಆಗಲಿಲ್ಲ', (e && e.message) || String(e), '<button id="ovClose">Close</button>'); }
 }
-function onPlaybackEnd(){ if(exporting && rec && rec.state==='recording') setTimeout(()=>rec.stop(),200); }
+// wait until every visible video has the frame for S.time, then render it
+async function renderAt(t){
+  seek(t);
+  for(let i=0;i<60;i++){
+    const busy = [...Object.values(vids), ...Object.values(ovVids)].some(v => v.seeking);
+    if(!busy) break; await new Promise(r => setTimeout(r, 16));
+  }
+  render(performance.now());
+}
+async function exportGif(opt){
+  const fps = Math.min(opt.fps, 15), maxW = opt.q >= 720 ? 480 : 320, k = Math.min(1, maxW/Math.max(out.width, out.height));
+  const w = Math.round(out.width*k), h = Math.round(out.height*k), n = Math.max(1, Math.ceil(S.total*fps));
+  if(n > 600 && !confirm(`GIF ದೊಡ್ಡದು (${n} frames). ಮುಂದುವರಿಸಬೇಕೆ?`)) return;
+  pause(); exporting = true;
+  showOverlay('GIF ತಯಾರಾಗುತ್ತಿದೆ…', `${w}×${h} · ${fps} fps`, '<button id="ovCancel">Cancel</button>');
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', {willReadFrequently:true});
+  const g = new GifWriter(w, h, Math.round(100/fps));
+  try{
+    for(let i=0;i<n && exporting;i++){
+      await renderAt(i/fps); x.drawImage(out, 0, 0, w, h); g.frame(x.getImageData(0,0,w,h).data);
+      $('#ovBar').style.width = (i/n*100) + '%';
+      if(i % 4 === 0) await new Promise(r => setTimeout(r));
+    }
+    if(!exporting) return;
+    exporting = false; const blob = g.end(), name = (opt.name || 'ChitraCut') + '.gif', url = saveBlob(blob, name);
+    showOverlay('✅ GIF ಮುಗಿಯಿತು', name+' ('+(blob.size/1048576).toFixed(1)+' MB)', `<a href="${url}" download="${name}"><button class="primary">Download again</button></a><button id="ovClose">Close</button>`);
+  }catch(e){ exporting = false; showOverlay('⚠ GIF ಆಗಲಿಲ್ಲ', e.message, '<button id="ovClose">Close</button>'); }
+}
+// tiny GIF89a encoder (fixed 6×7×6 colour cube + ordered dithering, LZW)
+function GifWriter(w, h, delay){
+  const bytes = []; const B = b => bytes.push(b & 255), W16 = v => { B(v); B(v>>8); };
+  const pal = []; for(let r=0;r<6;r++) for(let g=0;g<7;g++) for(let b=0;b<6;b++) pal.push([r*51, Math.round(g*42.5), b*51]);
+  while(pal.length < 256) pal.push([0,0,0]);
+  'GIF89a'.split('').forEach(ch => B(ch.charCodeAt(0))); W16(w); W16(h); B(0xF7); B(0); B(0);
+  pal.forEach(p => { B(p[0]); B(p[1]); B(p[2]); });
+  [0x21,0xFF,11,...'NETSCAPE2.0'.split('').map(c=>c.charCodeAt(0)),3,1,0,0,0].forEach(B);
+  const BAY = [0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+  this.frame = d => {
+    const idx = new Uint8Array(w*h);
+    for(let y=0,i=0;y<h;y++) for(let xx=0;xx<w;xx++,i++){
+      const t = (BAY[(y&3)*4+(xx&3)]/16 - .5), p = i*4;
+      const r = clamp(Math.round(d[p]/51 + t), 0, 5), g = clamp(Math.round(d[p+1]/42.5 + t), 0, 6), b = clamp(Math.round(d[p+2]/51 + t), 0, 5);
+      idx[i] = r*42 + g*6 + b;
+    }
+    [0x21,0xF9,4,0].forEach(B); W16(delay); B(0); B(0);
+    B(0x2C); W16(0); W16(0); W16(w); W16(h); B(0);
+    B(8); lzw(idx);
+  };
+  const lzw = idx => {
+    const MIN = 8, CLR = 256, EOI = 257; let size = MIN+1, next = 258, dict = new Map(), buf = 0, nb = 0; const outB = [];
+    const emit = code => { buf |= code << nb; nb += size; while(nb >= 8){ outB.push(buf & 255); buf >>>= 8; nb -= 8; } };
+    emit(CLR); let cur = idx[0];
+    for(let i=1;i<idx.length;i++){
+      const k = idx[i], key = cur*256 + k, f = dict.get(key);
+      if(f !== undefined){ cur = f; continue; }
+      emit(cur);
+      if(next < 4096){ dict.set(key, next++); if(next > (1<<size) && size < 12) size++; }
+      else { emit(CLR); dict = new Map(); size = MIN+1; next = 258; }
+      cur = k;
+    }
+    emit(cur); emit(EOI); if(nb > 0) outB.push(buf & 255);
+    for(let i=0;i<outB.length;i+=255){ const ch = outB.slice(i,i+255); B(ch.length); ch.forEach(B); }
+    B(0);
+  };
+  this.end = () => { B(0x3B); return new Blob([new Uint8Array(bytes)], {type:'image/gif'}); };
+}
+// compound clip: render a run of main-track clips (with their effects) into one new clip
+async function compoundClips(ids){
+  const list = S.clips.filter(c => ids.includes(c.id)); if(list.length < 2) return alert('Compound ಮಾಡಲು 2 ಅಥವಾ ಹೆಚ್ಚು clip ಆರಿಸಿ (Ctrl / Shift + click)');
+  const i0 = S.clips.indexOf(list[0]), i1 = S.clips.indexOf(list[list.length-1]);
+  if(i1 - i0 + 1 !== list.length) return alert('ಒಂದರ ಪಕ್ಕ ಒಂದು ಇರುವ clip ಗಳನ್ನು ಮಾತ್ರ compound ಮಾಡಬಹುದು');
+  const t0 = derived[list[0].id].start, t1 = derived[list[list.length-1].id].start + derived[list[list.length-1].id].dur;
+  const mime = pickMime('webm','vp9',1080) || pickMime('webm','vp8',1080) || pickMime('mp4','h264',1080);
+  if(!mime) return alert('ಈ browser ನಲ್ಲಿ ಆಗುವುದಿಲ್ಲ');
+  showOverlay('Compound clip ತಯಾರಾಗುತ್ತಿದೆ…', `${list.length} clips · ${fmtT(t1-t0)} (real-time)`, '<button id="ovCancel">Cancel</button>');
+  try{
+    const blob = await recordTimeline({t0, t1, q:S.quality, fps:30, bitrate:12e6, mime, mainOnly:true});
+    const m = await addVideoMedia(new File([blob], `Compound ${S.media.filter(x=>/^Compound/.test(x.name)).length+1}.${mime.includes('mp4')?'mp4':'webm'}`, {type:mime.split(';')[0]}));
+    pushUndo();
+    const c = newClip(m); c.out = Math.min(m.duration, t1 - t0); c.trans = deep(list[0].trans); c.compoundOf = list.map(x => x.id);
+    S.clips.splice(i0, list.length, c); S.sel = c.id; selMulti.clear(); afterEdit(); renderMediaPanel();
+    $('#overlay').style.display = 'none';
+  }catch(e){ if(e && e.message === 'cancel') return; showOverlay('⚠ ಆಗಲಿಲ್ಲ', e.message || String(e), '<button id="ovClose">Close</button>'); }
+}
+const selMulti = new Set();
+function onPlaybackEnd(){ if(exporting && recDone) recDone(); }
 $('#overlay').addEventListener('click',e=>{
-  if(e.target.id==='ovCancel'){ exporting=false; spk.gain.value=1; if(rec){ rec.onstop=null; if(rec.state!=='inactive') rec.stop(); } pause(); $('#overlay').style.display='none'; }
+  if(e.target.id==='ovCancel'){ const r=rec, rc=recCancel; recCancel=null; exporting=false; expEnd=null; soloMain=false; spk.gain.value=1;
+    if(r && r.state!=='inactive'){ r.ondataavailable=null; r.onstop=null; r.stop(); } if(rc) rc(); pause(); $('#overlay').style.display='none'; }
   if(e.target.id==='ovClose') $('#overlay').style.display='none';
 });
 
@@ -1614,8 +1969,11 @@ function loadSeg(){
   return segLoading;
 }
 function setSeg(it, el){
-  gl.uniform1f(U.u_segOn, 0);
-  if(!it.rmbg || !el) return;
+  gl.uniform1f(U.u_segOn, 0); gl.uniform1f(U.u_segAv, 0);
+  const bf = it.bfx && it.bfx.type !== 'none' ? it.bfx : null;
+  gl.uniform1f(U.u_bfx, bf ? BFX_T[bf.type]||0 : 0);
+  if(bf){ const n = parseInt((bf.color||'#20d5ec').slice(1),16); gl.uniform1f(U.u_bfxA, bf.amount/100); gl.uniform3f(U.u_bcol,(n>>16&255)/255,(n>>8&255)/255,(n&255)/255); }
+  if((!it.rmbg && !bf) || !el) return;
   if(!SEG){ if(!segErr) loadSeg().catch(()=>{}); return; }
   const key = el.tagName === 'IMG' ? 'img' : el.currentTime.toFixed(3);
   let c = segCache[it.id];
@@ -1636,7 +1994,8 @@ function setSeg(it, el){
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, c.w, c.h, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, c.u8);
   gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
   gl.activeTexture(gl.TEXTURE0);
-  gl.uniform1f(U.u_segOn, 1); gl.uniform1f(U.u_segInv, it.rmbgInv ? 1 : 0);
+  gl.uniform1f(U.u_segAv, 1);
+  if(it.rmbg){ gl.uniform1f(U.u_segOn, 1); gl.uniform1f(U.u_segInv, it.rmbgInv ? 1 : 0); }
 }
 
 /* ================= FREE SOUND EFFECTS (synthesised – no copyright, no download) ================= */

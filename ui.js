@@ -106,7 +106,7 @@ const FILTER_CSS = {none:'',vivid:'saturate(1.45) contrast(1.15)',warm:'sepia(.3
    ===================================================================== */
 const LTABS = [['media','Media','media'],['audio','Audio','audio'],['text','Text','text'],['stickers','Stickers','sticker'],['effects','Effects','effects'],['transitions','Transitions','trans'],['captions','Captions','captions'],['filters','Filters','filters'],['adjust','Adjustment','adjust']];
 const LSUB = {media:[['all','All'],['video','Videos'],['image','Photos'],['audio','Audio'],['library','Library']], audio:[['sfx','Sound effects'],['yours','Yours'],['voice','Voice-over']],
-  text:[['add','Add text'],['styles','Text styles']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[['video','Video effects']], transitions:[['all','Transitions']],
+  text:[['add','Add text'],['styles','Text styles']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[['video','Video effects'],['body','Body effects']], transitions:[['all','Transitions']],
   captions:[['auto','Auto captions'],['srt','SRT file']], filters:[['filters','Filters']], adjust:[['lut','LUT'],['adjust','Adjust']]};
 const TEXT_ADD = [
   ['default','Default text',{text:'ನಿಮ್ಮ ಪಠ್ಯ ಇಲ್ಲಿ'}],
@@ -139,6 +139,7 @@ function mediaTile(m){
   return `<div class="mtile ${m.type}" draggable="${!m.missing}" data-mid="${m.id}" title="${esc(m.name)}">
     <div class="mth" style="${bg}">${m.thumb?'':`<div class="ph">${m.type==='audio'?'🎵':'⚠️'}</div>`}
       ${usedMedia(m.id)?'<span class="badge">Added</span>':''}<span class="dur">${m.type==='image'?'IMG':fmtT(m.duration)}</span>
+      <button class="mdel" data-delm="${m.id}" title="Project ನಿಂದ delete ಮಾಡಿ">✕</button>
       ${m.missing?'':`<div class="acts">${m.type!=='audio'?`<button class="pip" data-pip="${m.id}" title="Overlay (PiP) ಆಗಿ ಸೇರಿಸಿ">PiP</button>`:''}<button data-addm="${m.id}" title="Timeline ಗೆ ಸೇರಿಸಿ">+</button></div>`}
     </div><div class="mnm">${m.missing?'⚠️ ':''}${esc(m.name)}</div></div>`;
 }
@@ -177,8 +178,8 @@ function leftContent(tab, sub){
       }
       if(sub === 'yours'){
         const list = S.media.filter(m => m.type === 'audio');
-        return `<div class="lhead"><button class="primary" data-l="audioimp">${ic('import')} Import music</button><button data-l="extract">${ic('wave')} Extract from video</button></div>
-          ${list.length ? list.map(m=>`<div class="srow"><button class="sico" data-ap="${m.id}" title="ಕೇಳಿ">${ic(apEl&&apEl.dataset.id===m.id&&!apEl.paused?'pause':'play')}</button><div class="sinfo"><b>${esc(m.name)}</b><span>${fmtT(m.duration)}</span></div><button class="sadd" data-addm="${m.id}" title="Playhead ನಲ್ಲಿ ಸೇರಿಸಿ">${ic('plus')}</button></div>`).join('') : '<div class="lnote">ನಿಮ್ಮ music / audio files ಇಲ್ಲಿ ಕಾಣುತ್ತವೆ. MP3, WAV, M4A support ಆಗುತ್ತವೆ.</div>'}`;
+        return `<div class="lhead"><button class="primary" data-l="audioimp">${ic('import')} Import music</button></div>
+          ${list.length ? list.map(m=>`<div class="srow"><button class="sico" data-ap="${m.id}" title="ಕೇಳಿ">${ic(apEl&&apEl.dataset.id===m.id&&!apEl.paused?'pause':'play')}</button><div class="sinfo"><b>${esc(m.name)}</b><span>${fmtT(m.duration)}</span></div><button class="sadd" data-addm="${m.id}" title="Playhead ನಲ್ಲಿ ಸೇರಿಸಿ">${ic('plus')}</button><button class="sadd" data-delm="${m.id}" title="Delete">${ic('trash')}</button></div>`).join('') : '<div class="lnote">ನಿಮ್ಮ music / audio files ಇಲ್ಲಿ ಕಾಣುತ್ತವೆ. MP3, WAV, M4A support ಆಗುತ್ತವೆ.</div>'}`;
       }
       return `<div class="dropzone" data-l="rec"><b>🎙 Voice-over record</b>Playhead (${fmtTC(S.time)}) ಇರುವ ಜಾಗದಿಂದ ನಿಮ್ಮ ಧ್ವನಿ record ಆಗುತ್ತದೆ</div>
         <div class="lnote">Record ಆಗುವಾಗ video play ಆಗುತ್ತದೆ. Headphone ಬಳಸಿದರೆ ಉತ್ತಮ. Live captions ON ಮಾಡಿದರೆ ಮಾತು ತಕ್ಷಣ ಕನ್ನಡ captions ಆಗುತ್ತದೆ (Chrome).</div>`;
@@ -197,10 +198,19 @@ function leftContent(tab, sub){
         <div class="lnote">ಇವು ChitraCut ನ ಸ್ವಂತ generic icons (Like, Bell, Verified ✓, Share…). YouTube / Facebook / Instagram ನ ನಿಜವಾದ logo ಗಳು trademark ಆಗಿರುವುದರಿಂದ ಸೇರಿಸಿಲ್ಲ.</div>`;
       return `<div class="tiles small">${EMOJIS.map(e=>`<button class="tile emoji" data-stk="${e}"><div class="tth">${e}</div></button>`).join('')}</div>`;
     case 'effects': {
-      const it = visTarget(), th = thumbFor(it), cur = it ? it.fx.type : '';
-      return `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'ಮೊದಲು clip select ಮಾಡಿ'}</div>
-        <div class="tiles">${FX.map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-fx="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv fx-${k}" style="background-image:url(${th})"></div>`}</div><span>${n}</span></button>`).join('')}</div>
-        <div class="lnote">⚡ Effect ಮೇಲೆ click ಮಾಡಿದರೆ Player ನಲ್ಲಿ ತಕ್ಷಣ preview ಆಗುತ್ತದೆ. Intensity/Speed → ಬಲಗಡೆ Video › Effect.</div>`;
+      const it = normItem(visTarget()), th = thumbFor(it), head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'ಮೊದಲು clip select ಮಾಡಿ'}</div>`;
+      if(sub === 'body'){
+        const cur = it ? it.bfx.type : '';
+        const st = !it || cur === 'none' ? '' : SEG ? '<div class="segstat ok">✓ AI body detection ready</div>' : segErr ? `<div class="segstat err">✗ ${esc(segErr)} — internet ಬೇಕು</div>` : '<div class="segstat">⏳ AI model load ಆಗುತ್ತಿದೆ… (ಮೊದಲ ಬಾರಿ ಮಾತ್ರ)</div>';
+        return head + `<div class="tiles">${BFX.map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-bfx="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv bfx-${k}" style="background-image:url(${th})"><i></i></div>`}</div><span>${n}</span></button>`).join('')}</div>
+          ${it && cur !== 'none' ? `<div style="margin-top:14px">${st}${sl(it,'Intensity','bfx.amount',0,100)}${['bodyGlow','neonOutline','bgTint','ghost'].includes(cur)?colorRow(it,'Color','bfx.color',true):''}</div>` : ''}
+          <div class="lnote">🧍 Body effects AI ಮೂಲಕ ವ್ಯಕ್ತಿಯನ್ನು ಗುರುತಿಸಿ ಅವರ ಸುತ್ತ / ಹಿನ್ನೆಲೆಗೆ ಮಾತ್ರ effect ಹಾಕುತ್ತದೆ (Portrait blur, Color pop, Glow…). ವ್ಯಕ್ತಿ ಸ್ಪಷ್ಟವಾಗಿ ಕಾಣುವ video ಗೆ ಉತ್ತಮ.</div>`;
+      }
+      const cat = S.fxCat || 'All', keys = cat === 'All' ? FX.map(f=>f[0]) : ['none', ...(FX_CATS.find(c=>c[0]===cat)||[0,[]])[1]], cur = it ? it.fx.type : '';
+      return head + `<div class="chiprow">${['All',...FX_CATS.map(c=>c[0])].map(c=>`<button data-fxcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>
+        <div class="tiles">${keys.map(k=>FX.find(f=>f[0]===k)).filter(Boolean).map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-fx="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv fx-${k}" style="background-image:url(${th})"></div>`}</div><span>${n}</span></button>`).join('')}</div>
+        ${it && cur !== 'none' ? `<div style="margin-top:14px">${sl(it,'Intensity','fx.amount',0,100)}${sl(it,'Speed','fx.speed',0,100)}</div>${!it.type?'<div class="btns"><button data-all="fx">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}` : ''}
+        <div class="lnote">⚡ Effect ಮೇಲೆ click ಮಾಡಿದರೆ Player ನಲ್ಲಿ ತಕ್ಷಣ preview ಆಗುತ್ತದೆ. Intensity / Speed ಇಲ್ಲೇ ಕೆಳಗೆ.</div>`;
     }
     case 'transitions': {
       const c = transTarget(), i = c ? S.clips.indexOf(c) : -1, cur = c ? c.trans.type : '';
@@ -217,10 +227,19 @@ function leftContent(tab, sub){
         <div class="lnote">YouTube ಗೆ subtitles ಬೇಕಿದ್ದರೆ Export .srt ಬಳಸಿ. Caption text ಅನ್ನು timeline ನಲ್ಲಿ select ಮಾಡಿ ಬದಲಿಸಬಹುದು.</div>`;
       return captionsAuto();
     case 'filters': {
-      const it = visTarget(), th = thumbFor(it);
-      return `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'ಮೊದಲು clip select ಮಾಡಿ'}</div>
-        <div class="tiles">${Object.keys(FILTERS).map(k=>`<button class="tile ${it&&it.filter===k?'on':''}" data-filt="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join('')}</div>
-        ${it && it.filter !== 'none' ? `<div style="margin-top:14px">${sl(it,'Strength','filterAmt',0,100)}</div><div class="btns"><button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>` : ''}`;
+      const it = visTarget(), cat = S.pfCat || 'Featured', cur = it ? it.filter : '';
+      const head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'ಮೊದಲು clip select ಮಾಡಿ'}</div>
+        <div class="chiprow">${PF_CATS.map(c=>`<button data-pfcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>`;
+      let tiles;
+      if(cat === 'Basic'){ const th = thumbFor(it); tiles = Object.keys(FILTERS).map(k=>`<button class="tile ${cur===k?'on':''}" data-filt="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join(''); }
+      else {
+        const th = pfThumbs(it), list = cat === 'Featured' ? PF_FEATURED.map(id => PF_MAP[id]) : PRO_FILTERS.filter(f => f.cat === cat);
+        tiles = `<button class="tile ${cur==='none'?'on':''}" data-filt="none"><div class="tth">${ic('ban')}</div><span>None</span></button>` +
+          list.map(f=>`<button class="tile ${cur==='pf:'+f.id?'on':''}" data-filt="pf:${f.id}"><div class="tth"><img class="pfimg" src="${th[f.id]}"></div><span>${f.name}</span></button>`).join('');
+      }
+      return head + `<div class="tiles">${tiles}</div>
+        ${it && cur !== 'none' ? `<div style="margin-top:14px"><div class="ltitle" style="margin:0 0 6px">${esc(filterName(cur))}</div>${sl(it,'Strength','filterAmt',0,100)}</div><div class="btns"><button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>` : ''}
+        <div class="lnote">🎬 Cinematic colour grades — ನಿಜವಾದ 3D LUT ಆಗಿ GPU ನಲ್ಲಿ apply ಆಗುತ್ತವೆ. Preview ನಿಮ್ಮ clip ನ frame ಮೇಲೆಯೇ. ಬೆಳಕು/ಬಣ್ಣ ಇನ್ನಷ್ಟು ಸರಿಪಡಿಸಲು ಬಲಗಡೆ <b>Adjust</b>.</div>`;
     }
     case 'adjust': {
       const it = visTarget();
@@ -236,10 +255,15 @@ function lutBody(it){
     <div style="height:12px"></div>${it.lut?sl(it,'Intensity','lutAmt',0,100):''}
     <div class="btns"><button data-act="importLut">${ic('import')} Import .cube LUT</button>${!it.type?'<button data-all="lut">ಎಲ್ಲಾ clips ಗೆ</button>':''}</div>`;
 }
-function adjustBody(it){
-  return sec('adj','Basic adjust', sl(it,'Brightness','adj.brightness',-100,100)+sl(it,'Contrast','adj.contrast',-100,100)+sl(it,'Saturation','adj.saturation',-100,100)+
-      sl(it,'Temperature','adj.temp',-100,100)+sl(it,'Tint','adj.tint',-100,100)+sl(it,'Fade','adj.fade',0,100), {reset:'resetAdj'}) +
-    sec('adj2','Effects', sl(it,'Vignette','adj.vignette',-100,100)+sl(it,'Grain','adj.grain',0,100)+sl(it,'Sharpen','adj.sharpen',0,100)) +
+function adjustBody(it, right){
+  const f = it.filter && it.filter !== 'none' ? `<div class="crow"><span>Filter</span><b style="color:var(--text)">${esc(filterName(it.filter))} · ${it.filterAmt}%</b></div>` : '';
+  return (right ? '<div style="height:8px"></div>' : '') +
+    sec('adjL','Light', sl(it,'Exposure','adj.exposure',-100,100)+sl(it,'Brightness','adj.brightness',-100,100)+sl(it,'Contrast','adj.contrast',-100,100)+
+      sl(it,'Highlights','adj.highlights',-100,100)+sl(it,'Shadows','adj.shadows',-100,100), {reset:'resetAdj'}) +
+    sec('adjC','Color', sl(it,'Saturation','adj.saturation',-100,100)+sl(it,'Vibrance','adj.vibrance',-100,100)+sl(it,'Temperature','adj.temp',-100,100)+
+      sl(it,'Tint','adj.tint',-100,100)+sl(it,'Hue','adj.hue',-100,100)) +
+    sec('adjE','Effects', sl(it,'Fade','adj.fade',0,100)+sl(it,'Vignette','adj.vignette',-100,100)+sl(it,'Grain','adj.grain',0,100)+sl(it,'Sharpen','adj.sharpen',0,100)) +
+    (right ? sec('adjF','Filter & LUT', f + lutBody(it)) : '') +
     (!it.type ? '<div class="btns"><button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : '');
 }
 function addTextPreset(k){
@@ -257,11 +281,11 @@ LC.addEventListener('click', async e => {
   if(d.l === 'import') return $('#fileIn').click();
   if(d.l === 'rec') return openRecord();
   if(d.l === 'audioimp') return $('#audioIn').click();
-  if(d.l === 'extract'){ const c = selClip() || clipAt(S.time); if(c && !isImg(c)) extractAudio(c); else alert('Video clip select ಮಾಡಿ'); return; }
   if(t.id === 'cRun'){ S.capLang = $('#cLang').value; S.capModel = $('#cModel').value; runCaptions(); return; }
   if(t.id === 'cSrtIn') return $('#srtIn').click();
   if(t.id === 'cSrtOut') return exportSRT();
   if(t.id === 'cDelAll'){ const n = S.overlays.filter(o=>o.caption).length; if(n && confirm(n+' captions delete ಮಾಡಲೇ?')){ pushUndo(); S.overlays = S.overlays.filter(o=>!o.caption); afterEdit(); } return; }
+  if(d.delm){ deleteMedia(d.delm); return; }
   if(d.pip){ addPip(media(d.pip)); return; }
   const mid = d.addm || (t.classList.contains('mtile') ? d.mid : null);
   if(mid){
@@ -290,9 +314,18 @@ LC.addEventListener('click', async e => {
   if(d.stk){ addOverlay(newOverlay('sticker', {text:d.stk, anim:{in:'pop',out:'fade',loop:'none',inDur:.5,outDur:.4}}), 'sticker'); return; }
   if(d.fx){
     const it = visTarget(); if(!it) return alert('ಮೊದಲು clip select ಮಾಡಿ');
-    pushUndo(); it.fx.type = d.fx; S.sel = it.id; S.rt[kindOf(it)] = 'video'; S.rs.video = 'effect';
+    pushUndo(); it.fx.type = d.fx; S.sel = it.id;
     renderTimeline(); renderInspector();
     if(d.fx !== 'none'){ const st = itemStart(it); previewPlay(clamp(S.time, st, st + Math.max(0, itemDur(it) - 2)), 2); }
+    return;
+  }
+  if(d.fxcat){ S.fxCat = d.fxcat; renderLeft(); return; }
+  if(d.pfcat){ S.pfCat = d.pfcat; renderLeft(); return; }
+  if(d.bfx){
+    const it = normItem(visTarget()); if(!it) return alert('ಮೊದಲು clip select ಮಾಡಿ');
+    pushUndo(); it.bfx.type = d.bfx; S.sel = it.id; if(d.bfx !== 'none') loadSeg().catch(()=>{});
+    renderTimeline(); renderInspector(); renderLeft();
+    if(d.bfx !== 'none'){ const st = itemStart(it); previewPlay(clamp(S.time, st, st + Math.max(0, itemDur(it) - 2)), 2); }
     return;
   }
   if(d.tr){
@@ -303,7 +336,7 @@ LC.addEventListener('click', async e => {
   }
   if(d.filt){
     const it = visTarget(); if(!it) return alert('ಮೊದಲು clip select ಮಾಡಿ');
-    pushUndo(); it.filter = d.filt; S.sel = it.id; renderTimeline(); renderInspector(); return;
+    pushUndo(); it.filter = d.filt; S.sel = it.id; renderTimeline(); renderInspector(); renderLeft(); return;
   }
   const it = visTarget();
   if(doClick(t, it)) return;
@@ -336,11 +369,11 @@ const RT = {
 };
 function rsubFor(tab, kind){
   switch(tab){
-    case 'video': return [['basic','Basic'],['rmbg','Remove BG'],['mask','Mask'],['retouch','Retouch'],['effect','Effect']];
-    case 'audio': return kind === 'ovvideo' ? null : [['basic','Basic'],['voice','Voice changer']];
+    case 'video': return [['basic','Basic'],['rmbg','Remove BG'],['mask','Mask'],['retouch','Retouch']];
+    case 'audio': return kind === 'ovvideo' ? null : [['basic','Basic'],['voice','Voice changer'],['fx','Effects']];
     case 'speed': return kind === 'clip' ? [['normal','Normal'],['curve','Curve']] : null;
     case 'anim': return [['in','In'],['out','Out'],['combo',(kind==='clip'||kind==='clipimg')?'Combo':'Loop']];
-    case 'adjust': return [['basic','Adjust'],['filter','Filter'],['lut','LUT']];
+    case 'adjust': return null;
     case 'text': return [['basic','Basic'],['style','Style']];
   }
   return null;
@@ -361,13 +394,13 @@ function renderInspector(){
     sub = S.rs[tab]; if(!subs.some(s => s[0] === sub)) sub = S.rs[tab] = subs[0][0];
     $('#rsub').innerHTML = `<div class="seg">${subs.map(([k,n])=>`<button data-rsub="${k}" class="${k===sub?'on':''}">${n}</button>`).join('')}</div>`;
   } else $('#rsub').innerHTML = '';
-  IB.innerHTML = inspBody(it, kind, tab, sub); fillRanges(IB); updKfBtn(); refreshLeftLive();
+  normItem(it); IB.innerHTML = inspBody(it, kind, tab, sub); fillRanges(IB); updKfBtn(); refreshLeftLive();
 }
 const KF_NOTE = '<div class="note">◆ <b>Keyframe:</b> playhead ಇಡಿ → ◆ ಒತ್ತಿ → playhead ಮುಂದೆ ಸರಿಸಿ → ಮೌಲ್ಯ ಬದಲಿಸಿ. ಎರಡರ ನಡುವೆ ತಾನಾಗಿ animation ಆಗುತ್ತದೆ.</div>';
 function transformSec(it){
   const ov = !!it.type, med = isMediaOv(it);
   let b = ov ? sl(it,'Size','size',5,med?300:400)+sl(it,'Position X','x',-20,120,.5)+sl(it,'Position Y','y',-20,120,.5)
-             : sl(it,'Scale','tf.scale',10,400)+sl(it,'Position X','tf.x',-cv.width,cv.width)+sl(it,'Position Y','tf.y',-cv.height,cv.height);
+             : sl(it,'Scale','tf.scale',10,400)+sl(it,'Position X','tf.x',-1440,1440)+sl(it,'Position Y','tf.y',-1440,1440);
   b += sl(it,'Rotate',ov?'rot':'tf.rot',-180,180);
   const B = (a,i,t) => `<button data-act="${a}" title="${t}">${ic(i)}</button>`;
   b += `<div class="alignbar">${ov?B('center','center','Center'):B('fit','fit','Fit')}${(!ov||med)?B(ov?'fillv':'fill','fill','Fill / full screen')+B('flip','flip','Mirror'):''}${B('rot90','rotate','Rotate 90°')}${ov?B('up','up','Layer ಮೇಲೆ')+B('down','down','Layer ಕೆಳಗೆ'):''}</div>`;
@@ -410,9 +443,30 @@ function fxBody(it){
     ${f.type!=='none' ? `<div style="height:12px"></div>${sl(it,'Intensity','fx.amount',0,100)}${sl(it,'Speed','fx.speed',0,100)}` : ''}
     ${!it.type ? '<div class="btns"><button data-all="fx">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : ''}`;
 }
-const VOICE_TILES = [['orig','Original'],['michog','Mic Hog'],['echo','Echo'],['bighouse','Big House'],['megaphone','Megaphone'],['telephone','Telephone'],['robot','Robot'],['lofi','Lo-Fi'],['deep','Deep'],['radio','Radio']];
+const VOICE_TILES = [['orig','Original'],['michog','Mic Hog'],['studio','Studio Voice'],['podcast','Podcast'],['echo','Echo'],['bighouse','Big House'],['cave','Cave'],['megaphone','Megaphone'],['telephone','Telephone'],['radio','Radio'],['robot','Robot'],['lofi','Lo-Fi'],['deep','Deep'],['chipmunk','Chipmunk'],['monster','Monster'],['underwater','Underwater']];
 function curVoice(it){ const a = it.audio; if(a.voice !== 'none') return a.voice; if(a.reverb > 0 && !a.echo) return 'bighouse'; if(a.echo > 0 && !a.reverb) return 'echo'; return (a.echo||a.reverb) ? '' : 'orig'; }
+const EQ_PRESETS = [['flat','Flat',[0,0,0,0,0,0,0,0,0,0]],['bass','Bass Boost',[6,5,4,2,0,0,0,0,0,0]],['vocal','Vocal',[-3,-2,-1,0,2,3,4,3,1,0]],['treble','Treble Boost',[0,0,0,0,0,1,2,4,5,6]],
+  ['podcast','Podcast',[-6,-3,0,1,0,1,3,3,1,-1]],['loud','Loudness',[5,4,1,0,-1,0,1,2,4,5]],['radio','Radio',[-12,-8,-3,2,4,4,2,-2,-8,-12]],['warm','Warm',[2,3,3,1,0,-1,-1,-2,-2,-3]]];
+function audioFxBody(it){
+  const a = it.audio, eqLab = ['31','62','125','250','500','1k','2k','4k','8k','16k'], ck = (p,t) => `<div class="crow"><span>${t}</span><input type="checkbox" data-p="${p}" ${getP(it,p)?'checked':''}></div>`;
+  const eq = `<div class="chiprow" style="margin:2px 0 10px">${EQ_PRESETS.map(([k,n])=>`<button data-act="eqp" data-val="${k}">${n}</button>`).join('')}</div>
+    <div class="geq">${a.eq.map((g,i)=>`<div class="band"><input type="range" orient="vertical" min="-12" max="12" step="1" value="${g}" data-p="audio.eq.${i}"><b>${g>0?'+':''}${g}</b><span>${eqLab[i]}</span></div>`).join('')}</div>`;
+  return '<div style="height:8px"></div>' +
+    sec('aeq','Graphic EQ (10-band)', eq + sl(it,'Bass','audio.bass',-15,15)+sl(it,'Treble','audio.treble',-15,15)) +
+    sec('adyn','Dynamics', ck('audio.comp','Compressor') + (a.comp ? sl(it,'Threshold (dB)','audio.compThr',-60,0)+sl(it,'Ratio','audio.compRatio',1,20,.5) : '') +
+      ck('audio.gate','Noise gate (ಮಾತಿಲ್ಲದಾಗ ಶಬ್ದ ನಿಲ್ಲಿಸುತ್ತದೆ)') + (a.gate ? sl(it,'Gate threshold (dB)','audio.gateThr',-80,-10) : '') +
+      ck('audio.limiter','Limiter (clipping ತಡೆ)') + sl(it,'Amplify (dB)','audio.amp',-20,20,.5)) +
+    sec('apit','Pitch', sl(it,'Pitch (semitones)','audio.pitch',-12,12,1) + '<div class="note">ವೇಗ ಬದಲಾಗದೆ ಧ್ವನಿಯ ಸ್ಥಾಯಿ ಮಾತ್ರ ಬದಲಾಗುತ್ತದೆ.</div>') +
+    sec('aecho','Echo & Reverb', sl(it,'Echo mix','audio.echo',0,100)+sl(it,'Echo delay (s)','audio.echoTime',.05,1.5,.01)+sl(it,'Echo feedback','audio.echoFb',0,85)+
+      sl(it,'Reverb mix','audio.reverb',0,100) + `<div class="crow"><span>Room</span><select data-p="audio.reverbSize">${REVERBS.map(([k,n])=>`<option value="${k}" ${a.reverbSize===k?'selected':''}>${n}</option>`).join('')}</select></div>`) +
+    sec('amod','Modulation & Distortion', sl(it,'Phaser','audio.phaser',0,100)+sl(it,'Wah-wah','audio.wah',0,100)+sl(it,'Tremolo','audio.trem',0,100)+sl(it,'Distortion','audio.dist',0,100)) +
+    sec('afil','Filters', sl(it,'High-pass (Hz, 0=off)','audio.hp',0,1000,10)+sl(it,'Low-pass (Hz, 0=off)','audio.lp',0,20000,100)) +
+    `<div class="btns"><button data-act="aReverse">${ic('undo')} Reverse audio</button><button data-act="aReset">${ic('reset')} Reset effects</button></div>
+    <div class="note">🎚 Audacity ತರಹದ effects — ಎಲ್ಲವೂ real-time; play ಮಾಡುತ್ತಾ slider ಸರಿಸಿ ಕೇಳಿ. Export ನಲ್ಲೂ ಇವೇ ಬರುತ್ತವೆ.</div>` +
+    (!it.type ? '<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : '');
+}
 function audioBody(it, kind, sub){
+  if(sub === 'fx') return audioFxBody(it);
   if(sub === 'voice'){
     const cv_ = curVoice(it);
     return `<div style="height:8px"></div><div class="vtiles">${VOICE_TILES.map(([k,n])=>`<button class="vtile ${cv_===k?'on':''}" data-voice="${k}">${n}</button>`).join('')}</div>
@@ -438,7 +492,7 @@ function audioBody(it, kind, sub){
     h += sec('eq','Equalizer', sl(it,'Bass boost','audio.bass',-15,15)+sl(it,'Treble','audio.treble',-15,15));
   } else h += '<div class="note">PiP video ಗೆ Voice tools ಬೇಕಿದ್ದರೆ ಅದನ್ನು main track ಗೆ ಎಳೆಯಿರಿ ಅಥವಾ Extract audio ಮಾಡಿ.</div>';
   const B = (a,i,t) => `<button data-act="${a}">${ic(i)} ${t}</button>`;
-  h += `<div class="btns">${kind==='clip'?B('extract','wave','Extract audio'):''}${B('cap','captions','Auto captions')}${kind==='audio'?B('dup','copy','Duplicate')+B('del','trash','Delete'):''}</div>`;
+  h += `<div class="btns">${kind==='clip'?(it.extracted?B('restoreAudio','undo','Restore audio'):B('extract','wave','Extract audio')):''}${kind==='audio'&&it.linkClip?B('restoreLinked','undo','Video ಗೆ ಮರಳಿಸಿ'):''}${B('cap','captions','Auto captions')}${kind==='audio'?B('dup','copy','Duplicate')+B('del','trash','Delete'):''}</div>`;
   if(kind === 'clip') h += '<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>';
   return h;
 }
@@ -463,7 +517,8 @@ function curveEditor(c){
     ${[10,5,2,1,.5,.2,.1].map(v=>`<line x1="0" x2="${CW}" y1="${cY(v)}" y2="${cY(v)}" stroke="${v===1?'#555':'#26262b'}" ${v===1?'stroke-dasharray="4 4"':''}/><text x="4" y="${cY(v)-2}" fill="#666" font-size="8">${v}x</text>`).join('')}
     ${ph>=0?`<line x1="${ph*CW}" x2="${ph*CW}" y1="0" y2="${CH}" stroke="#fff" stroke-width="1"/>`:''}
     <path d="${d}" fill="none" stroke="#20d5ec" stroke-width="2.2"/>
-    ${pts.map((p,i)=>`<circle data-ci="${i}" cx="${p[0]*CW}" cy="${cY(p[1])}" r="${curveSel===i?7:5.5}" fill="${curveSel===i?'#20d5ec':'#fff'}" stroke="#111" stroke-width="2" style="cursor:grab"/>`).join('')}
+    <path d="${d}" fill="none" stroke="transparent" stroke-width="18" style="cursor:copy" data-line="1"/>
+    ${pts.map((p,i)=>`<circle data-ci="${i}" cx="${p[0]*CW}" cy="${cY(p[1])}" r="13" fill="transparent" style="cursor:grab"/><circle data-ci="${i}" cx="${p[0]*CW}" cy="${cY(p[1])}" r="${curveSel===i?7:5.5}" fill="${curveSel===i?'#20d5ec':'#fff'}" stroke="#111" stroke-width="2" style="cursor:grab"/>`).join('')}
   </svg>`;
 }
 function refreshCurve(c){
@@ -476,17 +531,32 @@ let cdragC = null;
 function curvePt(e){ const r = $('#curveEd').getBoundingClientRect(); return {x:clamp((e.clientX-r.left)/r.width,0,1), y:(e.clientY-r.top)/r.height*CH}; }
 IB.addEventListener('pointerdown', e => {
   const svg = e.target.closest('#curveEd'); if(!svg) return; const c = selClip(); if(!c || !c.curve) return;
-  const ci = e.target.dataset ? e.target.dataset.ci : null;
-  if(ci == null) return;
+  let ci = e.target.dataset ? e.target.dataset.ci : null;
+  const p = curvePt(e);
+  if(ci == null){
+    const near = Math.abs(cY(curveAt(c, p.x)) - p.y) < 16 || e.target.dataset.line;
+    if(near){   // grab the line itself: a new point appears under the finger and follows it
+      const pts = c.curve, hit = pts.findIndex(q => Math.abs(q[0]-p.x) < .03);
+      if(hit >= 0) ci = hit;
+      else { pushUndo(); pts.push([p.x, curveAt(c,p.x)]); pts.sort((a,b)=>a[0]-b[0]); ci = pts.findIndex(q => q[0] === p.x); c.curveName = 'custom'; }
+      curveSel = +ci; cdragC = c; cdragC.noUndo = true; e.preventDefault(); refreshCurve(c);
+      const btn = IB.querySelector('[data-act="cDel"]'); if(btn) btn.disabled = !(curveSel>0 && curveSel<c.curve.length-1);
+      return;
+    }
+    curveScrub = c; scrubCurve(c, p.x); e.preventDefault(); return;   // empty area = move the playhead
+  }
   pushUndo(); curveSel = +ci; cdragC = c; e.preventDefault(); refreshCurve(c);
   const btn = IB.querySelector('[data-act="cDel"]'); if(btn) btn.disabled = !(curveSel>0 && curveSel<c.curve.length-1);
 });
+let curveScrub = null;
+function scrubCurve(c, x){ const d = derived[c.id]; if(!d) return; seek(d.start + srcToLocal(c, c.in + x*(c.out-c.in))); const w = $('#curveWrap'); if(w) w.innerHTML = curveEditor(c); }
 window.addEventListener('pointermove', e => {
+  if(curveScrub){ if($('#curveEd')) scrubCurve(curveScrub, curvePt(e).x); return; }
   if(!cdragC) return; const c = cdragC, p = curvePt(e), pts = c.curve, i = curveSel;
   if(i > 0 && i < pts.length-1) pts[i][0] = clamp(p.x, pts[i-1][0]+.02, pts[i+1][0]-.02);
   pts[i][1] = clamp(cV(p.y), .1, 10); c.curveName = 'custom'; refreshCurve(c);
 });
-window.addEventListener('pointerup', () => { if(cdragC){ cdragC = null; if(!S.playing) seek(Math.min(S.time,S.total)); } });
+window.addEventListener('pointerup', () => { curveScrub = null; if(cdragC){ cdragC = null; if(!S.playing) seek(Math.min(S.time,S.total)); } });
 IB.addEventListener('dblclick', e => {
   if(!e.target.closest('#curveEd')) return; const c = selClip(); if(!c || !c.curve) return;
   const p = curvePt(e); addCurvePoint(c, p.x, clamp(cV(p.y),.1,10));
@@ -508,7 +578,7 @@ function speedBody(it, kind, sub){
         <div class="crow"><span>Selected point</span><b id="curveVal" style="color:var(--text)">${sp?sp[1].toFixed(2)+'x':'—'}</b></div>
         <div class="crow"><span>Duration</span><b id="durInfo" style="color:var(--text)">${fmtTC(it.out-it.in)} → ${fmtTC(derived[it.id].dur)}</b></div>`;
     }
-    return h + '<div class="note">◉ Point ಗಳನ್ನು ಮೇಲೆ (ವೇಗ) / ಕೆಳಗೆ (slow) ಎಳೆಯಿರಿ · <b>+ Add point</b> ಅಥವಾ ಖಾಲಿ ಜಾಗದಲ್ಲಿ double-click ಮಾಡಿ ಹೊಸ point ಸೇರಿಸಿ.</div>';
+    return h + '<div class="note">◉ <b>ನೀಲಿ ಗೆರೆಯನ್ನೇ</b> ಹಿಡಿದು ಮೇಲೆ (ವೇಗ) / ಕೆಳಗೆ (slow) ಎಳೆಯಿರಿ — ಅಲ್ಲಿ ಹೊಸ point ಬರುತ್ತದೆ. Point ಗಳನ್ನು ಎಳೆಯಬಹುದು · ಖಾಲಿ ಜಾಗ click = playhead ಸರಿಸಿ · <b>+ Add point</b> ಸಹ ಇದೆ.</div>';
   }
   return sec('sp','Speed', sl(it,'Speed','speed',.1,10,.1)+`<div class="crow"><span>Duration</span><b id="durInfo" style="color:var(--text)">${fmtTC(it.out-it.in)} → ${fmtTC(derived[it.id].dur)}</b></div>`);
 }
@@ -561,7 +631,7 @@ function inspBody(it, kind, tab, sub){
         sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+sl(it,'Duration','dur',.3,60,.1)) +
         `<div class="btns"><button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`; }
     case 'track': return trackBody(it);
-    case 'adjust': return sub === 'filter' ? filterBody(it) : sub === 'lut' ? '<div style="height:10px"></div>'+lutBody(it) : adjustBody(it);
+    case 'adjust': return adjustBody(normItem(it), true);
     case 'text':
       if(sub === 'style') return `<div style="height:10px"></div><div class="tiles tstyle">${TEXT_PRESETS.map((p,i)=>`<button class="tile" data-preset="${i}"><div class="tth" style="${presetCss(p)}">Aa</div></button>`).join('')}</div><div style="height:6px"></div>` +
         sec('ol','Outline', colorRow(it,'Color','stroke')+sl(it,'Width','strokeW',0,20)) +
@@ -631,6 +701,7 @@ function onParamInput(e, it){
   if(p.startsWith('curve.')) it.curveName = 'custom';
   if(p === 'ck.on' && val) autoKey(it);
   if(p === 'rmbg' && val) loadSeg().catch(()=>{});
+  if(p.startsWith('audio.') && (el.type === 'range' || el.type === 'number')){ const b = el.closest('.band'); if(b) b.querySelector('b').textContent = (val>0?'+':'') + val; }
   const row = el.closest('.prow');
   if(row) row.querySelectorAll('[data-p]').forEach(x => { if(x !== el) x.value = x.type === 'number' ? fmtV(val) : val; if(x.type === 'range') setFill(x); });
   applyChange(p, it); updKfBtn();
@@ -673,6 +744,11 @@ function doAct(a, it, btn){
     case 'cDel': if(curveSel > 0 && curveSel < it.curve.length-1){ pushUndo(); it.curve.splice(curveSel,1); curveSel = -1; it.curveName = 'custom'; renderInspector(); refreshCurve(it); } return;
     case 'ckPick': setPick(!S.pick); renderInspector(); return;
     case 'extract': extractAudio(it); return;
+    case 'restoreAudio': restoreAudio(it); return;
+    case 'restoreLinked': { const own = S.clips.find(c => c.id === it.linkClip) || S.overlays.find(o => o.id === it.linkClip); if(own) restoreAudio(own); else { pushUndo(); S.audios.splice(S.audios.indexOf(it),1); afterEdit(); } return; }
+    case 'eqp': { const p = EQ_PRESETS.find(x => x[0] === btn.dataset.val); if(!p) return; pushUndo(); it.audio.eq = p[2].slice(); it.type === 'audio' ? rebuildAudChain(it) : rebuildChain(it); renderInspector(); return; }
+    case 'aReset': { pushUndo(); const keep = {voice:it.audio.voice, enhance:it.audio.enhance, isolate:it.audio.isolate, norm:it.audio.norm}; it.audio = Object.assign(defAudio(), keep); it.type === 'audio' ? rebuildAudChain(it) : rebuildChain(it); renderInspector(); return; }
+    case 'aReverse': reverseItem(it, btn); return;
     case 'cap': openCaptions(); return;
     case 'del': del(); return;
     case 'dup': dup(); return;
@@ -774,7 +850,17 @@ async function trackAction(a, o){
     trackRun = null; renderInspector(); renderTimeline(); seek(o.start + .01);
   }
 }
-function onSegReady(){ if(IB.querySelector('[data-p="rmbg"]')) renderInspector(); }
+function onSegReady(){ if(IB.querySelector('[data-p="rmbg"]')) renderInspector(); if(S.ltab === 'effects') renderLeft(); }
+async function reverseItem(it, btn){
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Reversing…'; }
+  try{
+    const nm = await reverseAudioItem(it); pushUndo();
+    if(it.type === 'audio'){ it.mediaId = nm.id; it.in = 0; it.dur = nm.duration/(it.speed||1); }
+    else { const st = itemStart(it), a = newAudioItem(nm, {kind:'extract', start:st, in:0, dur:nm.duration/(it.speed||1), speed:it.speed||1, volume:it.volume||100, audio:deep(it.audio), linkClip:it.id});
+      it.prevVolume = it.volume || 100; it.extracted = a.id; it.volume = 0; S.audios.push(a); S.sel = a.id; }
+    afterEdit(); renderLeft();
+  }catch(err){ alert('Reverse ಆಗಲಿಲ್ಲ: ' + err.message); renderInspector(); }
+}
 
 /* =====================================================================
    TIMELINE
@@ -804,8 +890,17 @@ function ovItemHTML(o){
   const m = media(o.mediaId), nm = esc(m ? m.name : '');
   const label = o.type==='gfx' ? '✨ '+esc((GFXMAP[o.gfx]||{}).name||'Graphic') : o.type==='text' ? (o.caption?'💬 ':'T  ')+esc((o.text||'').replace(/\n/g,' ')) : o.type==='sticker' ? (o.text.startsWith('svg:')?'⭐':o.text)+' Sticker' : o.type==='video' ? '🎞 '+nm : '🖼 '+nm;
   const fx = [o.mask&&o.mask.type!=='none'?'◐':'', o.ck&&o.ck.on?'🟩':'', o.rmbg?'✂':'', o.blend&&o.blend!=='source-over'?'⧉':'', o.fx&&o.fx.type!=='none'&&isMediaOv(o)?'⚡':''].join('');
-  const bg = o.type==='video' && m && m.thumb ? `background-image:linear-gradient(#0008,#0008),url(${m.thumb});` : '';
-  return `<div class="it ${o.type} ${o.caption?'cap':''} ${S.sel===o.id?'sel':''}" data-oid="${o.id}" style="left:${o.start*S.pps}px;width:${Math.max(14,o.dur*S.pps-2)}px;${bg}">${fx} ${label}${kfDots(o)}<div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
+  const bg = o.type==='image' && m && m.thumb ? `background-image:url(${m.thumb});background-size:auto 100%;background-repeat:repeat-x;` : '';
+  const strip = o.type==='video' && m ? ovStrip(o, m) : '';
+  return `<div class="it ${o.type} ${o.caption?'cap':''} ${S.sel===o.id?'sel':''}" data-oid="${o.id}" style="left:${o.start*S.pps}px;width:${Math.max(14,o.dur*S.pps-2)}px;${bg}">${strip}<span class="lbl">${fx} ${label}${o.type==='video'&&o.volume===0?' 🔇':''}</span>${kfDots(o)}<div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
+}
+function ovStrip(o, m){
+  const TH = 30, wpx = Math.max(14, o.dur*S.pps - 2);
+  if(!m.strip) return m.thumb ? `<div class="thumbs" style="background-image:url(${m.thumb})"></div>` : '';
+  const tw = Math.max(12, Math.round(TH*m.w/m.h)), n = Math.min(120, Math.ceil(wpx/tw)); let h = '';
+  for(let j=0;j<n;j++){ const src = o.in + (j*tw + tw/2)/S.pps*o.speed, idx = clamp(Math.floor(src/m.duration*m.stripN), 0, m.stripN-1);
+    h += `<i style="left:${j*tw}px;width:${tw}px;background-position:${-idx*tw}px 0"></i>`; }
+  return `<div class="thumbs strip" style="--strip:url(${m.strip});--sw:${m.stripN*tw}px">${h}</div>`;
 }
 function filmstrip(c, m, d){
   const TH = 36, wpx = Math.max(6, d.dur*S.pps - 2);
@@ -822,7 +917,7 @@ function clipHTML(c, i){
   const hasT = c.trans && c.trans.type !== 'none';
   const tm = i > 0 ? `<div class="tmark ${hasT?'on':''}" data-tid="${c.id}" title="Transition" style="left:${(d.start+d.td/2)*pps-10}px">⇄</div>` : '';
   const wv = m.wave && c.volume > 0 && !c.curve && !S.mainMute ? `<div class="wave" style="${waveStyle(m,c.in,c.speed)}"></div>` : '';
-  return `<div class="clip ${S.sel===c.id?'sel':''} ${S.mainHide?'hidden':''}" data-id="${c.id}" style="left:${d.start*pps}px;width:${Math.max(6,d.dur*pps-2)}px">
+  return `<div class="clip ${S.sel===c.id?'sel':''} ${selMulti.has(c.id)?'msel':''} ${S.mainHide?'hidden':''}" data-id="${c.id}" style="left:${d.start*pps}px;width:${Math.max(6,d.dur*pps-2)}px">
     <div class="cn">${badges} ${esc(m.name||'missing')} &nbsp;${fmtTC(d.dur)}</div>${filmstrip(c,m,d)}${wv}${kfDots(c)}
     <div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>${tm}`;
 }
@@ -884,10 +979,18 @@ TL.addEventListener('pointerdown', e => {
     TL.setPointerCapture(e.pointerId); e.preventDefault(); return;
   }
   if(cl){
-    const c = S.clips.find(x => x.id === cl.dataset.id); select(c.id);
+    const c = S.clips.find(x => x.id === cl.dataset.id);
+    if(e.ctrlKey || e.metaKey || e.shiftKey){
+      if(selClip() && !selMulti.size) selMulti.add(S.sel);
+      if(e.shiftKey && selClip()){ const a = S.clips.indexOf(selClip()), b = S.clips.indexOf(c); for(let k=Math.min(a,b);k<=Math.max(a,b);k++) selMulti.add(S.clips[k].id); }
+      else if(selMulti.has(c.id)) selMulti.delete(c.id); else selMulti.add(c.id);
+      S.sel = c.id; renderTimeline(); renderInspector(); return;
+    }
+    selMulti.clear(); select(c.id);
     drag = {type:'clipmaybe', c, x0:e.clientX, y0:e.clientY, start0:derived[c.id].start};
     TL.setPointerCapture(e.pointerId); return;
   }
+  if(selMulti.size){ selMulti.clear(); renderTimeline(); }
   drag = {type:'seek'}; seek(tAt(e.clientX));
   TL.setPointerCapture(e.pointerId); e.preventDefault();
 });
@@ -1041,22 +1144,59 @@ function syncSelects(){ $('#selRatio').value = S.ratio; $('#selBg').value = S.bg
 function updatePInfo(){ $('#pInfo').textContent = `${S.ratio==='orig'?'Original':S.ratio} · ${out.width}×${out.height}`; }
 
 /* ---------------- EXPORT DIALOG ---------------- */
+const EXP_RES = [[480,'480p'],[720,'720p'],[1080,'1080p'],[1440,'2K'],[2160,'4K']];
+const EXP_BR = [['low','Lower',.6],['rec','Recommended',1],['high','Higher',2]];
+function expDims(q){ let a,b; if(S.ratio==='orig'){ const m=S.media.find(x=>x.w); a=m?m.w:9; b=m?m.h:16; } else [a,b]=S.ratio.split(':').map(Number); let W,H; if(a>=b){ H=q; W=Math.round(q*a/b); } else { W=q; H=Math.round(q*b/a); } return [W-W%2, H-H%2]; }
+function expBitrate(E){ const [W,H] = expDims(E.q), base = W*H*E.fps*.15; return E.br === 'custom' ? E.cbr*1e6 : Math.round(base*(EXP_BR.find(b=>b[0]===E.br)||EXP_BR[1])[2]); }
 function openExport(){
   if(!S.total) return alert('ಮೊದಲು media ಸೇರಿಸಿ');
   pause();
-  showModal(`<h3 style="margin-top:0">${ic('export')} Export</h3>
-    <div class="crow"><span>Name</span><b style="color:var(--text)">${esc(S.project?S.project.name:'ChitraCut')}</b></div>
-    <div class="crow"><span>Duration</span><b style="color:var(--text)">${fmtTC(S.total)}</b></div>
-    <div style="color:var(--mute);margin-top:6px">Resolution</div>
-    <div class="qopts">${[[480,'480p','ಚಿಕ್ಕ file'],[720,'720p','Recommended'],[1080,'1080p','Full HD']].map(([q,n,d])=>`<button data-q="${q}" class="${S.quality===q?'on':''}">${n}<small>${d}</small></button>`).join('')}</div>
-    <div class="note">Chrome ನಲ್ಲಿ MP4 · 30 fps. Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ (${fmtT(S.total)}) — ಆ ಸಮಯದಲ್ಲಿ ಈ tab ತೆರೆದಿಡಿ.</div>
-    <div class="btns" style="justify-content:flex-end"><button id="xCancel">Cancel</button><button class="primary" id="xGo">${ic('export')} Export</button></div>`);
+  const E = S.exp = Object.assign({name:S.project?S.project.name:'ChitraCut', q:1080, br:'rec', cbr:10, fps:30, codec:'h264', fmt:'mp4', video:true, audio:true, gif:false, gifRes:320}, S.exp||{});
+  const prev = (() => { const c=document.createElement('canvas'), k=260/Math.max(out.width,out.height); c.width=out.width*k; c.height=out.height*k; c.getContext('2d').drawImage(out,0,0,c.width,c.height); return c.toDataURL('image/jpeg',.8); })();
+  showModal(`<div class="xwrap"><div class="xprev"><img src="${prev}"><div class="xmeta"><b>${fmtTC(S.total)}</b><span>${S.ratio==='orig'?'Original':S.ratio}</span></div></div>
+    <div class="xform"><h3 style="margin:0 0 12px">${ic('export')} Export</h3>
+    <div class="xrow"><span>Name</span><input type="text" id="xName" value="${esc(E.name)}"></div>
+    <div class="xsec"><label class="xchk"><input type="checkbox" id="xVideo" ${E.video?'checked':''}> <b>Video</b></label>
+      <div class="xbody" id="xVBody"></div></div>
+    <div class="xsec"><label class="xchk"><input type="checkbox" id="xAudio" ${E.audio?'checked':''}> <b>Audio</b></label>
+      <div class="xbody"><div class="xrow"><span>Format</span><b class="xval">${MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')?'AAC / M4A':'Opus / WebM'} · 192 kbps</b></div><div class="xhint">Video ಆಯ್ಕೆ ಇಲ್ಲದೆ Audio ಮಾತ್ರ ಆರಿಸಿದರೆ audio file ಮಾತ್ರ ಬರುತ್ತದೆ.</div></div></div>
+    <div class="xsec"><label class="xchk"><input type="checkbox" id="xGif" ${E.gif?'checked':''}> <b>Export GIF</b></label>
+      <div class="xbody"><div class="xrow"><span>Resolution</span><select id="xGifRes">${[[240,'240p'],[320,'320p'],[480,'480p']].map(([v,n])=>`<option value="${v}" ${E.gifRes===v?'selected':''}>${n}</option>`).join('')}</select></div></div></div>
+    <div class="xfoot"><span id="xSize"></span><div class="btns" style="margin:0"><button id="xCancel">Cancel</button><button class="primary" id="xGo">${ic('export')} Export</button></div></div>
+    </div></div>`);
+  $('#modalBox').classList.add('wide');
+  renderExpVideo();
 }
-$('#modal').addEventListener('click', e => {
-  const q = e.target.closest('[data-q]');
-  if(q){ S.quality = +q.dataset.q; $('#modalBox').querySelectorAll('[data-q]').forEach(b => b.classList.toggle('on', b === q)); return; }
-  if(e.target.closest('#xCancel')) hideModal();
-  if(e.target.closest('#xGo')){ hideModal(); setCanvas(); updatePInfo(); exportVideo(); }
+function renderExpVideo(){
+  const E = S.exp, sup = exportSupport(E.q), fmts = Object.keys(sup);
+  if(!fmts.includes(E.fmt)) E.fmt = fmts[0] || 'webm';
+  const cods = sup[E.fmt] || ['vp8']; if(!cods.includes(E.codec)) E.codec = cods[0];
+  const [W,H] = expDims(E.q), sel = (id,opts,v) => `<select id="${id}">${opts.map(([k,n])=>`<option value="${k}" ${String(v)===String(k)?'selected':''}>${n}</option>`).join('')}</select>`;
+  $('#xVBody').innerHTML = `
+    <div class="xrow"><span>Resolution</span>${sel('xRes',EXP_RES,E.q)}</div>
+    <div class="xrow"><span>Bit rate</span>${sel('xBr',[...EXP_BR.map(b=>[b[0],b[1]]),['custom','Custom']],E.br)}${E.br==='custom'?`<input type="number" id="xCbr" min="1" max="120" value="${E.cbr}" style="width:64px;margin-left:6px"> <small>Mbps</small>`:''}</div>
+    <div class="xrow"><span>Codec</span>${sel('xCodec',VCODECS.filter(c=>cods.includes(c[0])).map(c=>[c[0],c[1]]),E.codec)}</div>
+    <div class="xrow"><span>Format</span>${sel('xFmt',fmts.map(f=>[f,f]),E.fmt)}</div>
+    <div class="xrow"><span>Frame rate</span>${sel('xFps',[24,25,30,50,60].map(f=>[f,f+'fps']),E.fps)}</div>
+    <div class="xhint">${W}×${H} · ${(expBitrate(E)/1e6).toFixed(1)} Mbps${E.q>=1440?' · ⚠ 2K/4K ಗೆ ಶಕ್ತಿಶಾಲಿ PC ಬೇಕು; ನಿಧಾನವಾದರೆ frames ಕಡಿಮೆಯಾಗಬಹುದು':''}</div>`;
+  const vb = $('#xVBody'); vb.style.opacity = E.video ? 1 : .4; vb.style.pointerEvents = E.video ? '' : 'none';
+  const sz = ((E.video ? expBitrate(E) : 0) + (E.audio ? 192000 : 0))*S.total/8/1048576;
+  $('#xSize').innerHTML = `Size: ~${sz < 1 ? sz.toFixed(2) : sz.toFixed(0)} MB${E.gif?' + GIF':''} · ${fmtT(S.total)} <small>(real-time ನಲ್ಲಿ export ಆಗುತ್ತದೆ)</small>`;
+}
+$('#modal').addEventListener('change', e => {
+  const E = S.exp, id = e.target.id; if(!E || !id || !id.startsWith('x')) return;
+  const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+  const map = {xRes:['q',+v], xBr:['br',v], xCbr:['cbr',+v], xCodec:['codec',v], xFmt:['fmt',v], xFps:['fps',+v], xVideo:['video',v], xAudio:['audio',v], xGif:['gif',v], xGifRes:['gifRes',+v], xName:['name',v]};
+  if(map[id]){ E[map[id][0]] = map[id][1]; if(id !== 'xName') renderExpVideo(); }
+});
+$('#modal').addEventListener('click', async e => {
+  if(e.target.closest('#xCancel')){ hideModal(); $('#modalBox').classList.remove('wide'); return; }
+  if(!e.target.closest('#xGo')) return;
+  const E = S.exp; E.name = ($('#xName')||{}).value || E.name;
+  if(!E.video && !E.audio && !E.gif) return alert('Video, Audio ಅಥವಾ GIF ಯಾವುದಾದರೂ ಒಂದು ಆರಿಸಿ');
+  hideModal(); $('#modalBox').classList.remove('wide');
+  if(E.video || E.audio){ const ok = await exportVideo({q:E.q, fps:E.fps, bitrate:expBitrate(E), fmt:E.fmt, codec:E.codec, audioOnly:!E.video, name:E.name}); if(ok === false) return; }
+  if(E.gif) await exportVideo({gif:true, q:E.gifRes, fps:12, name:E.name});
 });
 
 /* =====================================================================
@@ -1193,3 +1333,80 @@ requestAnimationFrame(tick);
   try{ DB = await idbOpen(); if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{}); }catch(e){ DB = null; }
   showHome();
 })();
+
+/* =====================================================================
+   RIGHT-CLICK MENUS (timeline items, media tiles)
+   ===================================================================== */
+const CTX = document.createElement('div'); CTX.id = 'ctx'; document.body.appendChild(CTX);
+let ctxFns = [];
+function showCtx(x, y, items){
+  ctxFns = [];
+  CTX.innerHTML = items.filter(Boolean).map(it => {
+    if(it === '-') return '<div class="csep"></div>';
+    const [label, fn, opt] = it; ctxFns.push(fn);
+    return `<button data-ci="${ctxFns.length-1}" ${opt && opt.dis ? 'disabled' : ''}>${opt && opt.icon ? ic(opt.icon) : '<i class="ci0"></i>'}<span>${label}</span>${opt && opt.key ? `<kbd>${opt.key}</kbd>` : ''}</button>`;
+  }).join('');
+  CTX.style.display = 'block';
+  const r = CTX.getBoundingClientRect();
+  CTX.style.left = Math.min(x, innerWidth - r.width - 6) + 'px'; CTX.style.top = Math.min(y, innerHeight - r.height - 6) + 'px';
+}
+function hideCtx(){ CTX.style.display = 'none'; }
+CTX.addEventListener('click', e => { const b = e.target.closest('[data-ci]'); if(!b || b.disabled) return; hideCtx(); const f = ctxFns[+b.dataset.ci]; if(f) f(); });
+document.addEventListener('pointerdown', e => { if(!CTX.contains(e.target)) hideCtx(); }, true);
+document.addEventListener('keydown', e => { if(e.key === 'Escape') hideCtx(); });
+window.addEventListener('blur', hideCtx);
+function extractOvAudio(o){
+  const m = media(o.mediaId); if(!m) return; pushUndo();
+  const a = newAudioItem(m, {kind:'extract', start:o.start, in:o.in, dur:o.dur, speed:o.speed, volume:o.volume||100, linkClip:o.id});
+  o.prevVolume = o.volume || 100; o.extracted = a.id; o.volume = 0; S.audios.push(a); S.sel = a.id; afterEdit();
+}
+function ctxForItem(it){
+  const k = kindOf(it), m = media(it.mediaId) || {}, hasA = m.type === 'video';
+  const base = [['Split', split, {icon:'split', key:'S'}], ['Duplicate', dup, {icon:'copy', key:'Ctrl+D'}], ['Delete', del, {icon:'trash', key:'Del'}], '-'];
+  const attrs = [['Copy attributes', () => copyAttrs(it), {icon:'copy'}], ['Paste attributes', () => pasteAttrs(it), {icon:'import', dis:!attrClip}]];
+  const lay = [['Bring forward', () => ovAction('up'), {icon:'up'}], ['Send backward', () => ovAction('down'), {icon:'down'}]];
+  if(k === 'clip' || k === 'clipimg'){
+    const multi = selMulti.size >= 2;
+    return [...base,
+      hasA ? (it.extracted ? ['Restore audio (extract ರದ್ದು)', () => restoreAudio(it), {icon:'undo'}] : ['Extract audio', () => extractAudio(it), {icon:'wave'}]) : null,
+      hasA ? [it.volume > 0 ? 'Mute' : 'Unmute', () => toggleMuteItem(it), {icon:it.volume > 0 ? 'volx' : 'vol'}] : null,
+      hasA ? ['Freeze frame (3s)', freezeFrame, {icon:'pause'}] : null,
+      [multi ? `Compound clip (${selMulti.size} clips)` : 'Compound clip… (Ctrl+click ಮಾಡಿ ಹಲವು ಆರಿಸಿ)', () => compoundClips([...selMulti]), {icon:'layers', dis:!multi}],
+      hasA ? ['Reverse audio', () => reverseItem(it), {icon:'undo'}] : null,
+      '-', ['Move to overlay track', () => clipToOverlay(it, derived[it.id].start), {icon:'layers'}],
+      ['Mirror', () => { flipSel(); renderTimeline(); }, {icon:'flip'}], ['Rotate 90°', rotateSel, {icon:'rotate'}],
+      ['Delete left of playhead', () => trimSide('left'), {icon:'delL', key:'Q'}], ['Delete right of playhead', () => trimSide('right'), {icon:'delR', key:'W'}],
+      '-', ...attrs];
+  }
+  if(k === 'ovvideo' || k === 'ovimage') return [...base,
+      k === 'ovvideo' ? (it.extracted ? ['Restore audio', () => restoreAudio(it), {icon:'undo'}] : ['Extract audio', () => extractOvAudio(it), {icon:'wave'}]) : null,
+      k === 'ovvideo' ? [it.volume > 0 ? 'Mute' : 'Unmute', () => toggleMuteItem(it), {icon:it.volume > 0 ? 'volx' : 'vol'}] : null,
+      ['Move to main track', () => overlayToClip(it, it.start), {icon:'film'}], ...lay, ['Mirror', () => { flipSel(); renderTimeline(); }, {icon:'flip'}], '-', ...attrs];
+  if(k === 'audio'){
+    const own = it.linkClip && (S.clips.find(c => c.id === it.linkClip) || S.overlays.find(o => o.id === it.linkClip));
+    return [...base, own ? ['Video ಗೆ audio ಮರಳಿಸಿ (Restore)', () => restoreAudio(own), {icon:'undo'}] : null,
+      [it.volume > 0 ? 'Mute' : 'Unmute', () => toggleMuteItem(it), {icon:it.volume > 0 ? 'volx' : 'vol'}], ['Reverse audio', () => reverseItem(it), {icon:'undo'}],
+      ['Audio effects…', () => { S.rt.audio = 'audio'; S.rs.audio = 'fx'; renderInspector(); }, {icon:'wave'}], '-', ...attrs];
+  }
+  return [...base, ...lay];
+}
+TL.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const itEl = e.target.closest('.it'), cl = e.target.closest('.clip');
+  const it = itEl ? findFree(itEl.dataset.oid) : cl ? S.clips.find(c => c.id === cl.dataset.id) : null;
+  if(!it){ seek(tAt(e.clientX)); showCtx(e.clientX, e.clientY, [['Undo', undo, {icon:'undo', key:'Ctrl+Z', dis:!undoS.length}], ['Redo', redo, {icon:'redo', key:'Ctrl+Y', dis:!redoS.length}], '-', ['Add text here', () => addTextPreset('default'), {icon:'text'}], ['Freeze frame here', freezeFrame, {icon:'pause'}]]); return; }
+  if(it.type !== undefined || !selMulti.has(it.id)){ if(!selMulti.has(it.id)) selMulti.clear(); }
+  if(S.sel !== it.id){ S.sel = it.id; renderTimeline(); renderInspector(); }
+  if(!it.type || it.type === 'audio' || S.time < itemStart(it) || S.time > itemStart(it) + itemDur(it)){ const t = tAt(e.clientX); if(t >= itemStart(it) && t <= itemStart(it) + itemDur(it)) seek(t); }
+  showCtx(e.clientX, e.clientY, ctxForItem(it));
+});
+LC.addEventListener('contextmenu', e => {
+  const t = e.target.closest('.mtile,[data-delm]'); if(!t) return; e.preventDefault();
+  const m = media(t.dataset.mid || t.dataset.delm); if(!m) return;
+  showCtx(e.clientX, e.clientY, [
+    !m.missing ? ['Add to timeline', () => { m.type === 'audio' ? addAudioAt(m, {start:S.time}) : insertMediaClip(m, S.mainEnd + 1); renderLeft(); }, {icon:'plus'}] : null,
+    !m.missing && m.type !== 'audio' ? ['Add as overlay (PiP)', () => addPip(m), {icon:'layers'}] : null,
+    !m.missing && m.type !== 'audio' ? ['Add to audio track', () => addAudioAt(m, {start:S.time, kind:'extract'}), {icon:'wave', dis:m.type === 'image'}] : null,
+    '-', ['Delete from project', () => deleteMedia(m.id), {icon:'trash'}]]);
+});
+$('#out').addEventListener('contextmenu', e => { const it = selItem(); if(!it) return; e.preventDefault(); showCtx(e.clientX, e.clientY, ctxForItem(it)); });

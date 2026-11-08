@@ -434,7 +434,7 @@ async function runTracking(o, box, onProg, cancel){
         }
         if(vw){
           const k = Math.min(W/vw, H/vh)*ev(c,'tf.scale',st)/100;
-          x.scale(SC,SC); x.translate(W/2 + ev(c,'tf.x',st), H/2 - ev(c,'tf.y',st)); x.rotate(ev(c,'tf.rot',st)*Math.PI/180); if(c.tf.flip) x.scale(-1,1);
+          x.scale(SC,SC); x.translate(W/2 + ev(c,'tf.x',st)*PK(), H/2 - ev(c,'tf.y',st)*PK()); x.rotate(ev(c,'tf.rot',st)*Math.PI/180); if(c.tf.flip) x.scale(-1,1);
           x.drawImage(el, -vw*k/2, -vh*k/2, vw*k, vh*k);
         }
       }
@@ -462,4 +462,152 @@ function applyTracking(o, pts, box){
   const sm = pts.map((p,i) => { const a = pts[Math.max(0,i-1)], b = pts[Math.min(pts.length-1,i+1)]; return {t:p.t, x:(a.x+p.x*2+b.x)/4, y:(a.y+p.y*2+b.y)/4}; });
   const kf = sm.map(p => { const lt = p.t - o.start; return {t:lt, v:{size:ev(o,'size',lt), rot:ev(o,'rot',lt), opacity:ev(o,'opacity',lt), x:(p.x+offX)/W*100, y:(p.y+offY)/H*100}}; });
   pushUndo(); o.kf = kf; o.tracked = true;
+}
+
+/* ---------------- PRO FILTERS (cinematic colour grades, generated as 3D LUTs) ----------------
+   Each grade is a small recipe (exposure, white balance, lift/gamma/gain, contrast curve, split-toning,
+   teal-orange, fade, mono …). It is baked into a 25³ LUT on first use, so playback costs one texture lookup. */
+const lumF = (r,g,b) => .2126*r + .7152*g + .0722*b;
+function scurve(v,k){ v = clamp(v,0,1); if(k >= 0){ const e = 1 + k*1.6; return v < .5 ? .5*Math.pow(2*v,e) : 1 - .5*Math.pow(2*(1-v),e); } return .5 + (v-.5)*(1+k*.7); }
+function gradeFn(p){
+  return (r,g,b) => {
+    let c = [r,g,b];
+    if(p.ex){ const k = Math.pow(2,p.ex); c = c.map(v => v*k); }
+    if(p.t || p.ti){ c[0] *= 1 + .14*(p.t||0); c[2] *= 1 - .14*(p.t||0); c[1] *= 1 + .08*(p.ti||0); }
+    const L = p.lift || [0,0,0], Ga = p.gam || [1,1,1], Gn = p.gain || [1,1,1];
+    c = c.map((v,i) => Math.pow(Math.max(0, v*Gn[i] + L[i]*(1-v)), 1/Ga[i]));
+    if(p.con) c = c.map(v => scurve(v, p.con));
+    let l = lumF(...c);
+    if(p.to){   // teal shadows / orange highlights, skin protected
+      const warm = clamp((c[0]-c[2])*3, 0, 1), k = p.to;
+      c[0] += k*(-.07*(1-l) + .08*l*(.5+warm*.5)); c[1] += k*(.015*(1-l) + .01*l); c[2] += k*(.08*(1-l) - .09*l*(.5+warm*.5));
+    }
+    if(p.greens){ const gr = clamp((c[1] - Math.max(c[0],c[2]))*4, 0, 1); c = c.map((v,i) => v + gr*p.greens[i]); }
+    if(p.blues){ const bl = clamp((c[2] - Math.max(c[0],c[1]))*4, 0, 1); c = c.map((v,i) => v + bl*p.blues[i]); }
+    l = lumF(...c);
+    if(p.vib){ const s = Math.max(...c) - Math.min(...c), f = 1 + p.vib*(1 - clamp(s*1.6,0,1)); c = c.map(v => l + (v-l)*f); }
+    if(p.sat != null) c = c.map(v => l + (v-l)*(1+p.sat));
+    if(p.sh){ const w = Math.pow(1-clamp(l,0,1),2)*(p.shA||.2); c = c.map((v,i) => v + (p.sh[i]-.5)*w); }
+    if(p.hi){ const w = Math.pow(clamp(l,0,1),2)*(p.hiA||.2); c = c.map((v,i) => v + (p.hi[i]-.5)*w); }
+    if(p.mono){ const m = scurve(lumF(...c), p.monoCon||0), tn = p.tone || [1,1,1]; c = tn.map(t => m + (t-1)*m*(1-m)*1.6); }
+    if(p.fade){ c = c.map(v => v*(1-p.fade*.55) + p.fade*.13); }
+    c = c.map(v => v > .82 ? .82 + (v-.82)/(1 + (v-.82)/.18) : v);   // soft highlight roll-off (film shoulder)
+    return c.map(v => clamp(v,0,1));
+  };
+}
+const PF = (id,name,cat,p) => ({id,name,cat,p});
+const PRO_FILTERS = [
+  // Cinematic
+  PF('teal','Teal & Orange','Cinematic',{to:1.2,con:.25,sat:.08}),
+  PF('blockbuster','Blockbuster','Cinematic',{to:1.6,con:.4,sat:-.05,lift:[0,.01,.025],gain:[1.03,1,.97]}),
+  PF('cinewarm','Cine Warm','Cinematic',{t:.45,con:.22,sat:-.05,lift:[.02,.01,0],fade:.06}),
+  PF('cinecool','Cine Cool','Cinematic',{t:-.5,con:.2,sat:-.12,sh:[.3,.5,.75],shA:.25}),
+  PF('bleach','Bleach Bypass','Cinematic',{con:.55,sat:-.55,ex:.05}),
+  PF('desert','Desert Heat','Cinematic',{t:.8,ti:-.1,con:.3,sat:-.1,hi:[.85,.6,.3],hiA:.25,lift:[.02,.01,0]}),
+  PF('arrakis','Golden Dune','Cinematic',{t:.6,con:.35,sat:-.25,mono:0,gain:[1.06,.98,.85],lift:[.03,.02,0]}),
+  PF('matrixg','Code Green','Cinematic',{ti:-.6,con:.3,sat:-.3,gain:[.92,1.05,.9],sh:[.3,.6,.4],shA:.3}),
+  PF('noirblue','Night Blue','Cinematic',{t:-.9,ex:-.25,con:.35,sat:-.3,lift:[0,.02,.06]}),
+  PF('moonlight','Moonlight','Cinematic',{t:-.7,ex:-.35,sat:-.45,con:.15,sh:[.25,.4,.8],shA:.3}),
+  PF('epic','Epic Contrast','Cinematic',{con:.6,sat:.1,to:.6,ex:-.05}),
+  PF('thriller','Thriller','Cinematic',{ti:-.35,con:.45,sat:-.35,sh:[.35,.55,.45],shA:.35,ex:-.15}),
+  // Portrait
+  PF('natural','Natural Skin','Portrait',{t:.12,con:.08,vib:.25,ex:.05}),
+  PF('softglow','Soft Glow','Portrait',{ex:.12,con:-.15,fade:.08,t:.15,sat:-.05}),
+  PF('peach','Peach','Portrait',{t:.3,ti:.15,ex:.08,hi:[.95,.75,.65],hiA:.2,sat:.05}),
+  PF('rosy','Rosy','Portrait',{ti:.35,t:.1,ex:.06,sat:.08}),
+  PF('goldenhour','Golden Hour','Portrait',{t:.7,ex:.06,hi:[.95,.7,.35],hiA:.3,vib:.2,con:.1}),
+  PF('porcelain','Porcelain','Portrait',{ex:.18,sat:-.25,t:-.1,con:.05,fade:.05}),
+  PF('tan','Warm Tan','Portrait',{t:.4,con:.18,sat:.12,gain:[1.04,1,.95]}),
+  PF('clean','Clean Bright','Portrait',{ex:.2,con:.1,vib:.2}),
+  // Landscape
+  PF('nature','Vivid Nature','Landscape',{vib:.55,con:.2,greens:[-.02,.05,0],blues:[0,0,.05]}),
+  PF('lush','Lush Green','Landscape',{greens:[-.04,.08,-.02],vib:.3,con:.15,t:.05}),
+  PF('deepsky','Deep Sky','Landscape',{blues:[-.03,0,.1],con:.2,vib:.3,ex:-.05}),
+  PF('autumn','Autumn','Landscape',{t:.55,greens:[.08,-.02,-.04],sat:.15,con:.15}),
+  PF('sunset','Sunset','Landscape',{t:.65,ti:.2,hi:[1,.55,.3],hiA:.35,sat:.2,con:.15}),
+  PF('misty','Misty','Landscape',{fade:.25,con:-.2,sat:-.25,t:-.15,ex:.1}),
+  PF('tropical','Tropical','Landscape',{vib:.6,ti:-.1,blues:[-.04,.04,.06],con:.12,ex:.05}),
+  // Film
+  PF('film400','Film 400','Film',{con:.18,fade:.08,t:.12,sh:[.42,.55,.55],shA:.2,hi:[.6,.55,.45],hiA:.15,sat:-.05}),
+  PF('film800','Film 800 Warm','Film',{t:.35,fade:.12,con:.12,sat:.05,lift:[.03,.015,0]}),
+  PF('slide','Slide Film','Film',{con:.45,sat:.3,lift:[0,0,.01]}),
+  PF('fadedfilm','Faded Film','Film',{fade:.32,con:-.05,sat:-.2,t:.1}),
+  PF('cross','Cross Process','Film',{gam:[.92,1.08,1.25],gain:[1.08,1.05,.82],con:.3,sat:.15}),
+  PF('expired','Expired Film','Film',{ti:.25,t:.25,fade:.2,sat:-.15,sh:[.55,.35,.6],shA:.3}),
+  // Retro
+  PF('seventies','70s','Retro',{t:.55,fade:.22,sat:-.1,hi:[.9,.75,.45],hiA:.25,con:.05}),
+  PF('neon80','80s Neon','Retro',{ti:.45,t:-.2,sat:.35,con:.25,sh:[.55,.25,.75],shA:.35}),
+  PF('instant','Instant Photo','Retro',{fade:.2,t:.2,ti:-.1,con:.1,sat:-.15,hi:[.75,.8,.6],hiA:.25}),
+  PF('sepia','Sepia','Retro',{mono:1,tone:[1.12,1,.78],fade:.08}),
+  PF('vintagefade','Vintage','Retro',{fade:.3,t:.3,sat:-.35,con:.1}),
+  // B&W
+  PF('bwclassic','Classic B&W','B&W',{mono:1,monoCon:.2}),
+  PF('bwhigh','High Contrast','B&W',{mono:1,monoCon:.7}),
+  PF('bwsoft','Soft B&W','B&W',{mono:1,monoCon:-.2,fade:.12}),
+  PF('silver','Silver','B&W',{mono:1,monoCon:.35,tone:[.97,1,1.05],ex:.08}),
+  PF('cyanmono','Cyanotype','B&W',{mono:1,tone:[.75,.95,1.2],monoCon:.15}),
+  // Mood
+  PF('moody','Moody','Mood',{ex:-.2,sat:-.35,con:.2,t:-.15,fade:.08}),
+  PF('darkforest','Dark Forest','Mood',{ex:-.25,greens:[-.04,.02,.02],sat:-.25,con:.3,sh:[.35,.55,.5],shA:.3}),
+  PF('nightcity','Night City','Mood',{to:1,ti:.2,con:.35,sat:.15,ex:-.1}),
+  PF('cyber','Cyberpunk','Mood',{ti:.55,t:-.35,con:.35,sat:.35,sh:[.35,.3,.85],shA:.35,hi:[.95,.45,.85],hiA:.25}),
+  PF('horror','Horror','Mood',{ti:-.3,sat:-.6,con:.5,ex:-.2,sh:[.3,.5,.4],shA:.3}),
+  PF('dream','Dreamy','Mood',{ex:.15,con:-.2,fade:.18,ti:.25,sat:.1}),
+];
+const PF_MAP = {}; PRO_FILTERS.forEach(f => { PF_MAP[f.id] = f; f.fn = gradeFn(f.p); });
+const PF_CATS = ['Featured','Cinematic','Portrait','Landscape','Film','Retro','B&W','Mood','Basic'];
+const PF_FEATURED = ['teal','blockbuster','goldenhour','film400','moody','natural','nature','bwclassic','cyber','fadedfilm','cinewarm','bleach'];
+const PRO_LUTS = {};
+function proLut(id){
+  if(PRO_LUTS[id]) return PRO_LUTS[id];
+  const f = PF_MAP[id]; if(!f) return null;
+  const n = 25, data = new Uint8Array(n*n*n*4);
+  for(let b=0;b<n;b++) for(let g=0;g<n;g++) for(let r=0;r<n;r++){
+    const o = f.fn(r/(n-1), g/(n-1), b/(n-1)), i = (g*n*n + b*n + r)*4;
+    data[i] = o[0]*255; data[i+1] = o[1]*255; data[i+2] = o[2]*255; data[i+3] = 255;
+  }
+  const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, t);
+  for(const [k,v] of [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]]) gl.texParameteri(gl.TEXTURE_2D,k,v);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,n*n,n,0,gl.RGBA,gl.UNSIGNED_BYTE,data);
+  gl.activeTexture(gl.TEXTURE0);
+  return PRO_LUTS[id] = {tex:t, n};
+}
+function filterName(k){ if(!k || k === 'none') return 'None'; if(k.startsWith('pf:')) return (PF_MAP[k.slice(3)]||{}).name || k; return FILTER_NAMES[k] || k; }
+// real previews: the grade is applied (on the CPU) to a small frame of the selected clip
+const pfThumbCache = {key:'', urls:{}};
+function sampleFrame(it){
+  const c = document.createElement('canvas'); c.width = 96; c.height = 64; const x = c.getContext('2d', {willReadFrequently:true});
+  let el = null;
+  if(it){ if(it.type === 'video') el = ovVids[it.id]; else if(!it.type && !isImg(it)) el = vids[it.id]; if(!el || (el.tagName === 'VIDEO' && el.readyState < 2)) el = images[it.mediaId] || null; }
+  const m = it && media(it.mediaId);
+  if(el){ const w = el.videoWidth || el.naturalWidth, h = el.videoHeight || el.naturalHeight, k = Math.max(96/w, 64/h); x.drawImage(el, (96-w*k)/2, (64-h*k)/2, w*k, h*k); return {c, key:(m?m.id:'')+':'+(el.currentTime||0).toFixed(1)}; }
+  // built-in sample: sky, sun, hills and a face so every grade is easy to judge
+  const g = x.createLinearGradient(0,0,0,64); g.addColorStop(0,'#5d9be0'); g.addColorStop(.55,'#f2c79a'); g.addColorStop(.56,'#4f8a3c'); g.addColorStop(1,'#2d4a24'); x.fillStyle = g; x.fillRect(0,0,96,64);
+  x.fillStyle = '#ffe9a8'; x.beginPath(); x.arc(22,20,8,0,7); x.fill();
+  x.fillStyle = '#d9a07a'; x.beginPath(); x.ellipse(66,34,13,16,0,0,7); x.fill(); x.fillStyle = '#3a2618'; x.beginPath(); x.ellipse(66,22,14,8,0,Math.PI,0); x.fill();
+  x.fillStyle = '#b8323a'; x.fillRect(52,50,28,14);
+  return {c, key:'sample'};
+}
+function pfThumbs(it){
+  const {c, key} = sampleFrame(it);
+  if(pfThumbCache.key === key) return pfThumbCache.urls;
+  const x = c.getContext('2d', {willReadFrequently:true}), src = x.getImageData(0,0,96,64), urls = {};
+  urls._orig = c.toDataURL('image/jpeg', .8);
+  for(const f of PRO_FILTERS){
+    const d = new ImageData(96,64), s = src.data, o = d.data;
+    for(let i=0;i<s.length;i+=4){ const r = f.fn(s[i]/255, s[i+1]/255, s[i+2]/255); o[i] = r[0]*255; o[i+1] = r[1]*255; o[i+2] = r[2]*255; o[i+3] = 255; }
+    x.putImageData(d,0,0); urls[f.id] = c.toDataURL('image/jpeg', .8);
+  }
+  pfThumbCache.key = key; pfThumbCache.urls = urls; return urls;
+}
+
+/* ---------------- REVERSE AUDIO (offline, new media) ---------------- */
+async function reverseAudioItem(it){
+  const m = media(it.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file ಸಿಗಲಿಲ್ಲ');
+  const {from, len} = srcRangeOf(it);
+  const ab = await new OfflineAudioContext(1,1,44100).decodeAudioData(await blob.arrayBuffer());
+  const s0 = Math.floor(from*ab.sampleRate), n = Math.max(1, Math.min(ab.length - s0, Math.ceil(len*ab.sampleRate)));
+  const chans = []; for(let c=0;c<Math.min(2,ab.numberOfChannels);c++) chans.push(ab.getChannelData(c).slice(s0, s0+n).reverse());
+  const f = new File([wavMulti(chans, ab.sampleRate)], `${m.name.replace(/\.[^.]+$/,'')} (reversed).wav`, {type:'audio/wav'});
+  return addAudioMedia(f, n/ab.sampleRate);
 }
