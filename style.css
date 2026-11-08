@@ -394,3 +394,54 @@ textarea:focus{border-color:var(--acc)}
   #projName{max-width:130px}
   .logo span{display:none}
 }
+
+/* ---------- v6 additions ---------- */
+.chk{padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.chk:last-child{border-bottom:0}
+.chk label{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600}
+.chk .cdesc{flex-basis:100%;color:var(--mute);font-size:11.5px;padding-left:24px}
+.clip .thumbs.strip{background:none}
+.clip .thumbs.strip i{position:absolute;top:0;height:100%;background-image:var(--strip);background-size:var(--sw) 100%;background-repeat:no-repeat;border-right:1px solid #0004}
+.it.gfx{background:#7a46c9}
+.tiles.gfx{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
+.tth.gth{height:70px;padding:0}
+.tth.gth canvas{width:100%;height:100%;border-radius:5px;display:block}
+#curveEd circle:hover{fill:#20d5ec}
+/* more animation previews */
+.a-rotateIn{animation-name:a-rotIn}.a-flipX{animation-name:a-flipX}.a-flipY{animation-name:a-flipY}.a-dropIn{animation-name:a-bounce}
+.a-riseUp{animation-name:a-rise}.a-blurIn{animation-name:a-blur}.a-glitchIn,.a-glitchLoop{animation-name:fx-gl;animation-timing-function:steps(4)}
+.a-swingIn{animation-name:a-swing}.a-shrinkIn{animation-name:a-zoomOut}.a-growIn,.a-letterPop,.a-wordPop{animation-name:a-pop}
+.a-wipeIn{animation-name:a-type}.a-circleIn{animation-name:a-circ}.a-flashIn,.a-flashLoop{animation-name:fx-flash}.a-pixelIn{animation-name:a-blur}
+.a-tiltIn{animation-name:a-tilt}.a-letterFade{animation-name:a-rise}.a-letterBounce,.a-bounceLoop{animation-name:a-bounce}
+.a-zoomInOut{animation-name:a-pulse}.a-rock,.a-wobble{animation-name:a-sway}.a-jelly{animation-name:a-jelly}.a-rotateLoop{animation-name:a-rotate;animation-timing-function:linear}
+.a-shakeLoop{animation-name:a-shake}.a-blurPulse{animation-name:a-bpulse}.a-wave{animation-name:a-float}.a-rainbow{animation-name:fx-hue;animation-timing-function:linear}
+@keyframes a-rotIn{from{transform:rotate(-90deg) scale(.7);opacity:0}to{transform:none;opacity:1}}
+@keyframes a-flipX{from{transform:scaleX(0)}to{transform:none}}
+@keyframes a-flipY{from{transform:scaleY(0)}to{transform:none}}
+@keyframes a-rise{from{transform:translateY(25%);opacity:0}to{transform:none;opacity:1}}
+@keyframes a-circ{from{clip-path:circle(0)}to{clip-path:circle(75%)}}
+@keyframes a-tilt{from{transform:translateX(40%) rotate(15deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes a-jelly{0%,100%{transform:scale(1,1)}30%{transform:scale(1.15,.85)}60%{transform:scale(.9,1.1)}}
+@keyframes a-bpulse{0%,100%{filter:none}50%{filter:blur(4px)}}
+/* more transition previews */
+.t-circleOpen .tb{animation-name:tb-circ}.t-heart .tb,.t-star .tb{animation-name:tb-circ}
+.t-circleClose .ta{z-index:2;animation-name:ta-circ}
+.t-diamond .tb{animation-name:tb-dia}.t-clock .tb{animation-name:tb-wl}
+.t-blinds .tb{animation-name:tb-barn}.t-blindsV .tb,.t-doors .tb{animation-name:tb-doors}.t-barn .tb{animation-name:tb-barn}
+.t-dissolve .tb,.t-luma .tb,.t-pixelT .tb{animation-name:tb-fade;animation-timing-function:steps(6)}
+.t-blurDissolve .tb{animation-name:tb-bfade}.t-zoomBlur .ta{animation-name:ta-zi}.t-zoomBlur .tb{animation-name:tb-fade}
+.t-whipL .ta{animation-name:ta-sl}.t-whipL .tb{animation-name:tb-sl}.t-whipR .ta{animation-name:ta-sr}.t-whipR .tb{animation-name:tb-sr}
+.t-flashShake .tb,.t-rgbGlitch .tb{animation-name:tb-gl;animation-timing-function:steps(8)}
+.t-spinZoom .ta{animation-name:ta-spin}.t-spinZoom .tb{animation-name:tb-fade}
+.t-flip .ta{animation-name:ta-flip}.t-flip .tb{animation-name:tb-flip}
+.t-cube .ta{animation-name:ta-sl}.t-cube .tb{animation-name:tb-sl}.t-dropIn .tb{animation-name:tb-drop}
+@keyframes tb-circ{0%,20%{clip-path:circle(0)}80%,100%{clip-path:circle(75%)}}
+@keyframes ta-circ{0%,20%{clip-path:circle(75%)}80%,100%{clip-path:circle(0)}}
+@keyframes tb-dia{0%,20%{clip-path:polygon(50% 50%,50% 50%,50% 50%,50% 50%)}80%,100%{clip-path:polygon(50% -60%,160% 50%,50% 160%,-60% 50%)}}
+@keyframes tb-doors{0%,20%{clip-path:inset(0 50%)}80%,100%{clip-path:inset(0 0)}}
+@keyframes tb-barn{0%,20%{clip-path:inset(50% 0)}80%,100%{clip-path:inset(0 0)}}
+@keyframes tb-bfade{0%,20%{opacity:0;filter:blur(6px)}80%,100%{opacity:1;filter:none}}
+@keyframes ta-spin{0%,20%{transform:none;opacity:1}80%,100%{transform:rotate(180deg) scale(2);opacity:0}}
+@keyframes ta-flip{0%{transform:none}40%,100%{transform:scaleX(0)}}
+@keyframes tb-flip{0%,50%{transform:scaleX(0)}90%,100%{transform:none}}
+@keyframes tb-drop{0%,15%{transform:translateY(-100%)}55%{transform:none}70%{transform:translateY(-15%)}85%,100%{transform:none}}

@@ -53,6 +53,8 @@ const IC = {
   fit:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 9h6v6H9z"/>',
   up:'<path d="M12 19V5M6 11l6-6 6 6"/>', down:'<path d="M12 5v14M6 13l6 6 6-6"/>',
   edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  target:'<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><circle cx="12" cy="12" r="3"/>',
+  library:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M15 15.5v5l4.5-2.5z" fill="currentColor"/>',
   music2:'<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>'
 };
 const ic = n => `<svg class="i" viewBox="0 0 24 24">${IC[n]||''}</svg>`;
@@ -62,9 +64,11 @@ let HEADW = 150, apEl = null;
 
 /* ---------------- HELPERS ---------------- */
 function kindOf(it){ if(!it) return null; if(!it.type) return isImg(it) ? 'clipimg' : 'clip'; return it.type === 'video' ? 'ovvideo' : it.type === 'image' ? 'ovimage' : it.type; }
+let curveSel = -1, trackRun = null;
 const itemStart = it => it.type ? it.start : derived[it.id].start;
 const itemDur = it => it.type ? it.dur : derived[it.id].dur;
-function thumbFor(it){ const m = it && media(it.mediaId); return (m && m.thumb && m.type !== 'audio') ? m.thumb : (S.clips[0] && (media(S.clips[0].mediaId)||{}).thumb) || PLACEHOLDER; }
+function thumbFor(it){ if(it && it.type === 'gfx'){ const c = document.createElement('canvas'); c.width = 160; c.height = 90; paintGfx(c, it.gfx, (GFXMAP[it.gfx]||{}).thumbT||1); return c.toDataURL(); }
+  const m = it && media(it.mediaId); return (m && m.thumb && m.type !== 'audio') ? m.thumb : (S.clips[0] && (media(S.clips[0].mediaId)||{}).thumb) || PLACEHOLDER; }
 function visTarget(){ const it = selItem(); if(it && (!it.type || isMediaOv(it))) return it; return clipAt(S.time); }
 function transTarget(){ const c = selClip(); if(c && S.clips.indexOf(c) > 0) return c; const p = clipAt(S.time); if(p && S.clips.indexOf(p) > 0) return p; return S.clips[1] || null; }
 const usedMedia = id => S.clips.some(c=>c.mediaId===id) || S.overlays.some(o=>o.mediaId===id) || S.audios.some(a=>a.mediaId===id);
@@ -101,8 +105,8 @@ const FILTER_CSS = {none:'',vivid:'saturate(1.45) contrast(1.15)',warm:'sepia(.3
    LEFT PANEL
    ===================================================================== */
 const LTABS = [['media','Media','media'],['audio','Audio','audio'],['text','Text','text'],['stickers','Stickers','sticker'],['effects','Effects','effects'],['transitions','Transitions','trans'],['captions','Captions','captions'],['filters','Filters','filters'],['adjust','Adjustment','adjust']];
-const LSUB = {media:[['all','All'],['video','Videos'],['image','Photos'],['audio','Audio']], audio:[['sfx','Sound effects'],['yours','Yours'],['voice','Voice-over']],
-  text:[['add','Add text'],['styles','Text styles']], stickers:[['emoji','Emoji']], effects:[['video','Video effects']], transitions:[['all','Transitions']],
+const LSUB = {media:[['all','All'],['video','Videos'],['image','Photos'],['audio','Audio'],['library','Library']], audio:[['sfx','Sound effects'],['yours','Yours'],['voice','Voice-over']],
+  text:[['add','Add text'],['styles','Text styles']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[['video','Video effects']], transitions:[['all','Transitions']],
   captions:[['auto','Auto captions'],['srt','SRT file']], filters:[['filters','Filters']], adjust:[['lut','LUT'],['adjust','Adjust']]};
 const TEXT_ADD = [
   ['default','Default text',{text:'ನಿಮ್ಮ ಪಠ್ಯ ಇಲ್ಲಿ'}],
@@ -117,9 +121,18 @@ function renderLeft(){
   $('#ltabs').innerHTML = LTABS.map(([k,n,i])=>`<button data-ltab="${k}" class="${S.ltab===k?'on':''}">${ic(i)}<span>${n}</span></button>`).join('');
   const subs = LSUB[S.ltab], sub = subs.some(s=>s[0]===S.lsub[S.ltab]) ? S.lsub[S.ltab] : subs[0][0];
   $('#lsub').innerHTML = subs.map(([k,n])=>`<button data-lsub="${k}" class="${sub===k?'on':''}">${n}</button>`).join('');
-  LC.innerHTML = leftContent(S.ltab, sub); fillRanges(LC);
+  LC.innerHTML = leftContent(S.ltab, sub); fillRanges(LC); paintGfxTiles();
 }
 function renderMediaPanel(){ renderLeft(); }
+let gfxAnim = null;
+function paintGfxTiles(){ LC.querySelectorAll('canvas[data-gfxc]').forEach(c => paintGfx(c, c.dataset.gfxc, (GFXMAP[c.dataset.gfxc]||{}).thumbT || 1)); }
+LC.addEventListener('mouseover', e => {
+  const c = e.target.closest('[data-gfx]'); if(!c) return; const cv_ = c.querySelector('canvas'); if(!cv_ || (gfxAnim && gfxAnim.c === cv_)) return;
+  if(gfxAnim) cancelAnimationFrame(gfxAnim.raf);
+  const t0 = performance.now(), loop = () => { const g = GFXMAP[cv_.dataset.gfxc]; paintGfx(cv_, cv_.dataset.gfxc, ((performance.now()-t0)/1000) % Math.min(g.dur, 6)); gfxAnim.raf = requestAnimationFrame(loop); };
+  gfxAnim = {c:cv_, raf:requestAnimationFrame(loop)};
+});
+LC.addEventListener('mouseout', e => { const c = e.target.closest('[data-gfx]'); if(!c || c.contains(e.relatedTarget)) return; if(gfxAnim){ cancelAnimationFrame(gfxAnim.raf); const cv_ = gfxAnim.c; gfxAnim = null; paintGfx(cv_, cv_.dataset.gfxc, (GFXMAP[cv_.dataset.gfxc]||{}).thumbT||1); } });
 function refreshLeftLive(){ if(['effects','transitions','filters','adjust','captions'].includes(S.ltab) || (S.ltab==='text' && S.lsub.text==='styles')) renderLeft(); }
 function mediaTile(m){
   const bg = m.thumb ? `background-image:url(${m.thumb})` : '';
@@ -143,6 +156,12 @@ function captionsAuto(){
 function leftContent(tab, sub){
   switch(tab){
     case 'media': {
+      if(sub === 'library'){
+        const cat = S.gfxCat || 'Social', list = GFX.filter(g => g.cat === cat);
+        return `<div class="chiprow">${GFX_CATS.map(c=>`<button data-gfxcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>
+          <div class="tiles gfx">${list.map(g=>`<button class="tile" data-gfx="${g.id}" draggable="true"><div class="tth gth"><canvas data-gfxc="${g.id}" width="176" height="104"></canvas></div><span>${g.name}</span></button>`).join('')}</div>
+          <div class="lnote">✨ ಇವು ChitraCut ನಲ್ಲೇ ತಯಾರಾಗುವ animated stock graphics — <b>copyright ಇಲ್ಲ</b>, download ಬೇಕಿಲ್ಲ. Mouse ಇಟ್ಟರೆ preview · click = playhead ನಲ್ಲಿ ಸೇರಿಸಿ · timeline ಗೆ ಎಳೆಯಬಹುದು. Text / ಬಣ್ಣ ಬದಲಿಸಬಹುದು.</div>`;
+      }
       const list = S.media.filter(m => sub === 'all' || m.type === sub);
       return `<div class="lhead"><button class="primary" data-l="import">${ic('import')} Import</button><button data-l="rec">${ic('mic')} Record</button></div>
         ${S.media.length ? '' : `<div class="dropzone" data-l="import"><b>Import media</b>Video, photo, music files ಅನ್ನು ಇಲ್ಲಿ drag ಮಾಡಿ ಅಥವಾ click ಮಾಡಿ</div>`}
@@ -174,6 +193,8 @@ function leftContent(tab, sub){
         <div class="lnote">Text select ಮಾಡಿದ ನಂತರ ಬಲಗಡೆ font, ಬಣ್ಣ, animation ಬದಲಿಸಿ. ಕನ್ನಡ fonts ಲಭ್ಯ.</div>`;
     }
     case 'stickers':
+      if(sub === 'social' || sub === 'badges') return `<div class="tiles small">${STICKER_SETS[sub].map(k=>`<button class="tile emoji" data-stk="svg:${k}"><div class="tth"><img src="${SVG_URL[k]}" style="width:44px;height:44px"></div></button>`).join('')}</div>
+        <div class="lnote">ಇವು ChitraCut ನ ಸ್ವಂತ generic icons (Like, Bell, Verified ✓, Share…). YouTube / Facebook / Instagram ನ ನಿಜವಾದ logo ಗಳು trademark ಆಗಿರುವುದರಿಂದ ಸೇರಿಸಿಲ್ಲ.</div>`;
       return `<div class="tiles small">${EMOJIS.map(e=>`<button class="tile emoji" data-stk="${e}"><div class="tth">${e}</div></button>`).join('')}</div>`;
     case 'effects': {
       const it = visTarget(), th = thumbFor(it), cur = it ? it.fx.type : '';
@@ -264,6 +285,8 @@ LC.addEventListener('click', async e => {
     else addOverlay(newOverlay('text', {text:'ನಿಮ್ಮ ಪಠ್ಯ ಇಲ್ಲಿ', ...p}), 'text');
     return;
   }
+  if(d.gfxcat){ S.gfxCat = d.gfxcat; renderLeft(); return; }
+  if(d.gfx){ addGfx(d.gfx, S.time); return; }
   if(d.stk){ addOverlay(newOverlay('sticker', {text:d.stk, anim:{in:'pop',out:'fade',loop:'none',inDur:.5,outDur:.4}}), 'sticker'); return; }
   if(d.fx){
     const it = visTarget(); if(!it) return alert('ಮೊದಲು clip select ಮಾಡಿ');
@@ -292,6 +315,8 @@ LC.addEventListener('change', e => {
   else { editing = false; renderTimeline(); }
 });
 LC.addEventListener('dragstart', e => {
+  const g = e.target.closest('[data-gfx]');
+  if(g){ e.dataTransfer.setData('text/plain', 'ccgfx:' + g.dataset.gfx); e.dataTransfer.effectAllowed = 'copy'; TL.classList.add('dragging'); return; }
   const t = e.target.closest('.mtile'); if(!t) return;
   e.dataTransfer.setData('text/plain', 'ccmedia:' + t.dataset.mid); e.dataTransfer.effectAllowed = 'copy';
   TL.classList.add('dragging');
@@ -304,9 +329,10 @@ LC.addEventListener('dragend', () => { TL.classList.remove('dragging'); setZone(
 const RT = {
   clip:[['video','Video'],['audio','Audio'],['speed','Speed'],['anim','Animation'],['trans','Transition'],['adjust','Adjust']],
   clipimg:[['video','Video'],['speed','Duration'],['anim','Animation'],['trans','Transition'],['adjust','Adjust']],
-  ovvideo:[['video','Video'],['audio','Audio'],['speed','Speed'],['anim','Animation'],['adjust','Adjust']],
-  ovimage:[['video','Image'],['anim','Animation'],['adjust','Adjust']],
-  text:[['text','Text'],['anim','Animation']], sticker:[['sticker','Sticker'],['anim','Animation']], audio:[['audio','Audio']]
+  ovvideo:[['video','Video'],['audio','Audio'],['speed','Speed'],['anim','Animation'],['track','Tracking'],['adjust','Adjust']],
+  ovimage:[['video','Image'],['anim','Animation'],['track','Tracking'],['adjust','Adjust']],
+  gfx:[['gfx','Graphic'],['anim','Animation'],['track','Tracking']],
+  text:[['text','Text'],['anim','Animation'],['track','Tracking']], sticker:[['sticker','Sticker'],['anim','Animation'],['track','Tracking']], audio:[['audio','Audio']]
 };
 function rsubFor(tab, kind){
   switch(tab){
@@ -364,17 +390,18 @@ function rmbgBody(it){
 }
 function maskBody(it){
   const m = it.mask, t = m.type;
-  let h = `<div class="tiles" style="grid-template-columns:repeat(4,1fr)">${MASKS.map(([k,n])=>`<button class="vtile ${t===k?'on':''}" style="height:52px" data-set="mask.type" data-val="${k}">${n}</button>`).join('')}</div><div style="height:12px"></div>`;
+  let h = `<div class="ltitle" style="margin:10px 0 8px">${t==='none' ? '＋ Add mask — ಆಕಾರ ಆರಿಸಿ' : 'Mask shape'}</div>
+    <div class="tiles" style="grid-template-columns:repeat(4,1fr)">${MASKS.map(([k,n])=>`<button class="vtile ${t===k?'on':''}" style="height:52px" data-set="mask.type" data-val="${k}">${k==='none'?'✕ Remove':n}</button>`).join('')}</div><div style="height:12px"></div>`;
   if(t !== 'none'){
-    let b = sl(it,'Position X','mask.x',-50,50,.5)+sl(it,'Position Y','mask.y',-50,50,.5);
+    let b = sl(it,'Position X','mask.x',-60,60,.5)+sl(it,'Position Y','mask.y',-60,60,.5);
     if(t === 'mirror') b += sl(it,'Width','mask.h',1,200);
     else if(t === 'circle' || t === 'rect') b += sl(it,'Width','mask.w',1,300)+sl(it,'Height','mask.h',1,300);
     else if(t !== 'linear') b += sl(it,'Size','mask.h',1,300);
     b += sl(it,'Rotate','mask.rot',-180,180)+sl(it,'Feather','mask.feather',0,100);
     if(t === 'rect') b += sl(it,'Round corners','mask.round',0,100);
     b += `<div class="crow"><span>Invert</span><input type="checkbox" data-p="mask.invert" ${m.invert?'checked':''}></div>`;
-    h += sec('mk','Mask settings', b, {reset:'resetMask'});
-  } else h += '<div class="note">Mask ಆರಿಸಿದರೆ ಆ ಆಕಾರದ ಒಳಗಿನ ಭಾಗ ಮಾತ್ರ ಕಾಣುತ್ತದೆ. Feather = ಮೃದು ಅಂಚು.</div>';
+    h += `<div class="note">🖐 ಈ tab ತೆರೆದಿರುವಾಗ Player ನಲ್ಲಿ drag ಮಾಡಿದರೆ <b>mask ಮಾತ್ರ</b> ಸರಿಯುತ್ತದೆ (video ಅಲ್ಲ). Mouse wheel / ಎರಡು ಬೆರಳು = mask size.</div>` + sec('mk','Mask settings', b, {reset:'resetMask'});
+  } else h += '<div class="note">Mask ಆರಿಸಿದರೆ ಆ ಆಕಾರದ ಒಳಗಿನ ಭಾಗ ಮಾತ್ರ ಕಾಣುತ್ತದೆ. ನಂತರ Player ನಲ್ಲಿ mask ಅನ್ನು ಎಳೆದು ಸರಿಸಬಹುದು.</div>';
   return h;
 }
 function fxBody(it){
@@ -399,7 +426,17 @@ function audioBody(it, kind, sub){
   if(kind !== 'ovvideo') vb += sl(it,'Fade in','fadeIn',0,5,.1)+sl(it,'Fade out','fadeOut',0,5,.1);
   if(kind === 'audio') vb += sl(it,'Duration','dur',.2,Math.max(.2,((media(it.mediaId)||{duration:1}).duration-it.in)/it.speed),.1);
   h += sec('vol','Basic', vb);
-  if(kind !== 'ovvideo') h += sec('eq','Equalizer', sl(it,'Bass boost','audio.bass',-15,15)+sl(it,'Treble','audio.treble',-15,15));
+  if(kind !== 'ovvideo'){
+    const a = it.audio, chk = (p,t,d,on) => `<div class="chk"><label><input type="checkbox" data-p="${p}" ${on?'checked':''}><b>${t}</b></label><div class="cdesc">${d}</div></div>`;
+    const dnOn = kind === 'audio' && !!it.origMediaId;
+    h += sec('vt','Voice tools',
+      chk('audio.norm','Normalize loudness', `Volume ಅನ್ನು ಸರಿಯಾದ ಮಟ್ಟಕ್ಕೆ ತರುತ್ತದೆ${a.norm&&it.normGain?` · ×${it.normGain.toFixed(2)}`:''}`, a.norm) +
+      chk('audio.enhance','Enhance voice','ಧ್ವನಿ ಸ್ಪಷ್ಟ ಮತ್ತು ಜೋರು (EQ + compressor)', a.enhance) +
+      `<div class="chk"><label><input type="checkbox" data-dn="1" ${dnOn?'checked':''}><b>Reduce noise</b></label><select data-dnlvl style="margin-left:auto;padding:2px 4px">${['Low','Medium','High'].map((n,i)=>`<option value="${i}" ${(S.dnLvl??1)===i?'selected':''}>${n}</option>`).join('')}</select>
+        <div class="cdesc">Fan, hiss, traffic ಮುಂತಾದ ಹಿನ್ನೆಲೆ ಶಬ್ದ ತೆಗೆಯುತ್ತದೆ${kind!=='audio'?' — ಸ್ವಚ್ಛ audio ಹೊಸ audio track ಆಗಿ ಬರುತ್ತದೆ':''}</div><div class="prog" id="dnProg" style="display:none;margin:6px 0 0"><div></div></div></div>` +
+      chk('audio.isolate','Isolate voice','ಮಾತಿನ frequency ಮಾತ್ರ ಉಳಿಸುತ್ತದೆ (basic)', a.isolate));
+    h += sec('eq','Equalizer', sl(it,'Bass boost','audio.bass',-15,15)+sl(it,'Treble','audio.treble',-15,15));
+  } else h += '<div class="note">PiP video ಗೆ Voice tools ಬೇಕಿದ್ದರೆ ಅದನ್ನು main track ಗೆ ಎಳೆಯಿರಿ ಅಥವಾ Extract audio ಮಾಡಿ.</div>';
   const B = (a,i,t) => `<button data-act="${a}">${ic(i)} ${t}</button>`;
   h += `<div class="btns">${kind==='clip'?B('extract','wave','Extract audio'):''}${B('cap','captions','Auto captions')}${kind==='audio'?B('dup','copy','Duplicate')+B('del','trash','Delete'):''}</div>`;
   if(kind === 'clip') h += '<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>';
@@ -417,13 +454,61 @@ function animBody(it, kind, sub){
   h += clipLike ? '<div class="btns"><button data-all="anim">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : '<div class="btns"><button data-all="ovanim">ಇದೇ ತರಹದ ಎಲ್ಲಕ್ಕೂ ಹಾಕಿ</button></div>';
   return h;
 }
+const CW = 300, CH = 150, cY = v => CH/2 - Math.log10(clamp(v,.1,10))*CH/2*.86, cV = y => Math.pow(10, (CH/2 - y)/(CH/2*.86));
+function curveEditor(c){
+  const pts = c.curve; let d = '';
+  for(let i=0;i<=90;i++){ const p = i/90; d += (i?'L':'M') + (p*CW).toFixed(1) + ',' + cY(curveAt(c,p)).toFixed(1); }
+  const dd = derived[c.id], ph = dd && S.time >= dd.start && S.time <= dd.start+dd.dur ? (localToSrc(c, S.time-dd.start)-c.in)/(c.out-c.in) : -1;
+  return `<svg id="curveEd" viewBox="0 0 ${CW} ${CH}" style="width:100%;background:#111113;border-radius:8px;display:block;touch-action:none;cursor:crosshair">
+    ${[10,5,2,1,.5,.2,.1].map(v=>`<line x1="0" x2="${CW}" y1="${cY(v)}" y2="${cY(v)}" stroke="${v===1?'#555':'#26262b'}" ${v===1?'stroke-dasharray="4 4"':''}/><text x="4" y="${cY(v)-2}" fill="#666" font-size="8">${v}x</text>`).join('')}
+    ${ph>=0?`<line x1="${ph*CW}" x2="${ph*CW}" y1="0" y2="${CH}" stroke="#fff" stroke-width="1"/>`:''}
+    <path d="${d}" fill="none" stroke="#20d5ec" stroke-width="2.2"/>
+    ${pts.map((p,i)=>`<circle data-ci="${i}" cx="${p[0]*CW}" cy="${cY(p[1])}" r="${curveSel===i?7:5.5}" fill="${curveSel===i?'#20d5ec':'#fff'}" stroke="#111" stroke-width="2" style="cursor:grab"/>`).join('')}
+  </svg>`;
+}
+function refreshCurve(c){
+  layout(); renderTimeline();
+  const w = $('#curveWrap'); if(w) w.innerHTML = curveEditor(c);
+  const di = $('#durInfo'); if(di) di.textContent = fmtTC(c.out-c.in) + ' → ' + fmtTC(derived[c.id].dur);
+  const cv2 = $('#curveVal'), sp = c.curve[curveSel]; if(cv2) cv2.textContent = sp ? sp[1].toFixed(2)+'x' : '—';
+}
+let cdragC = null;
+function curvePt(e){ const r = $('#curveEd').getBoundingClientRect(); return {x:clamp((e.clientX-r.left)/r.width,0,1), y:(e.clientY-r.top)/r.height*CH}; }
+IB.addEventListener('pointerdown', e => {
+  const svg = e.target.closest('#curveEd'); if(!svg) return; const c = selClip(); if(!c || !c.curve) return;
+  const ci = e.target.dataset ? e.target.dataset.ci : null;
+  if(ci == null) return;
+  pushUndo(); curveSel = +ci; cdragC = c; e.preventDefault(); refreshCurve(c);
+  const btn = IB.querySelector('[data-act="cDel"]'); if(btn) btn.disabled = !(curveSel>0 && curveSel<c.curve.length-1);
+});
+window.addEventListener('pointermove', e => {
+  if(!cdragC) return; const c = cdragC, p = curvePt(e), pts = c.curve, i = curveSel;
+  if(i > 0 && i < pts.length-1) pts[i][0] = clamp(p.x, pts[i-1][0]+.02, pts[i+1][0]-.02);
+  pts[i][1] = clamp(cV(p.y), .1, 10); c.curveName = 'custom'; refreshCurve(c);
+});
+window.addEventListener('pointerup', () => { if(cdragC){ cdragC = null; if(!S.playing) seek(Math.min(S.time,S.total)); } });
+IB.addEventListener('dblclick', e => {
+  if(!e.target.closest('#curveEd')) return; const c = selClip(); if(!c || !c.curve) return;
+  const p = curvePt(e); addCurvePoint(c, p.x, clamp(cV(p.y),.1,10));
+});
+function addCurvePoint(c, x, v){
+  pushUndo(); const pts = c.curve; if(pts.some(p => Math.abs(p[0]-x) < .03)) return;
+  pts.push([x, v ?? curveAt(c,x)]); pts.sort((a,b)=>a[0]-b[0]); curveSel = pts.findIndex(p => p[0] === x); c.curveName = 'custom'; renderInspector(); refreshCurve(c);
+}
 function speedBody(it, kind, sub){
   if(kind === 'clipimg') return sec('du','Duration', sl(it,'Duration','__imgdur',.3,30,.1)+'<div class="note">Photo ಎಷ್ಟು ಸೆಕೆಂಡ್ ಕಾಣಬೇಕು</div>');
   if(kind === 'ovvideo') return sec('sp','Speed', sl(it,'Speed','speed',.25,4,.05)+sl(it,'Duration','dur',.3,Math.max(.3,(media(it.mediaId).duration-it.in)/it.speed),.1));
   if(sub === 'curve'){
     let h = `<div class="tiles" style="grid-template-columns:repeat(4,1fr);margin-top:8px">${CURVE_OPTS.map(([k,n])=>`<button class="vtile ${it.curveName===k?'on':''}" style="height:48px" data-act="curve" data-val="${k}">${n}</button>`).join('')}</div><div style="height:12px"></div>`;
-    if(it.curve) h += curveSvg(it) + it.curve.map((v,i)=>sl(it,'Point '+(i+1),'curve.'+i,.1,10,.1)).join('');
-    return h + '<div class="note">Speed curve: clip ನ ಕೆಲವು ಭಾಗ ವೇಗ, ಕೆಲವು ಭಾಗ slow-motion.</div>';
+    if(it.curve){
+      if(typeof it.curve[0] === 'number') it.curve = curvePairs(it.curve);
+      const sp = it.curve[curveSel];
+      h += `<div id="curveWrap">${curveEditor(it)}</div>
+        <div class="btns"><button data-act="cAdd">${ic('plus')} Add point</button><button data-act="cDel" ${curveSel>0&&curveSel<it.curve.length-1?'':'disabled'}>${ic('trash')} Delete point</button><button data-act="curve" data-val="custom">${ic('reset')} Reset</button></div>
+        <div class="crow"><span>Selected point</span><b id="curveVal" style="color:var(--text)">${sp?sp[1].toFixed(2)+'x':'—'}</b></div>
+        <div class="crow"><span>Duration</span><b id="durInfo" style="color:var(--text)">${fmtTC(it.out-it.in)} → ${fmtTC(derived[it.id].dur)}</b></div>`;
+    }
+    return h + '<div class="note">◉ Point ಗಳನ್ನು ಮೇಲೆ (ವೇಗ) / ಕೆಳಗೆ (slow) ಎಳೆಯಿರಿ · <b>+ Add point</b> ಅಥವಾ ಖಾಲಿ ಜಾಗದಲ್ಲಿ double-click ಮಾಡಿ ಹೊಸ point ಸೇರಿಸಿ.</div>';
   }
   return sec('sp','Speed', sl(it,'Speed','speed',.1,10,.1)+`<div class="crow"><span>Duration</span><b id="durInfo" style="color:var(--text)">${fmtTC(it.out-it.in)} → ${fmtTC(derived[it.id].dur)}</b></div>`);
 }
@@ -437,6 +522,17 @@ function filterBody(it){
   const th = thumbFor(it);
   return `<div class="tiles" style="margin-top:10px">${Object.keys(FILTERS).map(k=>`<button class="tile ${it.filter===k?'on':''}" data-set="filter" data-val="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join('')}</div><div style="height:12px"></div>
     ${it.filter!=='none'?sl(it,'Strength','filterAmt',0,100):''}${!it.type?'<div class="btns"><button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}`;
+}
+function trackBody(it){
+  const on = S.trackEdit === it.id;
+  let h = `<div class="tiles" style="grid-template-columns:repeat(3,1fr);margin-top:10px">
+    <button class="tile ${!on?'on':''}" data-trk="none"><div class="tth">${ic('ban')}</div><span>None</span></button>
+    <button class="tile ${on?'on':''}" data-trk="motion"><div class="tth">${ic('target')}</div><span>Motion tracking</span></button></div><div style="height:10px"></div>`;
+  if(on) h += `<div class="note">① Player ನಲ್ಲಿರುವ <b style="color:var(--acc)">ನೀಲಿ ಚೌಕ</b>ವನ್ನು ಹಿಂಬಾಲಿಸಬೇಕಾದ ವಸ್ತುವಿನ (ಮುಖ, ಚೆಂಡು…) ಮೇಲೆ ಇಡಿ — ಕೆಳಗಿನ ಮೂಲೆ ಎಳೆದು size ಬದಲಿಸಿ.<br>② <b>Start tracking</b> ಒತ್ತಿ. ಈ item ಆ ವಸ್ತುವನ್ನು ಹಿಂಬಾಲಿಸುತ್ತದೆ.</div>
+    <div class="prog"><div id="trkBar" style="width:${trackRun?Math.round(trackRun.p*100):0}%"></div></div><div id="trkStat" style="color:var(--mute);min-height:18px">${trackRun?'Tracking…':''}</div>
+    <div class="btns">${trackRun?'<button data-trk="cancel">Cancel</button>':`<button class="primary" data-trk="start">${ic('target')} Start tracking</button>`}</div>`;
+  if(it.tracked) h += `<div class="note">✓ Tracking ಆಗಿದೆ (${(it.kf||[]).length} keyframes). ಮತ್ತೆ ಮಾಡಬಹುದು ಅಥವಾ <button data-trk="clear" style="padding:2px 8px">Clear</button></div>`;
+  return h;
 }
 function opacitySec(it){ return sec('op', it.type ? 'Opacity & Blend' : 'Opacity', sl(it,'Opacity','opacity',0,100)+(it.type?blendRow(it):'')); }
 function inspBody(it, kind, tab, sub){
@@ -457,6 +553,14 @@ function inspBody(it, kind, tab, sub){
     case 'speed': return speedBody(it, kind, sub);
     case 'anim': return animBody(it, kind, sub);
     case 'trans': return transBody(it);
+    case 'gfx': { const g = GFXMAP[it.gfx] || {}; let b = '';
+      if(g.text != null) b += `<div class="crow"><span>Text</span></div><input type="text" data-p="text" value="${esc(it.text||'')}" style="width:100%;margin:-6px 0 10px">`;
+      if(g.text2 != null) b += `<div class="crow"><span>Text 2</span></div><input type="text" data-p="text2" value="${esc(it.text2||'')}" style="width:100%;margin:-6px 0 10px">`;
+      b += colorRow(it,'Color','color',true) + sl(it,'Animation speed','gspeed',.25,3,.05);
+      return sec('gx', g.name || 'Graphic', b) + (g.full ? '<div class="note">ಇದು full-screen graphic. Opacity / Blend ಬದಲಿಸಿ main video ಜೊತೆ ಸೇರಿಸಬಹುದು.</div>' : transformSec(it)) + opacitySec(it) +
+        sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+sl(it,'Duration','dur',.3,60,.1)) +
+        `<div class="btns"><button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`; }
+    case 'track': return trackBody(it);
     case 'adjust': return sub === 'filter' ? filterBody(it) : sub === 'lut' ? '<div style="height:10px"></div>'+lutBody(it) : adjustBody(it);
     case 'text':
       if(sub === 'style') return `<div style="height:10px"></div><div class="tiles tstyle">${TEXT_PRESETS.map((p,i)=>`<button class="tile" data-preset="${i}"><div class="tth" style="${presetCss(p)}">Aa</div></button>`).join('')}</div><div style="height:6px"></div>` +
@@ -471,7 +575,7 @@ function inspBody(it, kind, tab, sub){
         transformSec(it) + opacitySec(it) + sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+sl(it,'Duration','dur',.3,60,.1)) +
         `<div class="btns">${it.caption?'<button data-act="capall">💬 ಈ style ಎಲ್ಲಾ captions ಗೆ</button>':''}<button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`;
     case 'sticker':
-      return `<div style="height:10px"></div><div class="tiles small">${EMOJIS.map(e=>`<button class="tile emoji ${it.text===e?'on':''}" data-set="text" data-val="${e}"><div class="tth">${e}</div></button>`).join('')}</div><div style="height:6px"></div>` +
+      return `<div style="height:10px"></div><div class="tiles small">${[...STICKER_SETS.social,...STICKER_SETS.badges].map(k=>`<button class="tile emoji ${it.text==='svg:'+k?'on':''}" data-set="text" data-val="svg:${k}"><div class="tth"><img src="${SVG_URL[k]}" style="width:36px;height:36px"></div></button>`).join('')}${EMOJIS.map(e=>`<button class="tile emoji ${it.text===e?'on':''}" data-set="text" data-val="${e}"><div class="tth">${e}</div></button>`).join('')}</div><div style="height:6px"></div>` +
         transformSec(it) + opacitySec(it) + sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+sl(it,'Duration','dur',.3,60,.1)) +
         `<div class="btns"><button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`;
   }
@@ -563,6 +667,10 @@ function applyAll(k, it, btn){
 function doAct(a, it, btn){
   switch(a){
     case 'importLut': $('#lutIn').click(); return;
+    case 'cAdd': { const dd = derived[it.id]; let x = dd && S.time > dd.start && S.time < dd.start+dd.dur ? (localToSrc(it,S.time-dd.start)-it.in)/(it.out-it.in) : -1;
+      if(x < .03 || x > .97){ let g = 0; for(let i=0;i<it.curve.length-1;i++){ const w = it.curve[i+1][0]-it.curve[i][0]; if(w > g){ g = w; x = it.curve[i][0]+w/2; } } }
+      addCurvePoint(it, x); return; }
+    case 'cDel': if(curveSel > 0 && curveSel < it.curve.length-1){ pushUndo(); it.curve.splice(curveSel,1); curveSel = -1; it.curveName = 'custom'; renderInspector(); refreshCurve(it); } return;
     case 'ckPick': setPick(!S.pick); renderInspector(); return;
     case 'extract': extractAudio(it); return;
     case 'cap': openCaptions(); return;
@@ -589,7 +697,7 @@ function doAct(a, it, btn){
     case 'ckBlue': it.ck.color = '#0047bb'; it.ck.on = true; break;
     case 'curve': {
       const v = btn.dataset.val; it.curveName = v;
-      it.curve = v === 'none' ? null : v === 'custom' ? (it.curve ? [...it.curve] : [1,1,1,1,1]) : [...CURVES[v]];
+      it.curve = v === 'none' ? null : v === 'custom' ? [[0,1],[.25,1],[.5,1],[.75,1],[1,1]] : curvePairs(CURVES[v]); curveSel = -1;
       layout(); seek(Math.min(S.time, S.total)); break;
     }
   }
@@ -617,9 +725,55 @@ function doClick(t, it){
 }
 $('#rtabs').addEventListener('click', e => { const b = e.target.closest('[data-rtab]'); if(!b) return; S.rt[kindOf(selItem())] = b.dataset.rtab; renderInspector(); });
 $('#rsub').addEventListener('click', e => { const b = e.target.closest('[data-rsub]'); if(!b) return; const tab = $('#rtabs .on'); if(tab) S.rs[tab.dataset.rtab] = b.dataset.rsub; renderInspector(); });
-IB.addEventListener('input', e => onParamInput(e, selItem()));
+IB.addEventListener('input', e => {
+  const el = e.target, it = selItem();
+  if(el.dataset.dnlvl != null){ S.dnLvl = +el.value; return; }
+  if(el.dataset.dn){ doDenoise(it, el.checked); return; }
+  onParamInput(e, it);
+  if(el.dataset.p === 'audio.norm' && el.checked && it){ computeNorm(it).then(() => { renderInspector(); }).catch(err => alert(err.message)); }
+});
+async function doDenoise(it, on){
+  if(!it) return;
+  if(!on){ if(it.type === 'audio' && it.origMediaId){ pushUndo(); it.mediaId = it.origMediaId; it.in = it.origIn; delete it.origMediaId; delete it.origIn; afterEdit(); } return; }
+  const pr = $('#dnProg'), bar = pr && pr.firstElementChild; if(pr) pr.style.display = 'block';
+  IB.querySelectorAll('[data-dn]').forEach(x => x.disabled = true);
+  try{
+    const nm = await reduceNoise(it, S.dnLvl ?? 1, p => { if(bar) bar.style.width = (p*100) + '%'; });
+    pushUndo();
+    if(it.type === 'audio'){ it.origMediaId = it.mediaId; it.origIn = it.in; it.mediaId = nm.id; it.in = 0; }
+    else {
+      const st = it.type ? it.start : derived[it.id].start, a = newAudioItem(nm, {kind:'extract', start:st, in:0, dur:nm.duration/(it.speed||1), speed:it.speed||1, volume:it.volume, audio:deep(it.audio||defAudio())});
+      a.origMediaId = it.mediaId; a.origIn = it.in; it.volume = 0; S.audios.push(a); S.sel = a.id;
+    }
+    afterEdit(); renderLeft();
+  }catch(err){ alert('Noise reduction ಆಗಲಿಲ್ಲ: ' + err.message); renderInspector(); }
+}
 IB.addEventListener('change', e => { editing = false; if(e.target.type === 'range') e.target.blur(); renderTimeline(); });
-IB.addEventListener('click', e => { const t = e.target.closest('button'); if(t) doClick(t, selItem()); });
+IB.addEventListener('click', e => {
+  const t = e.target.closest('button'); if(!t) return; const it = selItem();
+  if(t.dataset.trk){ trackAction(t.dataset.trk, it); return; }
+  doClick(t, it);
+});
+function defaultTrackBox(o){
+  const g = geo[o.id], W = out.width, H = out.height, s = Math.min(W,H)*.18;
+  const cx = g ? g.cx : ev(o,'x')/100*W, cy = g ? g.cy : ev(o,'y')/100*H;
+  return {x:cx-s/2, y:cy-s/2, w:s, h:s};
+}
+async function trackAction(a, o){
+  if(!o) return;
+  if(a === 'none'){ S.trackEdit = null; renderInspector(); return; }
+  if(a === 'motion'){ if(!S.clips.length) return alert('Main track ನಲ್ಲಿ video ಬೇಕು'); seek(o.start + .01); S.trackEdit = o.id; S.trackBox = defaultTrackBox(o); renderInspector(); return; }
+  if(a === 'clear'){ pushUndo(); o.kf = []; o.tracked = false; renderInspector(); renderTimeline(); return; }
+  if(a === 'cancel'){ if(trackRun) trackRun.flag = true; return; }
+  if(a === 'start'){
+    pause(); trackRun = {flag:false, p:0}; renderInspector();
+    try{
+      const pts = await runTracking(o, S.trackBox, p => { trackRun.p = p; const b = $('#trkBar'); if(b) b.style.width = (p*100)+'%'; const st = $('#trkStat'); if(st) st.textContent = `Tracking… ${Math.round(p*100)}%`; }, trackRun);
+      if(!trackRun.flag){ applyTracking(o, pts, S.trackBox); S.trackEdit = null; }
+    }catch(err){ alert('Tracking ಆಗಲಿಲ್ಲ: ' + err.message); }
+    trackRun = null; renderInspector(); renderTimeline(); seek(o.start + .01);
+  }
+}
 function onSegReady(){ if(IB.querySelector('[data-p="rmbg"]')) renderInspector(); }
 
 /* =====================================================================
@@ -648,10 +802,18 @@ function waveStyle(m, inP, speed){
 }
 function ovItemHTML(o){
   const m = media(o.mediaId), nm = esc(m ? m.name : '');
-  const label = o.type==='text' ? (o.caption?'💬 ':'T  ')+esc((o.text||'').replace(/\n/g,' ')) : o.type==='sticker' ? o.text+' Sticker' : o.type==='video' ? '🎞 '+nm : '🖼 '+nm;
+  const label = o.type==='gfx' ? '✨ '+esc((GFXMAP[o.gfx]||{}).name||'Graphic') : o.type==='text' ? (o.caption?'💬 ':'T  ')+esc((o.text||'').replace(/\n/g,' ')) : o.type==='sticker' ? (o.text.startsWith('svg:')?'⭐':o.text)+' Sticker' : o.type==='video' ? '🎞 '+nm : '🖼 '+nm;
   const fx = [o.mask&&o.mask.type!=='none'?'◐':'', o.ck&&o.ck.on?'🟩':'', o.rmbg?'✂':'', o.blend&&o.blend!=='source-over'?'⧉':'', o.fx&&o.fx.type!=='none'&&isMediaOv(o)?'⚡':''].join('');
   const bg = o.type==='video' && m && m.thumb ? `background-image:linear-gradient(#0008,#0008),url(${m.thumb});` : '';
   return `<div class="it ${o.type} ${o.caption?'cap':''} ${S.sel===o.id?'sel':''}" data-oid="${o.id}" style="left:${o.start*S.pps}px;width:${Math.max(14,o.dur*S.pps-2)}px;${bg}">${fx} ${label}${kfDots(o)}<div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
+}
+function filmstrip(c, m, d){
+  const TH = 36, wpx = Math.max(6, d.dur*S.pps - 2);
+  if(!m.strip || m.type !== 'video') return `<div class="thumbs" style="background-image:url(${m.thumb||''})"></div>`;
+  const tw = Math.max(14, Math.round(TH*m.w/m.h)), n = Math.min(120, Math.ceil(wpx/tw)); let h = '';
+  for(let j=0;j<n;j++){ const lt = (j*tw + tw/2)/S.pps, src = localToSrc(c, Math.min(lt, d.dur)), idx = clamp(Math.floor(src/m.duration*m.stripN), 0, m.stripN-1);
+    h += `<i style="left:${j*tw}px;width:${tw}px;background-position:${-idx*tw}px 0"></i>`; }
+  return `<div class="thumbs strip" style="--strip:url(${m.strip});--sw:${m.stripN*tw}px">${h}</div>`;
 }
 function clipHTML(c, i){
   const d = derived[c.id]; if(!d) return '';
@@ -661,7 +823,7 @@ function clipHTML(c, i){
   const tm = i > 0 ? `<div class="tmark ${hasT?'on':''}" data-tid="${c.id}" title="Transition" style="left:${(d.start+d.td/2)*pps-10}px">⇄</div>` : '';
   const wv = m.wave && c.volume > 0 && !c.curve && !S.mainMute ? `<div class="wave" style="${waveStyle(m,c.in,c.speed)}"></div>` : '';
   return `<div class="clip ${S.sel===c.id?'sel':''} ${S.mainHide?'hidden':''}" data-id="${c.id}" style="left:${d.start*pps}px;width:${Math.max(6,d.dur*pps-2)}px">
-    <div class="cn">${badges} ${esc(m.name||'missing')} &nbsp;${fmtTC(d.dur)}</div><div class="thumbs" style="background-image:url(${m.thumb||''})"></div>${wv}${kfDots(c)}
+    <div class="cn">${badges} ${esc(m.name||'missing')} &nbsp;${fmtTC(d.dur)}</div>${filmstrip(c,m,d)}${wv}${kfDots(c)}
     <div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>${tm}`;
 }
 function renderTimeline(){
@@ -785,6 +947,7 @@ TL.addEventListener('drop', async e => {
   const z = zoneAt(e.clientY), t = Math.max(0, tAt(e.clientX)); setZone(null); TL.classList.remove('dragging');
   const d = e.dataTransfer.getData('text/plain');
   if(d && d.startsWith('ccmedia:')){ dropMedia(media(d.slice(8)), z, t); renderLeft(); return; }
+  if(d && d.startsWith('ccgfx:')){ addGfx(d.slice(6), t); return; }
   if(!S.project) return;
   for(const f of e.dataTransfer.files){
     let m = null;
@@ -947,6 +1110,79 @@ window.addEventListener('drop', e => { e.preventDefault(); if(S.project && e.dat
 new ResizeObserver(fitCanvas).observe($('#stage'));
 window.addEventListener('resize', () => { HEADW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--head')) || 150; renderTimeline(); });
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* =====================================================================
+   PREVIEW GIZMOS: mask editing & tracking box (captures pointer before default drag)
+   ===================================================================== */
+function maskEditTarget(){
+  const it = selItem(); if(!it || it.type === 'audio' || it.type === 'text' || it.type === 'sticker' || it.type === 'gfx') return null;
+  const k = kindOf(it); if(S.rt[k] !== 'video' || S.rs.video !== 'mask' || !it.mask || it.mask.type === 'none' || !geo[it.id]) return null;
+  return it;
+}
+const trackEditTarget = () => { const it = selItem(); return it && S.trackEdit === it.id && S.trackBox ? it : null; };
+function drawGizmos(ctx){
+  const u = Math.min(out.width, out.height), lw = Math.max(2, u/320);
+  const mi = maskEditTarget();
+  if(mi){
+    const g = geo[mi.id], m = mi.mask, L = 2*g.hh;
+    ctx.save(); ctx.translate(g.cx, g.cy); ctx.rotate(g.rot); if(g.flip) ctx.scale(-1,1);
+    ctx.translate(m.x/100*2*g.hw, m.y/100*2*g.hh); ctx.rotate(m.rot*Math.PI/180);
+    const sx = m.w/200*L, sy = m.h/200*L;
+    ctx.lineWidth = lw; ctx.strokeStyle = '#fff'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4; ctx.setLineDash([lw*5, lw*3]);
+    ctx.beginPath();
+    if(m.type === 'circle') ctx.ellipse(0,0,Math.max(1,sx),Math.max(1,sy),0,0,Math.PI*2);
+    else if(m.type === 'rect') rr(ctx,-sx,-sy,sx*2,sy*2,m.round/100*Math.min(sx,sy));
+    else if(m.type === 'linear'){ ctx.moveTo(-L*3,0); ctx.lineTo(L*3,0); }
+    else if(m.type === 'mirror'){ ctx.moveTo(-L*3,-sy); ctx.lineTo(L*3,-sy); ctx.moveTo(-L*3,sy); ctx.lineTo(L*3,sy); }
+    else if(m.type === 'star'){ for(let i=0;i<10;i++){ const a = -Math.PI/2 + i*Math.PI/5, r = i%2 ? sy*.42 : sy; ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r); } ctx.closePath(); }
+    else if(m.type === 'heart'){ const s = sy*1.8; ctx.moveTo(0,s*.55); ctx.bezierCurveTo(-s*.95,-.05*s,-s*.5,-s*.62,0,-s*.25); ctx.bezierCurveTo(s*.5,-s*.62,s*.95,-.05*s,0,s*.55); }
+    ctx.stroke(); ctx.setLineDash([]); ctx.shadowBlur = 0;
+    ctx.fillStyle = '#20d5ec'; ctx.beginPath(); ctx.arc(0,0,lw*3.5,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  const ti = trackEditTarget();
+  if(ti){
+    const b = S.trackBox; ctx.save(); ctx.lineWidth = lw; ctx.strokeStyle = '#20d5ec'; ctx.fillStyle = 'rgba(32,213,236,.12)';
+    ctx.fillRect(b.x,b.y,b.w,b.h); ctx.strokeRect(b.x,b.y,b.w,b.h);
+    ctx.fillStyle = '#20d5ec'; ctx.fillRect(b.x+b.w-lw*5, b.y+b.h-lw*5, lw*10, lw*10);
+    ctx.font = `700 ${Math.round(u/36)}px Inter,sans-serif`; ctx.fillText('TRACK', b.x, b.y - lw*3); ctx.restore();
+  }
+}
+let gz = null;
+const gzPts = new Map();
+out.addEventListener('pointerdown', e => {
+  if(exporting || S.pick) return;
+  const ti = trackEditTarget(), mi = !ti && maskEditTarget(); if(!ti && !mi) return;
+  e.stopImmediatePropagation(); e.preventDefault();
+  const p = toCv(e); gzPts.set(e.pointerId, p); out.setPointerCapture(e.pointerId);
+  if(gzPts.size === 2 && gz && gz.kind === 'mask'){ const [a,b] = [...gzPts.values()]; gz.pinch = {d0:Math.hypot(a.x-b.x,a.y-b.y), w0:mi.mask.w, h0:mi.mask.h}; return; }
+  if(ti){ const b = S.trackBox, near = Math.abs(p.x-(b.x+b.w)) < 26 && Math.abs(p.y-(b.y+b.h)) < 26; gz = {kind:'track', mode:near?'size':'move', p0:p, b0:{...b}}; return; }
+  pushUndo(); gz = {kind:'mask', it:mi, p0:p, x0:mi.mask.x, y0:mi.mask.y};
+}, true);
+out.addEventListener('pointermove', e => {
+  if(!gz || !gzPts.has(e.pointerId)) return; e.stopImmediatePropagation();
+  const p = toCv(e); gzPts.set(e.pointerId, p); const dx = p.x - gz.p0.x, dy = p.y - gz.p0.y;
+  if(gz.kind === 'track'){
+    const b = S.trackBox, b0 = gz.b0;
+    if(gz.mode === 'move'){ b.x = b0.x + dx; b.y = b0.y + dy; } else { b.w = Math.max(16, b0.w + dx); b.h = Math.max(16, b0.h + dy); }
+    return;
+  }
+  const it = gz.it, g = geo[it.id]; if(!g) return;
+  if(gz.pinch && gzPts.size >= 2){ const [a,b] = [...gzPts.values()], k = Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,gz.pinch.d0); it.mask.w = clamp(gz.pinch.w0*k,1,300); it.mask.h = clamp(gz.pinch.h0*k,1,300); syncMaskInputs(it); return; }
+  const c = Math.cos(g.rot), s = Math.sin(g.rot); let lx = dx*c + dy*s, ly = -dx*s + dy*c; if(g.flip) lx = -lx;
+  it.mask.x = clamp(gz.x0 + lx/(2*g.hw)*100, -60, 60); it.mask.y = clamp(gz.y0 + ly/(2*g.hh)*100, -60, 60);
+  syncMaskInputs(it);
+}, true);
+const gzEnd = e => { gzPts.delete(e.pointerId); if(!gz) return; e.stopImmediatePropagation(); if(gzPts.size === 0) gz = null; else if(gz.kind === 'mask'){ gz.pinch = null; const p = [...gzPts.values()][0]; gz.p0 = p; gz.x0 = gz.it.mask.x; gz.y0 = gz.it.mask.y; } };
+out.addEventListener('pointerup', gzEnd, true);
+out.addEventListener('pointercancel', gzEnd, true);
+out.addEventListener('wheel', e => {
+  const mi = maskEditTarget(); if(!mi) return; e.preventDefault(); e.stopImmediatePropagation();
+  const k = e.deltaY < 0 ? 1.06 : 1/1.06; mi.mask.w = clamp(mi.mask.w*k,1,300); mi.mask.h = clamp(mi.mask.h*k,1,300); syncMaskInputs(mi);
+}, {capture:true, passive:false});
+function syncMaskInputs(it){
+  IB.querySelectorAll('input[data-p^="mask."]').forEach(el => { const v = getP(it, el.dataset.p); if(typeof v !== 'number') return; el.value = el.type === 'number' ? fmtV(v) : v; if(el.type === 'range') setFill(el); });
+}
 
 /* ---------------- INIT ---------------- */
 HEADW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--head')) || 150;

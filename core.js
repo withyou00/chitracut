@@ -12,6 +12,7 @@ const images = {};        // mediaId -> <img>
 const mediaBlobs = {};    // mediaId -> File/Blob
 const derived = {};       // clipId -> {start,dur,cum,len,td}
 const hits = new Map();
+const geo = {};           // last drawn on-screen geometry per item (for mask / tracking gizmos)
 const undoS = [], redoS = [];
 let active = null, editing = false, exporting = false, rec = null, drag = null, cdrag = null, recState = null;
 
@@ -42,7 +43,7 @@ const deep = o => JSON.parse(JSON.stringify(o));
 const defMask = () => ({type:'none',x:0,y:0,w:60,h:60,rot:0,feather:5,round:0,invert:false});
 const defAdj = () => ({brightness:0,contrast:0,saturation:0,temp:0,tint:0,fade:0,vignette:0,grain:0,sharpen:0});
 const defFx = () => ({type:'none',amount:60,speed:50});
-const defAudio = () => ({voice:'none',bass:0,treble:0,echo:0,reverb:0});
+const defAudio = () => ({voice:'none',bass:0,treble:0,echo:0,reverb:0,enhance:false,isolate:false,norm:false});
 const clipDefaults = () => ({in:0, out:3, speed:1, curve:null, curveName:'none', volume:100, fadeIn:0, fadeOut:0, opacity:100,
   tf:{scale:100,x:0,y:0,rot:0,flip:false}, kf:[], rt:{smooth:0,bright:0,clear:0}, rmbg:false, rmbgInv:false, ck:{on:false,color:'#00ff00',sim:35,smooth:10,spill:30}, filter:'none', filterAmt:80, adj:defAdj(), lut:'', lutAmt:100, mask:defMask(), fx:defFx(),
   anim:{in:'none',out:'none',loop:'none',inDur:0.5,outDur:0.5}, trans:{type:'none',dur:0.6}, audio:defAudio()});
@@ -71,11 +72,11 @@ const FILTERS = {
 const FILTER_NAMES = {none:'None',vivid:'Vivid',warm:'Warm',cool:'Cool',bw:'B&W',vintage:'Vintage',cinema:'Cinematic',fade:'Faded',drama:'Drama',moody:'Moody',golden:'Golden',film:'Film'};
 const CURVES = {montage:[2.5,.6,2.5,.6,2.5], hero:[2,2,.3,2,2], bullet:[3,.25,.25,.25,3], jumper:[.5,3,.5,3,.5], flashIn:[4,2,1,1,1], flashOut:[1,1,1,2,4]};
 const CURVE_OPTS = [['none','None'],['montage','Montage'],['hero','Hero'],['bullet','Bullet'],['jumper','Jump Cut'],['flashIn','Flash In'],['flashOut','Flash Out'],['custom','Custom']];
-const ANIM_IN = [['none','None'],['fade','Fade In'],['zoomIn','Zoom In'],['zoomOut','Zoom Out'],['slideL','Slide Left'],['slideR','Slide Right'],['slideU','Slide Up'],['slideD','Slide Down'],['spin','Spin'],['shake','Shake']];
+const ANIM_IN = [['none','None'],['fade','Fade In'],['zoomIn','Zoom In'],['zoomOut','Zoom Out'],['slideL','Slide Left'],['slideR','Slide Right'],['slideU','Slide Up'],['slideD','Slide Down'],['spin','Spin'],['shake','Shake'],['rotateIn','Rotate In'],['flipX','Flip X'],['flipY','Flip Y'],['dropIn','Drop'],['riseUp','Rise Up'],['blurIn','Blur In'],['glitchIn','Glitch In'],['swingIn','Swing'],['shrinkIn','Shrink'],['growIn','Grow'],['wipeIn','Wipe'],['circleIn','Circle'],['flashIn','Flash'],['pixelIn','Pixelate'],['tiltIn','Tilt']];
 const ANIM_OUT = ANIM_IN.map(([k,n]) => [k, n.replace(' In',' Out')]);
-const ANIM_LOOP = [['none','None'],['kenburns','Ken Burns'],['zoomOutSlow','Slow Zoom Out'],['pulse','Pulse'],['sway','Sway']];
+const ANIM_LOOP = [['none','None'],['kenburns','Ken Burns'],['zoomOutSlow','Slow Zoom Out'],['pulse','Pulse'],['sway','Sway'],['zoomInOut','Zoom In-Out'],['rock','Rock'],['wobble','Wobble'],['jelly','Jelly'],['glitchLoop','Glitch'],['flashLoop','Flash'],['rotateLoop','Rotate'],['shakeLoop','Shake'],['heartbeat','Heartbeat'],['bounceLoop','Bounce'],['blurPulse','Blur Pulse']];
 const VOICES = [['none','None'],['michog','Mic Hog'],['megaphone','Megaphone'],['telephone','Telephone'],['robot','Robot'],['lofi','Lo-Fi'],['deep','Deep'],['radio','Radio']];
-const TRANS = [['none','None'],['fade','Dissolve'],['black','Fade Black'],['white','Flash White'],['slideL','Slide Left'],['slideR','Slide Right'],['slideU','Slide Up'],['slideD','Slide Down'],['wipeL','Wipe Left'],['wipeR','Wipe Right'],['zoomIn','Zoom In'],['zoomOut','Zoom Out'],['spin','Spin'],['glitch','Glitch']];
+const TRANS = [['none','None'],['fade','Dissolve'],['black','Fade Black'],['white','Flash White'],['slideL','Slide Left'],['slideR','Slide Right'],['slideU','Slide Up'],['slideD','Slide Down'],['wipeL','Wipe Left'],['wipeR','Wipe Right'],['zoomIn','Zoom In'],['zoomOut','Zoom Out'],['spin','Spin'],['glitch','Glitch'],['circleOpen','Circle Open'],['circleClose','Circle Close'],['diamond','Diamond'],['clock','Clock Wipe'],['blinds','Blinds'],['blindsV','Blinds V'],['dissolve','Pixel Dissolve'],['doors','Doors'],['barn','Barn Door'],['heart','Heart'],['star','Star'],['luma','Luma Fade'],['blurDissolve','Blur'],['pixelT','Pixelate'],['zoomBlur','Zoom Blur'],['whipL','Whip Left'],['whipR','Whip Right'],['flashShake','Shake & Flash'],['rgbGlitch','RGB Glitch'],['spinZoom','Spin Zoom'],['flip','Flip'],['cube','Cube'],['dropIn','Drop In']];
 const FONTS = [['Noto Sans Kannada','ಕನ್ನಡ Sans'],['Baloo Tamma 2','ಬಲೂ ತಮ್ಮ'],['Anek Kannada','ಅನೇಕ್'],['Tiro Kannada','ತಿರೋ'],['Noto Serif Kannada','ಕನ್ನಡ Serif'],['Poppins','Poppins'],['Montserrat','Montserrat'],['Oswald','Oswald'],['Bebas Neue','Bebas Neue'],['Anton','Anton'],['Pacifico','Pacifico'],['Lobster','Lobster'],['Dancing Script','Dancing'],['Permanent Marker','Marker']];
 const TEXT_PRESETS = [
   {color:'#ffffff',strokeW:0,bgOn:false,shadow:30,shadowColor:'#000000'},
@@ -89,14 +90,14 @@ const TEXT_PRESETS = [
 ];
 const SWATCHES = ['#ffffff','#000000','#ffe600','#ff3b30','#ff9500','#34c759','#1fd1d1','#007aff','#af52de','#ff4fa3'];
 const EMOJIS = '❤️ 😂 😍 🔥 👍 🎉 ✨ ⭐ 💯 😎 🥳 😢 😡 🤔 👏 🙏 💪 🎂 🎁 🌸 🌹 ☀️ 🌙 ⚡ 💥 💫 🎵 🎶 📍 ✅ ❌ ⚠️ 👉 👈 👆 👇 😮 🤩 😇 🥰 😜 🙌 💖 💔 🏆 🎓 📚 🪔'.split(' ');
-const OV_IN = [['none','None'],['fade','Fade'],['pop','Pop'],['zoom','Zoom'],['slideUp','Slide Up'],['slideDown','Slide Down'],['slideL','Slide Left'],['slideR','Slide Right'],['typewriter','Typewriter'],['bounce','Bounce'],['spin','Spin'],['blur','Blur']];
+const OV_IN = [['none','None'],['fade','Fade'],['pop','Pop'],['zoom','Zoom'],['slideUp','Slide Up'],['slideDown','Slide Down'],['slideL','Slide Left'],['slideR','Slide Right'],['typewriter','Typewriter'],['bounce','Bounce'],['spin','Spin'],['blur','Blur'],['letterPop','Letter Pop'],['letterFade','Letter Fade'],['letterBounce','Letter Bounce'],['wordPop','Word Pop'],['flipX','Flip X'],['flipY','Flip Y'],['dropIn','Drop'],['riseUp','Rise Up'],['rotateIn','Rotate In'],['growIn','Grow'],['shrinkIn','Shrink'],['glitchIn','Glitch'],['swingIn','Swing'],['tiltIn','Tilt'],['wipeIn','Wipe'],['flashIn','Flash']];
 const OV_OUT = OV_IN.filter(x => x[0] !== 'bounce' && x[0] !== 'pop');
-const OV_LOOP = [['none','None'],['pulse','Pulse'],['shake','Shake'],['float','Float'],['swing','Swing'],['blink','Blink'],['heartbeat','Heartbeat'],['rotate','Rotate']];
+const OV_LOOP = [['none','None'],['pulse','Pulse'],['shake','Shake'],['float','Float'],['swing','Swing'],['blink','Blink'],['heartbeat','Heartbeat'],['rotate','Rotate'],['wave','Wave'],['jelly','Jelly'],['rock','Rock'],['bounceLoop','Bounce'],['zoomInOut','Zoom In-Out'],['glitchLoop','Glitch'],['rainbow','Rainbow']];
 const MASKS = [['none','None'],['linear','Linear'],['mirror','Mirror'],['circle','Circle'],['rect','Rectangle'],['heart','❤ Heart'],['star','★ Star']];
 const MASK_T = {none:0,linear:1,mirror:2,circle:3,rect:4,heart:5,star:6};
 const BLENDS = [['source-over','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['color-dodge','Color Dodge'],['color-burn','Color Burn'],['hard-light','Hard Light'],['soft-light','Soft Light'],['difference','Difference'],['exclusion','Exclusion'],['hue','Hue'],['saturation','Saturation'],['color','Color'],['luminosity','Luminosity']];
 const FX = [['none','None'],['rgbsplit','RGB Split'],['glitch','Glitch'],['vhs','VHS'],['oldfilm','Old Film'],['shake','Shake'],['zoompulse','Zoom Pulse'],['flash','Flash'],['rainbow','Rainbow'],['pixelate','Pixelate'],['blur','Blur'],['mirror','Mirror'],['kaleido','4-Split'],['invert','Invert']];
-const FX_T = {none:0,rgbsplit:1,glitch:2,vhs:3,pixelate:4,mirror:5,kaleido:6,invert:7,blur:8,oldfilm:9,shake:10,zoompulse:11,flash:12,rainbow:14};
+const FX_T = {none:0,rgbsplit:1,glitch:2,vhs:3,pixelate:4,mirror:5,kaleido:6,invert:7,blur:8,oldfilm:9,shake:10,zoompulse:11,flash:12,bright:13,rainbow:14};
 const CAP_LANGS = [['kannada','ಕನ್ನಡ'],['english','English'],['hindi','हिन्दी'],['tamil','தமிழ்'],['telugu','తెలుగు'],['marathi','मराठी'],['malayalam','മലയാളം']];
 const SR_LANGS = [['kn-IN','ಕನ್ನಡ'],['en-IN','English (India)'],['hi-IN','हिन्दी'],['ta-IN','தமிழ்'],['te-IN','తెలుగు'],['mr-IN','मराठी'],['ml-IN','മലയാളം']];
 
@@ -151,7 +152,14 @@ function jumpKf(dir){
 
 /* ================= TIMELINE MATH ================= */
 const N = 100;
-function curveAt(c,p){ if(!c.curve) return 1; const a=c.curve, n=a.length-1; const x=clamp(p,0,1)*n, i=Math.min(Math.floor(x),n-1), f=x-i; return a[i]+(a[i+1]-a[i])*f; }
+function curveAt(c,p){
+  if(!c.curve || !c.curve.length) return 1; const a=c.curve; p=clamp(p,0,1);
+  if(typeof a[0]==='number'){ const n=a.length-1, x=p*n, i=Math.min(Math.floor(x),n-1), f=x-i; return a[i]+(a[i+1]-a[i])*f; }
+  if(p<=a[0][0]) return a[0][1];
+  for(let i=0;i<a.length-1;i++) if(p<=a[i+1][0]){ const f=(p-a[i][0])/Math.max(1e-6,a[i+1][0]-a[i][0]), e=f*f*(3-2*f); return Math.pow(2, Math.log2(a[i][1])*(1-e)+Math.log2(a[i+1][1])*e); }
+  return a[a.length-1][1];
+}
+const curvePairs = arr => arr.map((v,i)=>[i/(arr.length-1), v]);
 function rateAt(c,p){ return clamp(c.speed*curveAt(c,p), 0.1, 10); }
 function layout(){
   let t = 0, prev = null;
@@ -190,7 +198,9 @@ function currentPair(){
 }
 
 /* ================= MEDIA ELEMENTS ================= */
-function mkVideo(url){ const v=document.createElement('video'); if(url) v.src=url; v.preload='auto'; v.playsInline=true; return v; }
+const POOL = (() => { const d=document.createElement('div'); d.id='mediaPool'; d.style.cssText='position:fixed;left:0;top:0;width:4px;height:4px;overflow:hidden;opacity:.01;pointer-events:none;z-index:-1'; (document.body||document.documentElement).appendChild(d); return d; })();
+function mkVideo(url){ const v=document.createElement('video'); v.preload='auto'; v.playsInline=true; v.setAttribute('playsinline',''); v.style.cssText='width:4px;height:4px'; POOL.appendChild(v); if(url) v.src=url; return v; }
+function dropEl(v){ try{ v.pause(); v.removeAttribute('src'); v.load(); v.remove(); }catch(e){} }
 function getVid(c){
   let v = vids[c.id];
   if(!v){ v = mkVideo(media(c.mediaId).url); v.currentTime = c.in; vids[c.id] = v; }
@@ -203,7 +213,8 @@ function ovVid(o){
 }
 function audEl(a){
   let el = audEls[a.id];
-  if(!el){ el = new Audio(); el.preload = 'auto'; const m = media(a.mediaId); if(m && m.url) el.src = m.url; audEls[a.id] = el; }
+  if(el && el.dataset.mid !== a.mediaId){ dropEl(el); delete audEls[a.id]; if(audChains[a.id]){ killChain(audChains[a.id]); delete audChains[a.id]; } el = null; }
+  if(!el){ el = new Audio(); el.preload = 'auto'; el.dataset.mid = a.mediaId; const m = media(a.mediaId); if(m && m.url) el.src = m.url; audEls[a.id] = el; }
   return el;
 }
 
@@ -234,6 +245,9 @@ function buildChain(c){
   const gain = v => { const g=AC.createGain(); g.gain.value=v; return g; };
   link(filt('lowshelf',200,null,a.bass));
   link(filt('highshelf',3500,null,a.treble));
+  if(a.isolate){ link(filt('highpass',150,.7)); link(filt('lowpass',5000,.7)); link(filt('peaking',2500,1,3)); }
+  if(a.enhance){ link(filt('highpass',85,.7)); link(filt('peaking',300,1,-3)); link(filt('peaking',3200,1.2,4)); link(filt('highshelf',9000,null,2.5));
+    const cp=AC.createDynamicsCompressor(); cp.threshold.value=-26; cp.knee.value=8; cp.ratio.value=3.5; cp.attack.value=.005; cp.release.value=.15; link(cp); link(gain(1.5)); }
   switch(a.voice){
     case 'michog':   link(filt('highpass',250,.7)); link(filt('peaking',2200,1,9)); link(shaper(40)); link(filt('lowpass',5500,.7)); link(gain(.55)); break;
     case 'megaphone':link(filt('highpass',600,1)); link(filt('lowpass',3000,1)); link(shaper(15)); link(gain(.7)); break;
@@ -345,7 +359,7 @@ function syncAudItems(){
   for(const a of S.audios){
     const el = audEl(a), on = S.time >= a.start && S.time < a.start + a.dur, ch = audChain(a);
     if(ch){
-      const lt = S.time - a.start; let g = on ? a.volume/100 : 0;
+      const lt = S.time - a.start; let g = on ? a.volume/100*(a.audio.norm && a.normGain ? a.normGain : 1) : 0;
       if(a.fadeIn > 0) g *= clamp(lt/a.fadeIn, 0, 1);
       if(a.fadeOut > 0) g *= clamp((a.dur-lt)/a.fadeOut, 0, 1);
       ch.vol.gain.value = g;
@@ -422,7 +436,7 @@ function tick(now){
   if(pr){
     for(const [c,role] of [[pr.a,'a'],[pr.b,'b']]){
       if(!c) continue; const ch = chains.get(c.id); if(!ch) continue;
-      const d = derived[c.id], lt = S.time - d.start; let g = S.mainMute ? 0 : c.volume/100;
+      const d = derived[c.id], lt = S.time - d.start; let g = S.mainMute ? 0 : c.volume/100*(c.audio.norm && c.normGain ? c.normGain : 1);
       if(c.fadeIn > 0)  g *= clamp(lt/c.fadeIn, 0, 1);
       if(c.fadeOut > 0) g *= clamp((d.dur-lt)/c.fadeOut, 0, 1);
       if(pr.b) g *= role === 'a' ? 1 - pr.p : pr.p;
@@ -453,7 +467,7 @@ uniform float u_lutN,u_lutAmt,u_alpha,u_time,u_b,u_c,u_s,u_t,u_ti,u_f,u_v,u_g,u_
 uniform float u_mT,u_mRot,u_mF,u_mR,u_mInv,u_asp;uniform vec2 u_mC,u_mS;
 uniform float u_ck,u_ckSim,u_ckSm,u_ckSp;uniform vec3 u_ckC;
 uniform float u_fx,u_fxA,u_sec;
-uniform sampler2D u_seg;uniform float u_segOn,u_segInv,u_rtS,u_rtB;
+uniform sampler2D u_seg;uniform float u_segOn,u_segInv,u_rtS,u_rtB,u_trT,u_trP;uniform vec2 u_res;
 const vec3 LW=vec3(.299,.587,.114);
 vec3 lut(vec3 c){float n=u_lutN;float b=c.b*(n-1.);float b0=floor(b);float b1=min(b0+1.,n-1.);float f=b-b0;
  float x=c.r*(n-1.)+.5;float y=(c.g*(n-1.)+.5)/n;
@@ -482,6 +496,23 @@ float maskA(){
  float f=u_mF+.0015;float a=1.-smoothstep(-f,f,d);
  return u_mInv>.5?1.-a:a;}
 vec2 cuv(vec3 c){float y=dot(c,LW);return vec2(c.b-y,c.r-y);}
+float sedge(float v,float e){return smoothstep(e+.006,e-.006,v);}
+float trMask(){
+ if(u_trT<.5)return 1.;
+ vec2 q=gl_FragCoord.xy/u_res;q.y=1.-q.y;float p=u_trP;vec2 d=q-.5;d.x*=u_res.x/u_res.y;
+ if(u_trT<1.5)return sedge(length(d),p*1.25);
+ if(u_trT<2.5)return 1.-sedge(length(d),(1.-p)*1.25);
+ if(u_trT<3.5)return sedge(abs(d.x)+abs(d.y),p*1.6);
+ if(u_trT<4.5){float a=atan(d.x,-d.y)/6.28318+.5;return sedge(a,p);}
+ if(u_trT<5.5)return sedge(fract(q.y*10.),p);
+ if(u_trT<6.5)return sedge(fract(q.x*10.),p);
+ if(u_trT<7.5)return step(rnd(floor(q*vec2(60.,60.*u_res.y/u_res.x))),p);
+ if(u_trT<8.5)return sedge(abs(q.x-.5)*2.,p);
+ if(u_trT<9.5)return sedge(abs(q.y-.5)*2.,p);
+ if(u_trT<10.5){float s=max(p*2.4,.001);return sedge(sdHeart(vec2(d.x,-d.y)/s+vec2(0.,.55))*s,0.);}
+ if(u_trT<11.5)return sedge(sdStar(vec2(d.x,-d.y),p*1.3,.45),0.);
+ if(u_trT>12.5&&u_trT<13.5)return sedge(q.x,p);
+ return 1.;}
 vec3 hueRot(vec3 c,float a){vec3 k=vec3(.57735);float cs=cos(a);return c*cs+cross(k,c)*sin(a)+k*dot(k,c)*(1.-cs);}
 vec4 tx(vec2 u){vec4 t=texture2D(u_tex,u);
  if(u_ck>.5){float d=distance(cuv(t.rgb),cuv(u_ckC))-u_ckSim;t.a*=pow(clamp(d/u_ckSm,0.,1.),1.5);
@@ -505,7 +536,7 @@ vec4 fetch(vec2 u){float I=u_fxA;
  if(u_fx<4.5){vec2 b=u_px*mix(2.,48.,I);return tx((floor(u/b)+.5)*b);}
  if(u_fx<5.5){u.x=u.x<.5?u.x:1.-u.x;return tx(u);}
  if(u_fx<6.5){vec2 f=floor(u*2.);vec2 v=fract(u*2.);v=mix(v,1.-v,f);return tx(v);}
- if(u_fx>7.5&&u_fx<8.5){vec4 s=vec4(0.);vec2 r=u_px*(1.+I*7.);
+ if(u_fx>7.5&&u_fx<8.5){vec4 s=vec4(0.);vec2 r=u_px*(1.+I*14.);
   for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++)s+=tx(u+vec2(float(i),float(j))*r);return s/25.;}
  return tx(u);}
 void main(){vec3 c;float ta=1.;float I=u_fxA;
@@ -528,10 +559,12 @@ void main(){vec3 c;float ta=1.;float I=u_fxA;
   float sx=rnd(vec2(floor(u_sec*6.),7.));c-=.4*I*(1.-smoothstep(0.,.0025,abs(uv.x-sx)))*step(.4,rnd(vec2(floor(u_sec*6.),9.)));
   c+=(rnd(uv*800.+u_sec)-.5)*.18*I;}
  else if(u_fx>11.5&&u_fx<12.5){c+=(1.-smoothstep(0.,.3,fract(u_sec)))*.7*I;}
+ else if(u_fx>12.5&&u_fx<13.5)c=c+I*.85*(1.-c*.3);
  else if(u_fx>13.5&&u_fx<14.5)c=mix(c,hueRot(c,u_sec*2.),I);
  c*=1.-u_v*smoothstep(.25,.85,distance(uv,vec2(.5)));
  c+=(rnd(uv*1000.+u_time)-.5)*u_g*.2;
- float A=u_alpha*ta*maskA();
+ float A=u_alpha*ta*maskA()*trMask();
+ if(u_trT>11.5&&u_trT<12.5){float lm=dot(clamp(c,0.,1.),LW);A*=smoothstep(lm-.08,lm+.08,u_trP*1.16-.08);}
  if(u_segOn>.5){float m=texture2D(u_seg,uv).r;if(u_segInv>.5)m=1.-m;A*=smoothstep(.3,.7,m);}
  gl_FragColor=vec4(clamp(c,0.,1.)*A,A);}`;
 function mkShader(type,src){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
@@ -543,7 +576,7 @@ gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATI
 const aLoc = gl.getAttribLocation(prog,'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc,2,gl.FLOAT,false,0,0);
 const U = {};
 ['u_half','u_off','u_rot','u_canvas','u_tex','u_lut','u_lutN','u_lutAmt','u_alpha','u_time','u_b','u_c','u_s','u_t','u_ti','u_f','u_v','u_g','u_sh','u_px','u_blur',
- 'u_mT','u_mC','u_mS','u_mRot','u_mF','u_mR','u_mInv','u_asp','u_ck','u_ckC','u_ckSim','u_ckSm','u_ckSp','u_fx','u_fxA','u_sec','u_seg','u_segOn','u_segInv','u_rtS','u_rtB'].forEach(n => U[n]=gl.getUniformLocation(prog,n));
+ 'u_mT','u_mC','u_mS','u_mRot','u_mF','u_mR','u_mInv','u_asp','u_ck','u_ckC','u_ckSim','u_ckSm','u_ckSp','u_fx','u_fxA','u_sec','u_seg','u_segOn','u_segInv','u_rtS','u_rtB','u_trT','u_trP','u_res'].forEach(n => U[n]=gl.getUniformLocation(prog,n));
 gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 function mkTex(){
   const t=gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,t);
@@ -554,7 +587,7 @@ function mkTex(){
 const texA = mkTex(), texB = mkTex(), texO = mkTex(), texSeg = mkTex();
 const dummy = mkTex(); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
 gl.uniform1i(U.u_tex,0); gl.uniform1i(U.u_lut,1); gl.uniform1i(U.u_seg,2);
-const EX0 = {s:1,dx:0,dy:0,a:1,r:0};
+const EX0 = {s:1,sx:1,dx:0,dy:0,a:1,r:0};
 
 function fxParams(c){ const p={...c.adj}, f=FILTERS[c.filter]||{}, k=c.filterAmt/100; for(const key in f) p[key]=(p[key]||0)+f[key]*k; return p; }
 function setFx(c){
@@ -601,34 +634,63 @@ function setChroma(it){
   gl.uniform1f(U.u_ckSm, Math.max(.002, k.smooth/100*.3));
   gl.uniform1f(U.u_ckSp, Math.max(.002, k.spill/100*.5));
 }
+const bounceOut = k => { const n=7.5625,d=2.75; if(k<1/d) return n*k*k; if(k<2/d) return n*(k-=1.5/d)*k+.75; if(k<2.5/d) return n*(k-=2.25/d)*k+.9375; return n*(k-=2.625/d)*k+.984375; };
+const backOut = k => { const q=k-1; return 1+2.70158*q*q*q+1.70158*q*q; };
 function animState(c,lt,dur){
-  let s=1, dx=0, dy=0, r=0, a=1; const W=cv.width, H=cv.height;
+  const R={s:1,sx:1,sy:1,dx:0,dy:0,r:0,a:1,fx:null,mT:0,mP:0}; const W=cv.width, H=cv.height;
   const ap = (name,k) => { k=clamp(k,0,1); const e=1-Math.pow(1-k,3);
     switch(name){
-      case 'fade': a*=e; break;
-      case 'zoomIn': s*=.5+.5*e; a*=e; break;
-      case 'zoomOut': s*=1.6-.6*e; a*=e; break;
-      case 'slideL': dx+=(1-e)*W; break;
-      case 'slideR': dx-=(1-e)*W; break;
-      case 'slideU': dy+=(1-e)*H; break;
-      case 'slideD': dy-=(1-e)*H; break;
-      case 'spin': r+=(1-e)*Math.PI*2; s*=.3+.7*e; a*=e; break;
-      case 'shake': dx+=Math.sin(k*40)*(1-k)*W*.04; break;
+      case 'fade': R.a*=e; break;
+      case 'zoomIn': R.s*=.5+.5*e; R.a*=e; break;
+      case 'zoomOut': R.s*=1.6-.6*e; R.a*=e; break;
+      case 'slideL': R.dx+=(1-e)*W; break;
+      case 'slideR': R.dx-=(1-e)*W; break;
+      case 'slideU': R.dy+=(1-e)*H; break;
+      case 'slideD': R.dy-=(1-e)*H; break;
+      case 'spin': R.r+=(1-e)*Math.PI*2; R.s*=.3+.7*e; R.a*=e; break;
+      case 'shake': R.dx+=Math.sin(k*40)*(1-k)*W*.04; break;
+      case 'rotateIn': R.r-=(1-e)*Math.PI/2; R.s*=.7+.3*e; R.a*=e; break;
+      case 'flipX': R.sx*=Math.max(.001,e); break;
+      case 'flipY': R.sy*=Math.max(.001,e); break;
+      case 'dropIn': R.dy-=(1-bounceOut(k))*H; break;
+      case 'riseUp': R.dy+=(1-e)*H*.12; R.a*=e; break;
+      case 'blurIn': R.fx=['blur',1-e]; R.a*=Math.min(1,k*2); break;
+      case 'glitchIn': R.fx=['rgbsplit',1-k]; R.dx+=Math.sin(k*97)*W*.03*(1-k); break;
+      case 'swingIn': R.r+=Math.sin(k*Math.PI*3)*(1-k)*.35; R.a*=Math.min(1,k*3); break;
+      case 'shrinkIn': R.s*=1.5-.5*e; break;
+      case 'growIn': R.s*=Math.max(.001,backOut(k)); break;
+      case 'wipeIn': R.mT=13; R.mP=e; break;
+      case 'circleIn': R.mT=1; R.mP=e; break;
+      case 'flashIn': R.fx=['bright',1-e]; break;
+      case 'pixelIn': R.fx=['pixelate',1-e]; break;
+      case 'tiltIn': R.r+=(1-e)*.25; R.dx+=(1-e)*W*.25; R.a*=e; break;
     }};
   if(c.anim.in!=='none' && lt < c.anim.inDur) ap(c.anim.in, lt/c.anim.inDur);
   if(c.anim.out!=='none' && lt > dur-c.anim.outDur) ap(c.anim.out, (dur-lt)/c.anim.outDur);
   const q = dur>0 ? lt/dur : 0;
   switch(c.anim.loop){
-    case 'kenburns': s*=1+.15*q; break;
-    case 'zoomOutSlow': s*=1.15-.15*q; break;
-    case 'pulse': s*=1+.04*Math.sin(lt*6); break;
-    case 'sway': r+=.04*Math.sin(lt*2.5); break;
+    case 'kenburns': R.s*=1+.15*q; break;
+    case 'zoomOutSlow': R.s*=1.15-.15*q; break;
+    case 'pulse': R.s*=1+.04*Math.sin(lt*6); break;
+    case 'sway': R.r+=.04*Math.sin(lt*2.5); break;
+    case 'zoomInOut': R.s*=1+.12*Math.sin(q*Math.PI); break;
+    case 'rock': R.r+=.06*Math.sin(lt*4); break;
+    case 'wobble': R.dx+=Math.sin(lt*7)*W*.015; R.r+=.03*Math.sin(lt*5); break;
+    case 'jelly': R.sx*=1+.05*Math.sin(lt*9); R.sy*=1-.05*Math.sin(lt*9); break;
+    case 'glitchLoop': if(Math.sin(lt*13)>.7){ R.fx=['rgbsplit',.8]; R.dx+=Math.sin(lt*91)*W*.01; } break;
+    case 'flashLoop': R.fx=['bright',Math.max(0,1-(lt*1.5%1)*4)*.6]; break;
+    case 'rotateLoop': R.r+=lt*1.2; break;
+    case 'shakeLoop': R.dx+=Math.sin(lt*41)*W*.012; R.dy+=Math.cos(lt*37)*H*.008; break;
+    case 'heartbeat': { const p=lt%1; if(p<.5) R.s*=1+.08*Math.max(0,Math.sin(p*Math.PI*4)); break; }
+    case 'bounceLoop': R.dy-=Math.abs(Math.sin(lt*4))*H*.03; break;
+    case 'blurPulse': R.fx=['blur',(.5+.5*Math.sin(lt*3))*.6]; break;
   }
-  return {s,dx,dy,r,a};
+  return R;
 }
 function transState(type,p,W,H){
   const A={...EX0}, B={...EX0}; let sc=null, clear=null;
-  const e = p<.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+  const e = p<.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2, bell = Math.sin(p*Math.PI);
+  const mask = t => { B.mT=t; B.mP=e; };
   switch(type){
     case 'fade': B.a=e; break;
     case 'black': case 'white':
@@ -644,6 +706,29 @@ function transState(type,p,W,H){
     case 'zoomOut': A.s=1-.3*e; B.s=1.8-.8*e; B.a=e; break;
     case 'spin': B.r=(1-e)*Math.PI; B.s=Math.max(.01,e); B.a=e; break;
     case 'glitch': { const j=Math.sin(p*90)*W*.05*(1-Math.abs(2*p-1)); A.dx=j; B.dx=-j; B.a = p>.5 ? 1 : (Math.random()<p*2 ? 1 : 0); break; }
+    case 'circleOpen': mask(1); break;
+    case 'circleClose': mask(2); break;
+    case 'diamond': mask(3); break;
+    case 'clock': mask(4); break;
+    case 'blinds': mask(5); break;
+    case 'blindsV': mask(6); break;
+    case 'dissolve': mask(7); break;
+    case 'doors': mask(8); break;
+    case 'barn': mask(9); break;
+    case 'heart': mask(10); break;
+    case 'star': mask(11); break;
+    case 'luma': B.mT=12; B.mP=p; break;
+    case 'blurDissolve': B.a=e; A.fx=['blur',bell]; B.fx=['blur',bell]; break;
+    case 'pixelT': A.fx=['pixelate',bell]; B.fx=['pixelate',bell]; B.a=clamp((p-.45)/.1,0,1); break;
+    case 'zoomBlur': A.s=1+e*.6; B.s=1.6-.6*e; B.a=e; A.fx=['blur',bell*.8]; B.fx=['blur',bell*.8]; break;
+    case 'whipL': A.dx=-e*W; B.dx=(1-e)*W; A.fx=['blur',bell]; B.fx=['blur',bell]; break;
+    case 'whipR': A.dx=e*W; B.dx=-(1-e)*W; A.fx=['blur',bell]; B.fx=['blur',bell]; break;
+    case 'flashShake': { const j=Math.sin(p*70)*W*.03*bell; A.dx=j; B.dx=-j; A.fx=['bright',bell]; B.fx=['bright',bell]; B.a=p>.5?1:0; break; }
+    case 'rgbGlitch': { const j=Math.sin(p*90)*W*.04*bell; A.dx=j; B.dx=-j; A.fx=['rgbsplit',bell]; B.fx=['rgbsplit',bell]; B.a=p>.5?1:0; break; }
+    case 'spinZoom': A.r=e*Math.PI; A.s=1+e; A.a=1-e; B.a=e; B.s=.5+.5*e; break;
+    case 'flip': if(p<.5){ A.sx=Math.max(.001,1-2*p); B.a=0; } else { A.a=0; B.sx=Math.max(.001,2*p-1); } break;
+    case 'cube': A.dx=-e*W*.5; A.sx=Math.max(.001,1-e); B.dx=(1-e)*W*.5; B.sx=Math.max(.001,e); break;
+    case 'dropIn': B.dy=-(1-bounceOut(p))*H; break;
   }
   return {A,B,sc,clear};
 }
@@ -657,23 +742,29 @@ function drawClip(c,tex,ex){
   try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el); }catch(e){ return; }
   const W=cv.width, H=cv.height, d=derived[c.id], lt=S.time-d.start, st=localToSrc(c,lt);
   gl.uniform2f(U.u_px,1/vw,1/vh);
+  gl.uniform1f(U.u_trT, ex.mT||0); gl.uniform1f(U.u_trP, ex.mP||0);
   setFx(c); gl.uniform1f(U.u_ck,0); gl.uniform1f(U.u_segOn,0);
   if(S.bg==='blur'){
-    gl.uniform1f(U.u_rtS,0); gl.uniform1f(U.u_rtB,0);
     const k=Math.max(W/vw,H/vh);
-    gl.uniform1f(U.u_mT,0); gl.uniform1f(U.u_fx,0);
+    gl.uniform1f(U.u_rtS,0); gl.uniform1f(U.u_rtB,0); gl.uniform1f(U.u_mT,0); gl.uniform1f(U.u_fx,0);
     gl.uniform2f(U.u_half,vw*k/2,vh*k/2); gl.uniform2f(U.u_off,ex.dx,-ex.dy); gl.uniform1f(U.u_rot,0);
     gl.uniform1f(U.u_alpha,ex.a); gl.uniform1f(U.u_blur,1);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   }
   setFx(c); setMask(c,vw,vh); setEffect(c); setChroma(c); setSeg(c,el);
   const an = animState(c,lt,d.dur), fm = fxMotion(c,W,H);
+  const fo = ex.fx || an.fx; if(fo){ gl.uniform1f(U.u_fx, FX_T[fo[0]]||0); gl.uniform1f(U.u_fxA, fo[1]); gl.uniform1f(U.u_sec, S.time); }
+  if(!ex.mT && an.mT){ gl.uniform1f(U.u_trT, an.mT); gl.uniform1f(U.u_trP, an.mP); }
   const k = Math.min(W/vw,H/vh)*ev(c,'tf.scale',st)/100*an.s*ex.s*fm.s;
-  gl.uniform2f(U.u_half,vw*k/2*(c.tf.flip?-1:1),vh*k/2);
-  gl.uniform2f(U.u_off,ev(c,'tf.x',st)+an.dx+ex.dx+fm.dx,ev(c,'tf.y',st)-an.dy-ex.dy-fm.dy);
-  gl.uniform1f(U.u_rot,-(ev(c,'tf.rot',st)*Math.PI/180+an.r+ex.r));
+  const hw = vw*k/2*an.sx*(ex.sx||1), hh = vh*k/2*an.sy;
+  const ox = ev(c,'tf.x',st)+an.dx+ex.dx+fm.dx, oy = ev(c,'tf.y',st)-an.dy-ex.dy-fm.dy, rot = ev(c,'tf.rot',st)*Math.PI/180+an.r+ex.r;
+  gl.uniform2f(U.u_half, hw*(c.tf.flip?-1:1), hh);
+  gl.uniform2f(U.u_off, ox, oy);
+  gl.uniform1f(U.u_rot, -rot);
   gl.uniform1f(U.u_alpha,an.a*ex.a*ev(c,'opacity',st)/100); gl.uniform1f(U.u_blur,0);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  geo[c.id] = {cx:W/2+ox, cy:H/2-oy, rot, hw, hh, flip:!!c.tf.flip};
+  gl.uniform1f(U.u_trT, 0);
 }
 function render(now){
   const W=cv.width, H=cv.height;
@@ -681,7 +772,7 @@ function render(now){
   const pr = currentPair(), tr = pr && pr.b ? transState(pr.b.trans.type, pr.p, W, H) : null;
   const bgc = tr && tr.clear != null ? tr.clear : (S.bg==='white' ? 1 : 0);
   gl.clearColor(bgc,bgc,bgc,1); gl.clear(gl.COLOR_BUFFER_BIT);
-  gl.uniform2f(U.u_canvas,W,H); gl.uniform1f(U.u_time,((now||0)%1000)/1000);
+  gl.uniform2f(U.u_canvas,W,H); gl.uniform2f(U.u_res,W,H); gl.uniform1f(U.u_trT,0); gl.uniform1f(U.u_time,((now||0)%1000)/1000);
   if(pr && !S.mainHide){
     drawClip(pr.a, texA, tr ? tr.A : EX0);
     if(pr.b){
@@ -693,6 +784,7 @@ function render(now){
   octx.globalAlpha = 1; octx.filter = 'none'; octx.globalCompositeOperation = 'source-over';
   octx.drawImage(cv,0,0);
   drawOverlays(octx);
+  if(!exporting && typeof drawGizmos === 'function') drawGizmos(octx);
 }
 
 /* ================= OVERLAYS ================= */
@@ -703,42 +795,61 @@ function ensureFont(f){
   document.fonts.load(`400 40px "${f}"`, 'ಕನ್ನಡ Aa').catch(()=>{});
 }
 function rr(ctx,x,y,w,h,r){ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else ctx.rect(x,y,w,h); }
+const LETTER_ANIMS = ['letterPop','letterFade','letterBounce','wordPop'];
 function ovAnim(o,lt,u){
-  let s=1, dx=0, dy=0, r=0, a=1, ch=1, blur=0;
+  const R={s:1,sx:1,sy:1,dx:0,dy:0,r:0,a:1,ch:1,blur:0,fx:null,mT:0,mP:0,wipe:1,hue:0,inK:1,outK:1};
   const ap = (n,k) => { k=clamp(k,0,1); const e=1-Math.pow(1-k,3);
     switch(n){
-      case 'fade': a*=e; break;
-      case 'pop': { const q=k-1; s*=Math.max(0,1+2.70158*q*q*q+1.70158*q*q); a*=Math.min(1,k*3); break; }
-      case 'zoom': s*=1.8-.8*e; a*=e; break;
-      case 'slideUp': dy+=(1-e)*u*.25; a*=e; break;
-      case 'slideDown': dy-=(1-e)*u*.25; a*=e; break;
-      case 'slideL': dx+=(1-e)*u*.35; a*=e; break;
-      case 'slideR': dx-=(1-e)*u*.35; a*=e; break;
-      case 'typewriter': ch=Math.min(ch,k); break;
-      case 'bounce': dy-=Math.abs(Math.cos(k*Math.PI*2.5))*(1-k)*u*.15; a*=Math.min(1,k*4); break;
-      case 'spin': r+=(1-e)*Math.PI*2; s*=e; break;
-      case 'blur': blur+=(1-e)*20; a*=e; break;
+      case 'fade': R.a*=e; break;
+      case 'pop': R.s*=Math.max(0,backOut(k)); R.a*=Math.min(1,k*3); break;
+      case 'zoom': R.s*=1.8-.8*e; R.a*=e; break;
+      case 'slideUp': R.dy+=(1-e)*u*.25; R.a*=e; break;
+      case 'slideDown': R.dy-=(1-e)*u*.25; R.a*=e; break;
+      case 'slideL': R.dx+=(1-e)*u*.35; R.a*=e; break;
+      case 'slideR': R.dx-=(1-e)*u*.35; R.a*=e; break;
+      case 'typewriter': R.ch=Math.min(R.ch,k); break;
+      case 'bounce': R.dy-=Math.abs(Math.cos(k*Math.PI*2.5))*(1-k)*u*.15; R.a*=Math.min(1,k*4); break;
+      case 'spin': R.r+=(1-e)*Math.PI*2; R.s*=e; break;
+      case 'blur': R.blur+=(1-e)*20; R.a*=e; break;
+      case 'flipX': R.sx*=Math.max(.001,e); break;
+      case 'flipY': R.sy*=Math.max(.001,e); break;
+      case 'dropIn': R.dy-=(1-bounceOut(k))*u*.6; R.a*=Math.min(1,k*5); break;
+      case 'riseUp': R.dy+=(1-e)*u*.08; R.a*=e; break;
+      case 'rotateIn': R.r-=(1-e)*Math.PI/2; R.a*=e; R.s*=.7+.3*e; break;
+      case 'growIn': R.s*=Math.max(0,backOut(k)); break;
+      case 'shrinkIn': R.s*=1.6-.6*e; R.a*=e; break;
+      case 'glitchIn': R.fx=['rgbsplit',1-k]; R.dx+=Math.sin(k*97)*u*.025*(1-k); R.a*=k>.15?1:k/.15; break;
+      case 'swingIn': R.r+=Math.sin(k*Math.PI*3)*(1-k)*.5; R.a*=Math.min(1,k*3); break;
+      case 'tiltIn': R.r+=(1-e)*.3; R.dx+=(1-e)*u*.2; R.a*=e; break;
+      case 'wipeIn': R.wipe=Math.min(R.wipe,e); R.mT=13; R.mP=e; break;
+      case 'flashIn': R.fx=['bright',1-e]; R.a*=Math.min(1,k*4); break;
     }};
   const A=o.anim, D=o.dur;
-  if(A.in!=='none' && lt < A.inDur) ap(A.in, lt/A.inDur);
-  if(A.out!=='none' && lt > D-A.outDur) ap(A.out, (D-lt)/A.outDur);
+  if(A.in!=='none' && lt < A.inDur){ R.inK=clamp(lt/A.inDur,0,1); ap(A.in, R.inK); }
+  if(A.out!=='none' && lt > D-A.outDur){ R.outK=clamp((D-lt)/A.outDur,0,1); ap(A.out, R.outK); }
   switch(A.loop){
-    case 'pulse': s*=1+.06*Math.sin(lt*6); break;
-    case 'shake': dx+=Math.sin(lt*50)*u*.006; dy+=Math.cos(lt*43)*u*.004; break;
-    case 'float': dy+=Math.sin(lt*2.5)*u*.02; break;
-    case 'swing': r+=.12*Math.sin(lt*3); break;
-    case 'blink': if(Math.sin(lt*8) < -.3) a*=.15; break;
-    case 'heartbeat': { const p=lt%1; if(p<.5) s*=1+.12*Math.max(0,Math.sin(p*Math.PI*4)); break; }
-    case 'rotate': r+=lt*2; break;
+    case 'pulse': R.s*=1+.06*Math.sin(lt*6); break;
+    case 'shake': R.dx+=Math.sin(lt*50)*u*.006; R.dy+=Math.cos(lt*43)*u*.004; break;
+    case 'float': R.dy+=Math.sin(lt*2.5)*u*.02; break;
+    case 'swing': R.r+=.12*Math.sin(lt*3); break;
+    case 'blink': if(Math.sin(lt*8) < -.3) R.a*=.15; break;
+    case 'heartbeat': { const p=lt%1; if(p<.5) R.s*=1+.12*Math.max(0,Math.sin(p*Math.PI*4)); break; }
+    case 'rotate': R.r+=lt*2; break;
+    case 'jelly': R.sx*=1+.08*Math.sin(lt*9); R.sy*=1-.08*Math.sin(lt*9); break;
+    case 'rock': R.r+=.1*Math.sin(lt*4); break;
+    case 'bounceLoop': R.dy-=Math.abs(Math.sin(lt*4))*u*.04; break;
+    case 'zoomInOut': R.s*=1+.12*Math.sin(lt*2); break;
+    case 'glitchLoop': if(Math.sin(lt*13)>.75){ R.fx=['rgbsplit',.8]; R.dx+=Math.sin(lt*91)*u*.01; } break;
+    case 'rainbow': R.hue=(lt*120)%360+1; break;
   }
-  return {s,dx,dy,r,a,ch,blur};
+  return R;
 }
 function wrapLine(ctx,line,maxW){
   const words=line.split(' '), out=[]; let cur='';
   for(const w of words){ const t=cur?cur+' '+w:w; if(cur && ctx.measureText(t).width>maxW){ out.push(cur); cur=w; } else cur=t; }
   out.push(cur); return out;
 }
-function drawText(ctx,o,an,u,size,maxW){
+function drawText(ctx,o,an,u,size,maxW,lt){
   ensureFont(o.font);
   const px = size*u/720, lh = px*1.3;
   ctx.font = `${o.italic?'italic ':''}${o.bold?700:400} ${px}px "${o.font}","Noto Sans Kannada",sans-serif`;
@@ -746,26 +857,62 @@ function drawText(ctx,o,an,u,size,maxW){
   if(maxW) lines = lines.flatMap(l => wrapLine(ctx,l,maxW));
   if(!lines.length) lines=[' '];
   const w = Math.max(px*.5, ...lines.map(l => ctx.measureText(l).width)), h = lh*lines.length;
-  const padX = px*.35, padY = px*.18;
+  const padX = px*.35, padY = px*.18, color = an.hue ? `hsl(${an.hue},95%,62%)` : o.color;
+  if(an.wipe < 1){ ctx.save(); ctx.beginPath(); ctx.rect(-w/2-padX,-h/2-padY,(w+padX*2)*an.wipe,h+padY*2); ctx.clip(); }
   if(o.bgOn){ ctx.fillStyle = hexA(o.bgColor, o.bgAlpha/100); rr(ctx,-w/2-padX,-h/2-padY,w+padX*2,h+padY*2,px*.22); ctx.fill(); }
-  let show = lines;
-  if(an.ch < 1){
-    let n = Math.ceil(graphemes(lines.join('\n')).length*an.ch); show = [];
-    for(const l of lines){ const g = graphemes(l); if(n <= 0) break; show.push(g.slice(0,n).join('')); n -= g.length + 1; }
-  }
-  ctx.textBaseline = 'middle'; ctx.textAlign = o.align; ctx.lineJoin = 'round';
-  const x = o.align==='left' ? -w/2 : o.align==='right' ? w/2 : 0;
-  show.forEach((l,i) => {
-    const y = -h/2 + lh*(i+.5);
+  ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  const glyph = (s,x,y) => {
     if(o.shadow > 0){ ctx.shadowColor = o.shadowColor; ctx.shadowBlur = o.shadow*px/50; }
-    if(o.strokeW > 0){ ctx.strokeStyle = o.stroke; ctx.lineWidth = o.strokeW*px/40; ctx.strokeText(l,x,y); ctx.shadowColor = 'transparent'; }
-    ctx.fillStyle = o.color; ctx.fillText(l,x,y);
-  });
-  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+    if(o.strokeW > 0){ ctx.strokeStyle = o.stroke; ctx.lineWidth = o.strokeW*px/40; ctx.strokeText(s,x,y); ctx.shadowColor = 'transparent'; }
+    ctx.fillStyle = color; ctx.fillText(s,x,y); ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+  };
+  const A = o.anim, inL = an.inK < 1 && LETTER_ANIMS.includes(A.in), outL = an.outK < 1 && LETTER_ANIMS.includes(A.out);
+  if(!inL && !outL && A.loop !== 'wave'){
+    let show = lines;
+    if(an.ch < 1){
+      let n = Math.ceil(graphemes(lines.join('\n')).length*an.ch); show = [];
+      for(const l of lines){ const g = graphemes(l); if(n <= 0) break; show.push(g.slice(0,n).join('')); n -= g.length + 1; }
+    }
+    ctx.textAlign = o.align;
+    const x = o.align==='left' ? -w/2 : o.align==='right' ? w/2 : 0;
+    show.forEach((l,i) => glyph(l, x, -h/2 + lh*(i+.5)));
+  } else {
+    ctx.textAlign = 'left';
+    const words = (inL && A.in==='wordPop') || (outL && A.out==='wordPop');
+    const all = lines.map(l => graphemes(l)), total = all.reduce((a,g)=>a+g.length,0) || 1;
+    const wordsTotal = (lines.join(' ').match(/\S+/g) || ['']).length;
+    let idx = 0, widx = 0;
+    const kOf = (k,unit,units) => clamp((k - unit/Math.max(1,units)*.7)/.3, 0, 1);
+    all.forEach((g,li) => {
+      const lw = ctx.measureText(lines[li]).width; let x = o.align==='left' ? -w/2 : o.align==='right' ? w/2-lw : -lw/2;
+      const y = -h/2 + lh*(li+.5);
+      for(const ch of g){
+        const cw = ctx.measureText(ch).width, unit = words ? widx : idx, units = words ? wordsTotal : total;
+        let a = 1, sc = 1, dy = 0;
+        const fx = (type,k) => {
+          if(type==='letterPop' || type==='wordPop'){ sc*=Math.max(0,backOut(k)); a*=Math.min(1,k*3); }
+          else if(type==='letterFade'){ a*=k; dy+=(1-k)*px*.5; }
+          else if(type==='letterBounce'){ dy-=(1-bounceOut(k))*px*1.4; a*=Math.min(1,k*4); }
+        };
+        if(inL) fx(A.in, kOf(an.inK,unit,units));
+        if(outL) fx(A.out, kOf(an.outK,unit,units));
+        if(A.loop==='wave') dy += Math.sin(lt*5 - idx*.55)*px*.18;
+        if(a > .003 && sc > .003){ ctx.save(); ctx.globalAlpha *= a; ctx.translate(x+cw/2, y+dy); ctx.scale(sc,sc); glyph(ch,-cw/2,0); ctx.restore(); }
+        x += cw; idx++; if(ch === ' ') widx++;
+      }
+      widx++;
+    });
+  }
+  if(an.wipe < 1) ctx.restore();
   return {hw:w/2+padX, hh:h/2+padY};
 }
 function drawSticker(ctx,o,u,size){
   const px = size*u/720;
+  if(o.text && o.text.startsWith('svg:')){
+    const img = typeof SVGIMG !== 'undefined' ? SVGIMG[o.text.slice(4)] : null;
+    if(img && img.complete && img.naturalWidth) ctx.drawImage(img,-px*.6,-px*.6,px*1.2,px*1.2);
+    return {hw:px*.6, hh:px*.6};
+  }
   ctx.font = `${px}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(o.text, 0, px*.05);
@@ -778,18 +925,23 @@ function drawMediaLayer(ctx,o,an,cx,cy,rot,size,opacity,u){
   const [vw,vh] = elSize(el);
   if(!vw || (el.tagName === 'VIDEO' && el.readyState < 2)) return null;
   const W=cv.width, H=cv.height, w=u*size/100, h=w*vh/vw, a=clamp(opacity/100*an.a,0,1), fm=fxMotion(o,W,H);
+  const hw = w*an.s*fm.s*an.sx/2, hh = h*an.s*fm.s*an.sy/2;
   if(a > .001){
     gl.viewport(0,0,W,H); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texO);
     try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el); }catch(e){ return null; }
     gl.uniform2f(U.u_px,1/vw,1/vh); setFx(o); setMask(o,vw,vh); setChroma(o); setEffect(o); setSeg(o,el);
-    gl.uniform2f(U.u_half,(o.flip?-1:1)*w*an.s*fm.s/2,h*an.s*fm.s/2); gl.uniform2f(U.u_off,cx+fm.dx-W/2,H/2-cy-fm.dy);
+    if(an.fx){ gl.uniform1f(U.u_fx, FX_T[an.fx[0]]||0); gl.uniform1f(U.u_fxA, an.fx[1]); gl.uniform1f(U.u_sec, S.time); }
+    gl.uniform1f(U.u_trT, an.mT||0); gl.uniform1f(U.u_trP, an.mP||0);
+    gl.uniform2f(U.u_half,(o.flip?-1:1)*hw, hh); gl.uniform2f(U.u_off,cx+fm.dx-W/2,H/2-cy-fm.dy);
     gl.uniform1f(U.u_rot,-rot); gl.uniform1f(U.u_alpha,1); gl.uniform1f(U.u_blur,0);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    gl.uniform1f(U.u_trT, 0);
     ctx.save(); ctx.globalAlpha = a; ctx.globalCompositeOperation = o.blend || 'source-over';
     if(an.blur > .5) ctx.filter = `blur(${an.blur*u/720}px)`;
     ctx.drawImage(cv,0,0); ctx.restore();
   }
+  geo[o.id] = {cx:cx+fm.dx, cy:cy+fm.dy, rot, hw, hh, flip:!!o.flip};
   return {hw:w/2, hh:h/2};
 }
 function drawSel(ctx,h,u){
@@ -807,13 +959,15 @@ function drawOverlays(ctx){
     const cx = X/100*W + an.dx, cy = Y/100*H + an.dy, rot = R*Math.PI/180 + an.r;
     let box = null;
     if(isMediaOv(o)) box = drawMediaLayer(ctx,o,an,cx,cy,rot,SZ,OP,u);
+    else if(o.type==='gfx'){ box = typeof drawGfxItem === 'function' ? drawGfxItem(ctx,o,an,cx,cy,rot,SZ,OP,u,lt) : null; }
     else {
       ctx.save(); ctx.globalCompositeOperation = o.blend || 'source-over';
-      ctx.translate(cx,cy); ctx.rotate(rot); ctx.scale(an.s, an.s);
+      ctx.translate(cx,cy); ctx.rotate(rot); ctx.scale(an.s*an.sx, an.s*an.sy);
       ctx.globalAlpha = clamp(OP/100*an.a, 0, 1);
       if(an.blur > .5) ctx.filter = `blur(${an.blur*u/720}px)`;
-      box = o.type==='text' ? drawText(ctx,o,an,u,SZ,o.caption ? W*.86/Math.max(.2,an.s) : 0) : drawSticker(ctx,o,u,SZ);
+      box = o.type==='text' ? drawText(ctx,o,an,u,SZ,o.caption ? W*.86/Math.max(.2,an.s) : 0,lt) : drawSticker(ctx,o,u,SZ);
       ctx.restore();
+      if(box) geo[o.id] = {cx, cy, rot, hw:box.hw*an.s, hh:box.hh*an.s, flip:false};
     }
     if(box){
       const h = {cx, cy, rot, s:an.s, hw:box.hw, hh:box.hh};
@@ -880,19 +1034,39 @@ function autoKey(o){
 function setPick(on){ S.pick = on; out.classList.toggle('pick', on); $('#pickTip').style.display = on ? 'block' : 'none'; }
 
 /* ================= IMPORT ================= */
-function probe(url){
-  return new Promise((res,rej)=>{
-    const v=document.createElement('video'); v.preload='auto'; v.muted=true; v.playsInline=true; let fixing=false;
-    v.onloadedmetadata=()=>{ if(!isFinite(v.duration)){ fixing=true; v.currentTime=1e7; } else v.currentTime=Math.min(1,v.duration/2); };
-    v.onseeked=()=>{
-      if(fixing){ fixing=false; v.currentTime=Math.min(1,v.duration/2); return; }
-      const c=document.createElement('canvas'); c.width=160; c.height=Math.round(160*v.videoHeight/v.videoWidth)||90;
-      c.getContext('2d').drawImage(v,0,0,c.width,c.height);
-      res({duration:v.duration,w:v.videoWidth,h:v.videoHeight,thumb:c.toDataURL('image/jpeg',.7)});
-    };
-    v.onerror=()=>rej(new Error('ಈ video ಓದಲು ಆಗುತ್ತಿಲ್ಲ (format support ಇಲ್ಲ)'));
-    v.src=url;
-  });
+function waitFrame(v){ return new Promise(r=>{ let done=false; const fin=()=>{ if(!done){ done=true; r(); } }; if(v.requestVideoFrameCallback) v.requestVideoFrameCallback(fin); setTimeout(fin,300); }); }
+function seekTo(v,t){ return new Promise(res=>{ let done=false; const fin=()=>{ if(done) return; done=true; v.removeEventListener('seeked',fin); res(); }; v.addEventListener('seeked',fin); v.currentTime=t; setTimeout(fin,4000); }); }
+function frameLuma(c){ const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; let s=0,n=0; for(let i=0;i<d.length;i+=32){ s+=d[i]+d[i+1]+d[i+2]; n++; } return s/n/3; }
+async function probe(url){
+  const v=mkVideo(null); v.muted=true;
+  try{
+    await new Promise((res,rej)=>{ v.onloadedmetadata=res; v.onerror=()=>rej(new Error('ಈ video ಓದಲು ಆಗುತ್ತಿಲ್ಲ — MP4 (H.264) ಆಗಿ convert ಮಾಡಿ ಪ್ರಯತ್ನಿಸಿ')); v.src=url; });
+    if(!isFinite(v.duration)) await seekTo(v,1e7);
+    const dur=v.duration||1;
+    if(!v.videoWidth) throw new Error('Video ಚಿತ್ರ decode ಆಗುತ್ತಿಲ್ಲ (HEVC/H.265 ಇರಬಹುದು). Phone camera settings ನಲ್ಲಿ "Most compatible / H.264" ಆರಿಸಿ ಅಥವಾ MP4 H.264 ಗೆ convert ಮಾಡಿ.');
+    const c=document.createElement('canvas'); c.width=160; c.height=Math.round(160*v.videoHeight/v.videoWidth)||90;
+    let best=null, bestL=-1;
+    for(const t of [Math.min(1,dur/2), dur*.35, dur*.65, .05]){
+      await seekTo(v, clamp(t,0,Math.max(0,dur-.05))); await waitFrame(v);
+      c.getContext('2d').drawImage(v,0,0,c.width,c.height); const L=frameLuma(c);
+      if(L>bestL){ bestL=L; best=c.toDataURL('image/jpeg',.75); }
+      if(L>14) break;
+    }
+    return {duration:dur,w:v.videoWidth,h:v.videoHeight,thumb:best};
+  } finally { dropEl(v); }
+}
+async function genStrip(m){
+  if(!m || m.type!=='video' || !m.url || m.strip || m._stripping) return;
+  m._stripping=true;
+  const v=mkVideo(null); v.muted=true;
+  try{
+    await new Promise((res,rej)=>{ v.onloadedmetadata=res; v.onerror=rej; v.src=m.url; });
+    const n=clamp(Math.ceil(m.duration/1.5),4,30), fh=48, fw=Math.max(16,Math.round(fh*m.w/m.h));
+    const c=document.createElement('canvas'); c.width=fw*n; c.height=fh; const x=c.getContext('2d');
+    for(let i=0;i<n;i++){ await seekTo(v,Math.min(m.duration-.05,(i+.5)*m.duration/n)); await waitFrame(v); x.drawImage(v,i*fw,0,fw,fh); }
+    m.strip=c.toDataURL('image/jpeg',.6); m.stripN=n;
+    if(typeof renderTimeline==='function'){ layout(); renderTimeline(); }
+  }catch(e){} finally{ m._stripping=false; dropEl(v); }
 }
 function loadImg(url){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=()=>rej(new Error('ಈ photo ಓದಲು ಆಗುತ್ತಿಲ್ಲ')); img.src=url; }); }
 async function probeImage(url){
@@ -921,7 +1095,8 @@ function registerMedia(m,f){
 }
 async function addVideoMedia(f){
   const url=URL.createObjectURL(f), info=await probe(url);
-  return registerMedia({id:nid(),name:f.name,url,type:'video',duration:info.duration,thumb:info.thumb,w:info.w,h:info.h},f);
+  const m=registerMedia({id:nid(),name:f.name,url,type:'video',duration:info.duration,thumb:info.thumb,w:info.w,h:info.h},f);
+  genStrip(m); return m;
 }
 async function addImageMedia(f){
   const url=URL.createObjectURL(f), info=await probeImage(url);
@@ -1322,7 +1497,7 @@ function idbDelBlobs(pid){
 }
 function projectData(){
   return {clips:deep(S.clips), overlays:deep(S.overlays), audios:deep(S.audios),
-    media:S.media.map(({id,name,type,duration,thumb,w,h})=>({id,name,type,duration,thumb,w,h})),
+    media:S.media.map(({id,name,type,duration,thumb,w,h,strip,stripN})=>({id,name,type,duration,thumb,w,h,strip,stripN})),
     ratio:S.ratio, quality:S.quality, bg:S.bg, time:S.time, mainMute:S.mainMute, mainHide:S.mainHide,
     luts:S.luts.filter(l=>l.custom).map(l=>({id:l.id,name:l.name,n:l.n,data:l.data}))};
 }
@@ -1346,7 +1521,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden) saveProje
 function updateProjName(){ $('#projName').textContent=S.project?S.project.name:'Project'; document.title=(S.project?S.project.name+' · ':'')+'ChitraCut'; }
 function resetState(){
   pause(); setPick(false);
-  for(const map of [vids,ovVids,audEls]) for(const k in map){ map[k].pause(); map[k].removeAttribute('src'); delete map[k]; }
+  for(const map of [vids,ovVids,audEls]) for(const k in map){ dropEl(map[k]); delete map[k]; }
   dropAllChains(); dropAudChains();
   for(const k in ovAud){ try{ ovAud[k].disconnect(); }catch(e){} delete ovAud[k]; }
   for(const m of S.media){ if(m.url) URL.revokeObjectURL(m.url); if(m.wave) URL.revokeObjectURL(m.wave); }
@@ -1386,7 +1561,7 @@ async function openProject(id){
   S.sel=S.clips[0]?S.clips[0].id:null;
   afterEdit(); seek(clamp(d.time||0,0,S.total)); renderMediaPanel(); updateProjName();
   lastSaved=sig(); setSaved('✓ Opened');
-  S.media.filter(m=>!m.missing).forEach(computeWave);
+  S.media.filter(m=>!m.missing).forEach(m=>{ computeWave(m); genStrip(m); });
 }
 /* ================= EXPORT ================= */
 function showOverlay(title,msg,btns){
@@ -1531,6 +1706,7 @@ async function synthSFX(id){
     case 'magic': for(let i=0;i<16;i++){ const t=i*.07+Math.random()*.03; osc('sine',1500+Math.random()*2800,null,t,0,.002,.25,.18); } break;
     case 'drumroll': { let t=0; while(t<1.6){ noise(t,.002,.04,.25+t*.35,'bandpass',900,null,1.2); t+=.03; } osc('sine',120,60,1.65,.2,.002,.4,.9); noise(1.65,.002,.5,.5,'highpass',5000); break; }
     case 'applause': for(let i=0;i<260;i++){ const t=Math.random()*2.6, k=Math.min(1,t/.4)*Math.min(1,(2.9-t)/.6); noise(t,.001,.02+Math.random()*.03,.15*k+.02,'bandpass',1500+Math.random()*2500,null,1.5); } break;
+    default: if(typeof synthExtra==='function') synthExtra(id,{ctx,out_,env,osc,noise,nb});
   }
   const buf = await ctx.startRendering();
   sfxCache[id] = buf; return buf;

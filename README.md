@@ -10,7 +10,7 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - **ಬಲ:** Video / Audio / Speed / Animation / Transition / Adjust tabs + Basic · Remove BG · Mask · Retouch · Effect
 - **ಕೆಳಗೆ:** Timeline — overlay tracks ಮೇಲೆ, main track ಮಧ್ಯ, audio tracks ಕೆಳಗೆ. Main ಗೆ ಎಳೆದರೆ clip, ಮೇಲೆ ಎಳೆದರೆ overlay.
 
-## ✅ Features (Phase 1 – 5)
+## ✅ Features (Phase 1 – 6)
 | ವಿಭಾಗ | Features |
 |---|---|
 | Timeline | Multi-clip, trim (clip ಅಂಚು drag), split (S), delete, duplicate, move, undo/redo, zoom |
@@ -39,13 +39,14 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 | Voice-over | 🎙 Mic recording (video ಜೊತೆ play), + Live captions (Chrome speech recognition) |
 | Auto captions | 💬 Whisper AI browser ನಲ್ಲೇ (ಕನ್ನಡ, English, ಹಿಂದಿ…), SRT import/export, ಎಲ್ಲಾ captions ಗೆ ಒಂದೇ style |
 | Phase 5 (UI) | 🤖 Auto background removal (AI, browser ನಲ್ಲೇ), 💆 Retouch (smooth, whitening, clear), 🔔 27 free sound effects (copyright ಇಲ್ಲ), 🎧 Voice changer tiles + preview, ▶ Animation/transition/effect tiles preview, Mirror, Rotate 90°, Delete left/right (Q/W), main track mute/hide |
+| Phase 6 | 📚 Library: 25 animated stock graphics (Subscribe + Bell, Like, Follow, Countdown, Lower third, Neon hearts, Fireworks, Snow, Confetti…) — copyright ಇಲ್ಲ · ⭐ 28 social/badge stickers · 🔔 62 sound effects · 🎚 Reduce noise, Enhance voice, Normalize loudness, Isolate voice · 🎯 Motion tracking · ◐ Mask ಅನ್ನು Player ನಲ್ಲಿ ನೇರವಾಗಿ ಎಳೆಯುವುದು · ⏱ Speed curve + Add point · 36 transitions · 30+ In/Out + 15 loop animations (ಅಕ್ಷರ-ಅಕ್ಷರ text animation ಸಹಿತ) · Timeline filmstrip |
 | Export | 480p / 720p / 1080p (Chrome ನಲ್ಲಿ MP4, ಇಲ್ಲದಿದ್ದರೆ WebM) |
 
 > Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ — 1 ನಿಮಿಷದ video ಗೆ ಸುಮಾರು 1 ನಿಮಿಷ. ಆ ಸಮಯದಲ್ಲಿ tab ತೆರೆದಿಡಿ.
 
 ## 🚀 GitHub ನಲ್ಲಿ ಉಚಿತವಾಗಿ ಹಾಕುವುದು (5 ನಿಮಿಷ)
 1. github.com ನಲ್ಲಿ account ತೆರೆಯಿರಿ → **New repository** → ಹೆಸರು `chitracut` → **Public** → Create.
-2. **Add file → Upload files** → ಈ folder ನ ಎಲ್ಲಾ files (`index.html, style.css, core.js, ui.js, manifest.json, sw.js, icon-192.png, icon-512.png, README.md`) drag ಮಾಡಿ → **Commit**.
+2. **Add file → Upload files** → ಈ folder ನ ಎಲ್ಲಾ files (`index.html, style.css, core.js, extras.js, ui.js, manifest.json, sw.js, icon-192.png, icon-512.png, README.md`) drag ಮಾಡಿ → **Commit**.
 3. **Settings → Pages** → Source: *Deploy from a branch* → Branch: `main` / `(root)` → **Save**.
 4. 1–2 ನಿಮಿಷದಲ್ಲಿ link ಸಿಗುತ್ತದೆ: `https://<ನಿಮ್ಮ-username>.github.io/chitracut/`
 5. **Phone app ಆಗಿ:** Chrome ನಲ್ಲಿ ಆ link ತೆರೆದು ⋮ → **Add to Home screen / Install app**.
