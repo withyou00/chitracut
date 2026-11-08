@@ -3,7 +3,7 @@
 CapCut ತರಹದ video editor. ಯಾವುದೇ server ಬೇಕಿಲ್ಲ — ಎಲ್ಲಾ editing ನಿಮ್ಮ phone/PC ಯ browser ನಲ್ಲೇ ಆಗುತ್ತದೆ.
 GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** host ಮಾಡಬಹುದು ಮತ್ತು phone ನಲ್ಲಿ app ಆಗಿ install ಮಾಡಬಹುದು (PWA).
 
-## ✅ Phase 1 features (ಈಗ ಇರುವುದು)
+## ✅ Features (Phase 1 + Phase 2)
 | ವಿಭಾಗ | Features |
 |---|---|
 | Timeline | Multi-clip, trim (clip ಅಂಚು drag), split (S), delete, duplicate, move, undo/redo, zoom |
@@ -14,6 +14,12 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 | Adjust | Brightness, contrast, saturation, temperature, tint, fade, vignette, grain, sharpen |
 | LUT | 7 built-in LUTs + ನಿಮ್ಮ **.cube LUT import** |
 | Audio | Volume, fade in/out, **Bass boost, Treble**, **Mic Hog**, Megaphone, Telephone, Robot, Lo-Fi, Deep, Radio, **Echo, Reverb**, background music |
+| Text (Phase 2) | ಕನ್ನಡ fonts (Noto Sans/Serif Kannada, Baloo Tamma 2, Anek, Tiro) + 9 English fonts, 8 style presets, color, outline, background box, shadow/glow, bold/italic, align |
+| Text animation | In/Out: Fade, Pop, Zoom, Slide, **Typewriter** (ಕನ್ನಡ ಅಕ್ಷರ ಒಡೆಯದೆ), Bounce, Spin, Blur · Loop: Pulse, Shake, Float, Swing, Blink, Heartbeat |
+| Stickers / Overlay | 48 emoji stickers, PNG logo/watermark overlay, layer order |
+| Photos | Photo ಗಳನ್ನು timeline clip ಆಗಿ (3s default, trim ಮಾಡಬಹುದು) |
+| Transitions | Dissolve, Fade Black, Flash White, Slide ×4, Wipe ×2, Zoom In/Out, Spin, Glitch (clip ಗಳ ನಡುವಿನ ⇄ ಒತ್ತಿ) — audio crossfade ಸಹಿತ |
+| Preview editing | Preview ನಲ್ಲೇ text/sticker/video drag, mouse wheel ಅಥವಾ pinch ಮಾಡಿ size |
 | Export | 480p / 720p / 1080p (Chrome ನಲ್ಲಿ MP4, ಇಲ್ಲದಿದ್ದರೆ WebM) |
 
 > Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ — 1 ನಿಮಿಷದ video ಗೆ ಸುಮಾರು 1 ನಿಮಿಷ. ಆ ಸಮಯದಲ್ಲಿ tab ತೆರೆದಿಡಿ.
@@ -27,10 +33,10 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 6. **PC software ಆಗಿ:** Chrome/Edge ನಲ್ಲಿ address bar ನ install ⊕ icon ಒತ್ತಿ.
 
 ## ⌨️ Shortcuts
-`Space` play/pause · `S` / `Ctrl+B` split · `Delete` · `Ctrl+Z` / `Ctrl+Y` · `←` `→` frame step
+`Space` play/pause · `T` text · `S` / `Ctrl+B` split · `Delete` · `Ctrl+Z` / `Ctrl+Y` · `←` `→` frame step
 
 ## 🗺️ Roadmap (ಮುಂದಿನ ಹಂತಗಳು)
-- **Phase 2:** Text & titles (fonts, Kannada support, text animations), stickers/emoji, image clips, transitions (fade, slide, zoom, glitch)
+- ~~Phase 2: Text, stickers, image clips, transitions~~ ✅
 - **Phase 3:** Multi-track (overlay / picture-in-picture), keyframes, masks, chroma key (green screen), blend modes
 - **Phase 4:** Effects (glitch, shake, RGB split, VHS), audio waveform, voice recording, auto-captions, project save/open (IndexedDB)
 - **Phase 5:** Fast export with FFmpeg.wasm, Android APK (Capacitor ಅಥವಾ TWA → Play Store), Windows .exe (Tauri/Electron)
