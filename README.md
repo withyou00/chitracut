@@ -145,3 +145,9 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
   - New grades use selective colour (HSL): for example, greens shift to teal while skin stays natural.
   - **HD** looks also add GPU sharpening, shadow lift and a vignette.
   - Each filter is previewed on a photo that suits it.
+
+## Phase 19 — Better chroma key
+- **Neutral keys (white, black, grey backgrounds):** the key now matches brightness as well as colour. Removing a white background no longer eats grey/black parts of the image, and white text inside a green screen stays.
+- **Clean edges:** the key colour is removed from semi-transparent edge pixels, so there is no white or green halo around letters and hair. The matte is softened over neighbouring pixels to remove jagged edges.
+- **Spill remove:** only applies to coloured screens (green/blue), so it no longer greys out a logo when keying white.
+- The ratio label in the player header now updates correctly when a project opens.

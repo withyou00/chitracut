@@ -664,7 +664,7 @@ precision mediump float;
 varying vec2 uv;uniform sampler2D u_tex,u_lut,u_lut2;uniform vec2 u_px;uniform float u_lut2N,u_lut2Amt,u_ex,u_hl,u_shd,u_vib,u_hue,u_segAv,u_bfx,u_bfxA;uniform vec3 u_bcol;
 uniform float u_lutN,u_lutAmt,u_alpha,u_time,u_b,u_c,u_s,u_t,u_ti,u_f,u_v,u_g,u_sh,u_blur;
 uniform float u_mT,u_mRot,u_mF,u_mR,u_mInv,u_asp;uniform vec2 u_mC,u_mS;
-uniform float u_ck,u_ckSim,u_ckSm,u_ckSp;uniform vec3 u_ckC;
+uniform float u_ck,u_ckSim,u_ckSm,u_ckSp,u_ckY,u_ckSat;uniform vec3 u_ckC;
 uniform float u_fx,u_fxA,u_sec;
 uniform sampler2D u_seg;uniform float u_segOn,u_segInv,u_rtS,u_rtB,u_trT,u_trP;uniform vec2 u_res;
 const vec3 LW=vec3(.299,.587,.114);
@@ -713,9 +713,14 @@ float trMask(){
  if(u_trT>12.5&&u_trT<13.5)return sedge(q.x,p);
  return 1.;}
 vec3 hueRot(vec3 c,float a){vec3 k=vec3(.57735);float cs=cos(a);return c*cs+cross(k,c)*sin(a)+k*dot(k,c)*(1.-cs);}
+float ckD(vec3 c){vec2 a=cuv(c)-cuv(u_ckC);return length(vec3(a,dot(c-u_ckC,LW)*u_ckY));}
+float ckA(vec3 c){return pow(clamp((ckD(c)-u_ckSim)/u_ckSm,0.,1.),1.5);}
 vec4 tx(vec2 u){vec4 t=texture2D(u_tex,u);
- if(u_ck>.5){float d=distance(cuv(t.rgb),cuv(u_ckC))-u_ckSim;t.a*=pow(clamp(d/u_ckSm,0.,1.),1.5);
-  float sp=pow(clamp(d/u_ckSp,0.,1.),1.5);t.rgb=mix(vec3(dot(t.rgb,LW)),t.rgb,sp);}
+ if(u_ck>.5){float a=ckA(t.rgb);
+  if(u_ckSm>.03){vec2 o=u_px*(1.+u_ckSm*6.);a=a*.4+.15*(ckA(texture2D(u_tex,u+vec2(o.x,0.)).rgb)+ckA(texture2D(u_tex,u-vec2(o.x,0.)).rgb)+ckA(texture2D(u_tex,u+vec2(0.,o.y)).rgb)+ckA(texture2D(u_tex,u-vec2(0.,o.y)).rgb));}
+  if(a<.999)t.rgb=clamp((t.rgb-(1.-a)*u_ckC)/max(a,.08),0.,1.);
+  float sp=pow(clamp((ckD(t.rgb)-u_ckSim)/u_ckSp,0.,1.),1.5);t.rgb=mix(vec3(dot(t.rgb,LW)),t.rgb,mix(1.,sp,u_ckSat));
+  t.a*=a;}
  return t;}
 float skin(vec3 c){float y=dot(c,LW);float cb=(c.b-y)*.564+.5;float cr=(c.r-y)*.713+.5;
  return (1.-smoothstep(.08,.14,abs(cb-.40)))*(1.-smoothstep(.06,.12,abs(cr-.60)))*smoothstep(.12,.25,y);}
@@ -827,7 +832,7 @@ gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATI
 const aLoc = gl.getAttribLocation(prog,'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc,2,gl.FLOAT,false,0,0);
 const U = {};
 ['u_half','u_off','u_rot','u_canvas','u_tex','u_lut','u_lutN','u_lutAmt','u_alpha','u_time','u_b','u_c','u_s','u_t','u_ti','u_f','u_v','u_g','u_sh','u_px','u_blur',
- 'u_mT','u_mC','u_mS','u_mRot','u_mF','u_mR','u_mInv','u_asp','u_ck','u_ckC','u_ckSim','u_ckSm','u_ckSp','u_fx','u_fxA','u_sec','u_seg','u_segOn','u_segInv','u_rtS','u_rtB','u_trT','u_trP','u_res','u_lut2','u_lut2N','u_lut2Amt','u_ex','u_hl','u_shd','u_vib','u_hue','u_segAv','u_bfx','u_bfxA','u_bcol'].forEach(n => U[n]=gl.getUniformLocation(prog,n));
+ 'u_mT','u_mC','u_mS','u_mRot','u_mF','u_mR','u_mInv','u_asp','u_ck','u_ckC','u_ckSim','u_ckSm','u_ckSp','u_ckY','u_ckSat','u_fx','u_fxA','u_sec','u_seg','u_segOn','u_segInv','u_rtS','u_rtB','u_trT','u_trP','u_res','u_lut2','u_lut2N','u_lut2Amt','u_ex','u_hl','u_shd','u_vib','u_hue','u_segAv','u_bfx','u_bfxA','u_bcol'].forEach(n => U[n]=gl.getUniformLocation(prog,n));
 gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 function mkTex(){
   const t=gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,t);
@@ -897,9 +902,13 @@ function setChroma(it){
   const k = it.ck, on = !!(k && k.on && !(S.pick && S.sel === it.id));
   gl.uniform1f(U.u_ck, on ? 1 : 0); if(!on) return;
   const n = parseInt(k.color.slice(1),16);
-  gl.uniform3f(U.u_ckC, (n>>16&255)/255, (n>>8&255)/255, (n&255)/255);
+  const r = (n>>16&255)/255, g = (n>>8&255)/255, b = (n&255)/255, y = .299*r + .587*g + .114*b;
+  // saturated key (green/blue screen): match on colour, ignore shadows. Neutral key (white/black/grey): brightness matters too
+  const ks = Math.hypot(b - y, r - y), sat = clamp((ks - .05)/.25, 0, 1);
+  gl.uniform3f(U.u_ckC, r, g, b);
+  gl.uniform1f(U.u_ckY, 2.2 - 1.9*sat); gl.uniform1f(U.u_ckSat, sat);
   gl.uniform1f(U.u_ckSim, k.sim/100*.6);
-  gl.uniform1f(U.u_ckSm, Math.max(.002, k.smooth/100*.3));
+  gl.uniform1f(U.u_ckSm, Math.max(.025, k.smooth/100*.3));
   gl.uniform1f(U.u_ckSp, Math.max(.002, k.spill/100*.5));
 }
 const bounceOut = k => { const n=7.5625,d=2.75; if(k<1/d) return n*k*k; if(k<2/d) return n*(k-=1.5/d)*k+.75; if(k<2.5/d) return n*(k-=2.25/d)*k+.9375; return n*(k-=2.625/d)*k+.984375; };
@@ -1629,6 +1638,7 @@ function setCanvas(){
   if(S.ratio==='orig'){ const m=S.media.find(x=>x.w); a=m?m.w:9; b=m?m.h:16; } else [a,b]=S.ratio.split(':').map(Number);
   let W,H; if(a>=b){ H=q; W=Math.round(q*a/b); } else { W=q; H=Math.round(q*b/a); }
   cv.width=out.width=W-W%2; cv.height=out.height=H-H%2; fitCanvas();
+  if(typeof updatePInfo === 'function') updatePInfo();
 }
 function fitCanvas(){
   const r=$('#stage').getBoundingClientRect(), k=Math.min((r.width-20)/out.width,(r.height-20)/out.height);
