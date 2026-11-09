@@ -1,6 +1,6 @@
 'use strict';
 /* =====================================================================
-   ChitraCut UI  –  CapCut-style layout (left library · player · inspector · timeline)
+   ChitraCut UI  –  pro editor layout (left library · player · inspector · timeline)
    Engine lives in core.js
    ===================================================================== */
 
@@ -989,7 +989,7 @@ function trackHead(kind, t, items){
 }
 function renderTimeline(){
   const pps = S.pps;
-  const w = Math.max(S.total*pps + 400, TL.clientWidth - HEADW);
+  const w = Math.max(Math.max(S.total, S.allEnd||0)*pps + 400, TL.clientWidth - HEADW);
   $('#tlInner').style.width = (HEADW + w) + 'px';
   const step = pps>=80?1:pps>=30?2:pps>=12?5:10, minor = step/(step===2?4:5);
   let r = '';
@@ -1014,7 +1014,8 @@ function renderTimeline(){
     }).join('')}</div></div>`;
   }
   h += `<div class="trow drop auz" data-zone="audio"><div class="thead"></div><div class="tbody">🎵 Audio: drop music / sound here</div></div>`;
-  $('#tlRows').innerHTML = h + '<div id="snapL"></div><div id="marq"></div>';
+  const endM = S.allEnd > S.total + .05 ? `<div class="tlend" style="left:${HEADW + S.total*pps}px;width:${(S.allEnd - S.total)*pps}px" title="Not played or exported — the video ends here. Trim or move the audio."><span>END</span></div>` : '';
+  $('#tlRows').innerHTML = h + endM + '<div id="snapL"></div><div id="marq"></div>';
   updatePH();
 }
 function updatePH(){
@@ -1225,7 +1226,7 @@ TL.addEventListener('wheel', e => {   // Ctrl + wheel = zoom around the mouse
 function setZoom(v){ S.pps = clamp(v, 8, 200); const z = $('#zoom'); if(z){ z.value = S.pps; setFill(z); } renderTimeline(); }
 
 /* =====================================================================
-   HOME (CapCut-style start page)
+   HOME (start page)
    ===================================================================== */
 function hideHome(){ $('#home').style.display = 'none'; }
 async function showHome(){
@@ -2054,7 +2055,7 @@ $('#modal').addEventListener('click', async e => {
 });
 
 /* =====================================================================
-   MOBILE APP LAYOUT (CapCut-mobile style)
+   MOBILE APP LAYOUT (mobile app style)
    player on top · timeline in the middle · tool bar at the bottom ·
    every panel opens as a sheet below the player, so the preview stays visible
    ===================================================================== */

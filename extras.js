@@ -614,7 +614,7 @@ async function reverseAudioItem(it){
 }
 
 /* =====================================================================
-   ANIMATION LIBRARY (v8) — in / out / loop, grouped like CapCut
+   ANIMATION LIBRARY (v8) — in / out / loop, grouped by category
    fn(R, k, e, W, H): k = 0→1 progress (1 = fully visible), e = eased k
    ===================================================================== */
 const elasticO = k => k <= 0 ? 0 : k >= 1 ? 1 : Math.pow(2,-10*k)*Math.sin((k*10-.75)*2.0944) + 1;

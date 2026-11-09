@@ -217,7 +217,7 @@ function curveAt(c,p){
 }
 const curvePairs = arr => arr.map((v,i)=>[i/(arr.length-1), v]);
 function rateAt(c,p){ return clamp(c.speed*curveAt(c,p), 0.1, 10); }
-/* ---- tracks: every overlay / audio item lives on a fixed track (like CapCut). Higher track = drawn on top ---- */
+/* ---- tracks: every overlay / audio item lives on a fixed track (like pro editors). Higher track = drawn on top ---- */
 const EPS_T = .04;
 const overlapT = (a,b) => a.start < b.start + b.dur - EPS_T && b.start < a.start + a.dur - EPS_T;
 function normTracks(){
@@ -247,7 +247,11 @@ function layout(){
     t = start + cum[N]; prev = c;
   }
   S.mainEnd = t;
-  S.total = Math.max(t, 0, ...S.overlays.map(o => o.start + o.dur), ...S.audios.map(a => a.start + a.dur));
+  // the project ends where the video ends (main track + overlays/text). Music longer than the video is cut there.
+  // Only an audio-only project uses the audio length.
+  const vEnd = Math.max(t, 0, ...S.overlays.map(o => o.start + o.dur));
+  S.allEnd = Math.max(vEnd, ...S.audios.map(a => a.start + a.dur));
+  S.total = vEnd > 0 ? vEnd : S.allEnd;
 }
 function srcToLocal(c,src){ const d=derived[c.id]; const p=clamp((src-c.in)/d.len,0,1)*N; const i=Math.min(Math.floor(p),N-1); return d.cum[i]+(d.cum[i+1]-d.cum[i])*(p-i); }
 function localToSrc(c,lt){
@@ -1644,7 +1648,7 @@ function hitAt(p){
 const sizePath = it => it.type ? 'size' : 'tf.scale';
 const rotPath = it => it.type ? 'rot' : 'tf.rot';
 let kfFlash = 0;
-// on-screen box of the selected item (canvas px, full scale) → for the CapCut-style transform handles
+// on-screen box of the selected item (canvas px, full scale) → for the transform handles
 function gizmoOf(it){
   if(!it || it.type === 'audio' || it.type === 'adjust' || exporting) return null;
   if(it.type){ const h = hits.get(it.id); if(!h) return null; const s = Math.max(.05, h.s||1); return {cx:h.cx, cy:h.cy, rot:h.rot, hw:h.hw*s, hh:h.hh*s}; }
@@ -2328,7 +2332,7 @@ async function addSFX(id){
 }
 
 /* ================= EXTRA EDIT OPERATIONS ================= */
-// CapCut-style "delete left / right of playhead"
+// "delete left / right of playhead"
 function trimSide(side){
   const fr = selFree();
   if(fr){

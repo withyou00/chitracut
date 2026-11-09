@@ -1,9 +1,9 @@
 # 🎬 ChitraCut – Free Video Editor (Browser + Phone App)
 
-CapCut ತರಹದ video editor. ಯಾವುದೇ server ಬೇಕಿಲ್ಲ — ಎಲ್ಲಾ editing ನಿಮ್ಮ phone/PC ಯ browser ನಲ್ಲೇ ಆಗುತ್ತದೆ.
+ಉಚಿತ professional video editor. ಯಾವುದೇ server ಬೇಕಿಲ್ಲ — ಎಲ್ಲಾ editing ನಿಮ್ಮ phone/PC ಯ browser ನಲ್ಲೇ ಆಗುತ್ತದೆ.
 GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** host ಮಾಡಬಹುದು ಮತ್ತು phone ನಲ್ಲಿ app ಆಗಿ install ಮಾಡಬಹುದು (PWA).
 
-## 🖥️ Layout (CapCut ಶೈಲಿ)
+## 🖥️ Layout 
 - **Home:** Create project banner, quick tools (Auto captions, Remove BG, Voice-over, Sound effects), projects grid
 - **ಎಡ:** Media · Audio · Text · Stickers · Effects · Transitions · Captions · Filters · Adjustment (sub-menu ಸಹಿತ)
 - **ಮಧ್ಯ:** Player (timecode, play, background, ratio, full screen)
@@ -45,24 +45,24 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 | Phase 7 – Effects | ಎಡಗಡೆ ಮಾತ್ರ: **Video effects** 28 (Fisheye, Wave, Swirl, Neon edges, Thermal, Night vision, CRT, Light leak, Cinema bars, Dreamy glow…) + **Body effects** 7 (Portrait blur, Color pop, Spotlight, Body glow, Neon outline, Color background, Ghost) |
 | Phase 7 – Audio | Audacity ತರಹ: 10-band graphic EQ + presets, Compressor, Noise gate, Limiter, Amplify, Pitch shift, Echo (delay/feedback), Reverb (Room/Hall/Church/Plate/Stadium), Phaser, Wah, Tremolo, Distortion, High/Low-pass, Reverse · ಮೃದುವಾದ **Mic Hog** + Studio, Podcast, Chipmunk, Monster, Cave, Underwater |
 | Phase 7 – Edit | Right-click menu (Extract / **Restore audio**, Mute, Freeze frame, **Compound clip** (Ctrl/Shift+click), Reverse audio, Copy/Paste attributes, Move to overlay/main…) · Media delete (✕ / right-click) · Speed curve ಗೆರೆ ಹಿಡಿದು ಎಳೆಯಬಹುದು · Scrub ಮಾಡುವಾಗ blink ಇಲ್ಲ · Overlay video filmstrip |
-| Phase 8 – Timeline | CapCut ತರಹ **ಸ್ಥಿರ tracks** (ಎಳೆದಾಗ item ಬೇರೆ track ಗೆ ಹಾರುವುದಿಲ್ಲ; ಮೇಲೆ/ಕೆಳಗೆ ಎಳೆದು track ಬದಲಿಸಬಹುದು) · ಮೇಲಿನ track ಮೇಲೆ ಕಾಣುತ್ತದೆ (video → text → video + Remove BG ಸರಿಯಾಗಿ) · Mouse ಎಳೆದು **ಹಲವು items select** (rubber-band), Ctrl/Shift+click, Ctrl+A, ಒಟ್ಟಿಗೆ move/delete · Snapping (Alt = snap ಇಲ್ಲ) · Track ಗೆ 👁 hide / 🔇 mute / 🔒 lock · Ctrl+wheel zoom |
+| Phase 8 – Timeline | **ಸ್ಥಿರ tracks** (ಎಳೆದಾಗ item ಬೇರೆ track ಗೆ ಹಾರುವುದಿಲ್ಲ; ಮೇಲೆ/ಕೆಳಗೆ ಎಳೆದು track ಬದಲಿಸಬಹುದು) · ಮೇಲಿನ track ಮೇಲೆ ಕಾಣುತ್ತದೆ (video → text → video + Remove BG ಸರಿಯಾಗಿ) · Mouse ಎಳೆದು **ಹಲವು items select** (rubber-band), Ctrl/Shift+click, Ctrl+A, ಒಟ್ಟಿಗೆ move/delete · Snapping (Alt = snap ಇಲ್ಲ) · Track ಗೆ 👁 hide / 🔇 mute / 🔒 lock · Ctrl+wheel zoom |
 | Phase 8 – Layout | Left / Player / Right / Timeline ನಡುವಿನ ಅಂತರ ಎಳೆದು **ಗಾತ್ರ ಬದಲಿಸಿ** (double-click = reset) |
 | Phase 8 – Animations | 100+ (Basic, Light, Glitch, Mask, 3D, Vibration, Zoom, Blur, Rotate, Distort + Text) · Search · Mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview |
 | Phase 8 – Voice | 48 voices: Voice filters (Crisp Mic, Live Stage, Divine Echo, 8D, Vinyl, Old Phone…) + Voice characters (Chipmunk, Giant, Alien, Ghost, Old Man, Villain, 8-bit…) · Search · Fine tune |
 | Phase 8 – Text | 33 **Text effects** (Neon, Gold, Chrome, Fire, 3D, Comic, Retro 80s, Glitch, Sticker…) · 🗣 **Text to speech** (ಕನ್ನಡ / English / हिन्दी, 10 voice styles, speed) · ಕನ್ನಡ captions English ಅಕ್ಷರದಲ್ಲಿ ಬಂದರೆ ತಾನಾಗಿ ಕನ್ನಡ ಲಿಪಿಗೆ |
 | Phase 9 | ✨ **Templates** (ಶಾಲಾ ಕಾರ್ಯಕ್ರಮ, Birthday, ಹಬ್ಬ, YouTube Intro/Outro, Reels, Memories, Travel, ಪಾಠದ ಪರಿಚಯ, Status) · 🥁 **Beat sync** (music beats ಗುರುತಿಸಿ clips cut) · ✂ **Auto silence cut** · ✏️ **Captions editor** (find/replace, merge) · 💬 Text **Bubble** (12) + **Curve text** + 12 **Text templates** · ◆ Keyframe **easing** (9) · 🎚 **Adjustment / Filter layer** · 🖼 **Cover / Thumbnail maker** (PNG, video ಆರಂಭಕ್ಕೆ ಸೇರಿಸಬಹುದು) |
-| Export – Export to | CapCut ತರಹ ಒಂದೇ ಸಾಲು: 📁 ಒತ್ತಿ folder ಆರಿಸಿ (ನೆನಪಿನಲ್ಲಿರುತ್ತದೆ) · folder ಇಲ್ಲದಿದ್ದರೆ Export ಒತ್ತಿದಾಗ Save as ಕೇಳುತ್ತದೆ · Desktop/Documents ನೇರವಾಗಿ ಆರಿಸಲು browser ಬಿಡುವುದಿಲ್ಲ — ಅದರೊಳಗಿನ folder ಆರಿಸಿ |
+| Export – Export to | ಒಂದೇ ಸಾಲು: 📁 ಒತ್ತಿ folder ಆರಿಸಿ (ನೆನಪಿನಲ್ಲಿರುತ್ತದೆ) · folder ಇಲ್ಲದಿದ್ದರೆ Export ಒತ್ತಿದಾಗ Save as ಕೇಳುತ್ತದೆ · Desktop/Documents ನೇರವಾಗಿ ಆರಿಸಲು browser ಬಿಡುವುದಿಲ್ಲ — ಅದರೊಳಗಿನ folder ಆರಿಸಿ |
 | Export | Name, Resolution 480p–**2K–4K**, Bit rate (Lower/Recommended/Higher/Custom), Codec (H.264 / HEVC / VP9 / AV1 / VP8 — browser support ಆಧರಿಸಿ), Format MP4/WebM, Frame rate 24–60, Audio only, **GIF export** |
 
 > Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ — 1 ನಿಮಿಷದ video ಗೆ ಸುಮಾರು 1 ನಿಮಿಷ. ಆ ಸಮಯದಲ್ಲಿ tab ತೆರೆದಿಡಿ. 2K/4K export ಗೆ ಶಕ್ತಿಶಾಲಿ PC ಬೇಕು — ನಿಧಾನದ device ನಲ್ಲಿ frames ಕಡಿಮೆಯಾಗಬಹುದು.
 
 ## 🎤 Phase 12
-- **Effects:** CapCut ತರಹ ಎಡ sidebar categories — Trending, Cinematic, Party, Light, Retro, Glitch, Lens, Motion, Split, Weather, Color · ಹೊಸ 23 (Black Flash, Light Sweep, Bokeh, Snow, Rain, Sparkle, Lens Flare, Film Frame, Prism, Vertigo, Tilt Shift, 3/9 Split, Heartbeat…) — ಒಟ್ಟು 50+ · **ಪ್ರತಿ tile ನಲ್ಲಿ ನಿಜವಾದ WebGL preview** (mouse ಇಟ್ಟರೆ ಚಲಿಸುತ್ತದೆ)
+- **Effects:** ಎಡ sidebar categories — Trending, Cinematic, Party, Light, Retro, Glitch, Lens, Motion, Split, Weather, Color · ಹೊಸ 23 (Black Flash, Light Sweep, Bokeh, Snow, Rain, Sparkle, Lens Flare, Film Frame, Prism, Vertigo, Tilt Shift, 3/9 Split, Heartbeat…) — ಒಟ್ಟು 50+ · **ಪ್ರತಿ tile ನಲ್ಲಿ ನಿಜವಾದ WebGL preview** (mouse ಇಟ್ಟರೆ ಚಲಿಸುತ್ತದೆ)
 - **Transitions:** Trending, Basic, Camera, Light, Glitch, Slide, Shape, 3D, Distort · ಹೊಸ 22 (Pull In/Out, Spin Blur, Glare, Film Burn, Ink Spread, Whip Up/Down, Shake Zoom, Zoom Punch…) — ಒಟ್ಟು 58 · ನಿಜವಾದ preview
 - **Vocal remover / BGM remover:** AI (UVR MDX-Net) browser ನಲ್ಲೇ — ಹಾಡಿನಿಂದ ಧ್ವನಿ ತೆಗೆಯಿರಿ, music ತೆಗೆಯಿರಿ, ಅಥವಾ ಎರಡು tracks ಆಗಿ ಬೇರ್ಪಡಿಸಿ · ⚡ Quick karaoke (AI ಇಲ್ಲದೆ). ಮೊದಲ ಬಾರಿ ~67 MB model; GPU ಇದ್ದರೆ ವೇಗ. *(Model ಅನ್ನು repo ನ `models/` folder ನಲ್ಲಿ ಇಟ್ಟರೆ ಅಲ್ಲಿಂದಲೇ load ಆಗುತ್ತದೆ.)*
 
 ## 📱 Phone app + Offline (v11)
-- **Phone layout:** ಮೇಲೆ Player, ಮಧ್ಯ Timeline, ಕೆಳಗೆ CapCut ತರಹ tool bar. Tool ಒತ್ತಿದರೆ panel Player ಕೆಳಗೆ ತೆರೆಯುತ್ತದೆ — preview ನೋಡುತ್ತಲೇ apply ಮಾಡಿ, ✓ ಒತ್ತಿ ಮುಚ್ಚಿ. Clip select ಮಾಡಿದಾಗ tool bar ಅದರ tools (Split, Animation, Speed, Filters…) ತೋರಿಸುತ್ತದೆ. Timeline: ಒಂದು ಬೆರಳು = scroll, tap = playhead, ಎರಡು ಬೆರಳು = zoom.
+- **Phone layout:** ಮೇಲೆ Player, ಮಧ್ಯ Timeline, ಕೆಳಗೆ tool bar. Tool ಒತ್ತಿದರೆ panel Player ಕೆಳಗೆ ತೆರೆಯುತ್ತದೆ — preview ನೋಡುತ್ತಲೇ apply ಮಾಡಿ, ✓ ಒತ್ತಿ ಮುಚ್ಚಿ. Clip select ಮಾಡಿದಾಗ tool bar ಅದರ tools (Split, Animation, Speed, Filters…) ತೋರಿಸುತ್ತದೆ. Timeline: ಒಂದು ಬೆರಳು = scroll, tap = playhead, ಎರಡು ಬೆರಳು = zoom.
 - **Install:** ಮೇಲಿನ ⬇ **Install app** ಬಟನ್ (Android/PC Chrome, Edge). iPhone: Safari › Share › Add to Home Screen.
 - **Offline:** ಒಮ್ಮೆ ತೆರೆದ ನಂತರ internet ಇಲ್ಲದೆಯೂ editing, effects, filters, export ಎಲ್ಲವೂ ಕೆಲಸ ಮಾಡುತ್ತವೆ. Home ನಲ್ಲಿ **Offline ready** ಒತ್ತಿದರೆ ಕನ್ನಡ fonts ಮತ್ತು Remove BG AI ಕೂಡ ಉಳಿಯುತ್ತವೆ. Auto captions / Text-to-speech ಮೊದಲ ಬಾರಿ internet ನಲ್ಲಿ ಬಳಸಿದ ನಂತರ offline ನಲ್ಲೂ ಕೆಲಸ ಮಾಡುತ್ತವೆ.
 
@@ -130,3 +130,9 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
   - After the first keyframe, moving, scaling or rotating at another time adds a keyframe automatically.
   - A filled ◆ means you are on a keyframe; an outline ◆ means the item has keyframes.
 - **Fonts:** the player redraws as soon as a font finishes downloading, so a newly chosen font (e.g. Anek Kannada) shows immediately.
+
+## Phase 16 — Project ends with the video
+- Playback and export stop where the video (main track + overlays/text) ends.
+- Music or audio longer than the video is cut at that point.
+- The part of the timeline after the end is shown dimmed (striped, red line).
+- An audio-only project still uses the audio length.

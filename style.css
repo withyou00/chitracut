@@ -718,3 +718,7 @@ body.resizing iframe,body.resizing canvas{pointer-events:none}
 
 .thside>*{flex:none}
 .thside textarea{min-height:52px;resize:vertical}
+
+/* v16: everything after the video end is dimmed (not played / exported) */
+.tlend{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(0,0,0,.45) 0 6px,rgba(0,0,0,.6) 6px 12px);border-left:2px solid #ff5a5a;pointer-events:none;z-index:4}
+.tlend span{position:absolute;top:2px;left:4px;font-size:10px;font-weight:700;color:#ff8a8a;letter-spacing:.06em}
