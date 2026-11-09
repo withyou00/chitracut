@@ -405,7 +405,7 @@ function rsubFor(tab, kind){
     case 'video': return [['basic','Basic'],['rmbg','Remove BG'],['mask','Mask'],['retouch','Retouch']];
     case 'audio': return kind === 'ovvideo' ? null : [['basic','Basic'],['voice','Voice changer'],['fx','Effects']];
     case 'speed': return kind === 'clip' ? [['normal','Normal'],['curve','Curve']] : null;
-    case 'anim': return [['in','In'],['out','Out'],['combo',(kind==='clip'||kind==='clipimg')?'Combo':'Loop']];
+    case 'anim': return (kind==='clipimg'||kind==='ovimage' ? [['magic','✨ Magic']] : []).concat([['in','In'],['out','Out'],['combo',(kind==='clip'||kind==='clipimg')?'Combo':'Loop']]);
     case 'adjust': return null;
     case 'text': return [['basic','Basic'],['style','Style'],['effects','Effects'],['bubble','Bubble']];
   }
@@ -560,6 +560,58 @@ function animList(it, sub){
   const lib = ANIM_LIB.map(([k,n,c]) => [k, sub === 'out' ? n.replace(/ In$/,' Out').replace(/^Pop Up$/,'Pop Down') : n, c]);
   return [...base.filter(x=>x[0]!=='none').map(([k,n])=>[k,n,ANIM_OLD_CAT[k]||'Basic']), ...lib].filter(x => txt || x[2] !== 'Text');
 }
+// ---- v23: Magic animate panel ----
+let MG_BUSY = '';
+function magicBody(it){
+  const mg = ensureMagic(it), L = mg.layers, chips = (path, cur, list) => `<div class="chiprow mgchips">${list.map(([k,n]) => `<button data-set="${path}" data-val="${k}" class="${cur===k?'on':''}">${n}</button>`).join('')}</div>`;
+  let h = `<div class="mghero"><b>✨ Magic animate</b><span>AI finds the people, animals and objects in this picture, lifts each one out and animates them one by one — in and out.</span></div>
+    <div class="btns mgbtns"><button class="primary" data-mg="auto" ${MG_BUSY?'disabled':''}>🤖 Auto-detect objects</button><button data-mg="tap" class="${S.magicPick?'on':''}" ${MG_BUSY?'disabled':''}>👆 ${S.magicPick?'Tapping… (done)':'Tap to add object'}</button></div>
+    <div class="mgprog" id="mgProg">${MG_BUSY}</div>`;
+  if(S.magicPick) h += `<div class="note">👆 Tap any person or object in the player to cut it out. Tap <b>Tapping… (done)</b> when finished.</div>`;
+  if(L.length){
+    h += `<div class="crow"><span><b>${L.length}</b> object${L.length>1?'s':''} found</span><label class="sw"><input type="checkbox" data-mg="on" ${mg.on?'checked':''}> Magic on</label></div>
+      <div class="mglayers">${L.map((l,i) => `<div class="mgl"><span class="mgn">${i+1}</span><img src="${l.t || l.m}" alt=""><span class="mglab">${esc(l.label)}</span><button data-mg="del" data-id="${l.id}" title="Remove">✕</button></div>`).join('')}</div>
+      <div class="ltitle">In — objects come from</div>${chips('magic.inS', mg.inS, MAGIC_STYLES)}
+      ${sl(it,'In duration','magic.inDur',.2,2,.05)}
+      <div class="ltitle">Out — objects leave to</div>${chips('magic.outS', mg.outS, [['none','None'], ...MAGIC_STYLES])}
+      ${mg.outS !== 'none' ? sl(it,'Out duration','magic.outDur',.2,2,.05) : ''}
+      ${sl(it,'Delay between objects','magic.stag',0,.6,.01)}
+      <div class="crow"><span>Order</span><select data-mgsel="order">${[['lr','Left → right'],['size','Biggest first'],['rand','Random']].map(([k,n]) => `<option value="${k}" ${mg.order===k?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="crow"><span>Background</span><select data-mgsel="bg">${[['static','Stays'],['fade','Fades in'],['zoom','Zooms in']].map(([k,n]) => `<option value="${k}" ${mg.bg===k?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="btns"><button data-mg="play">▶ Preview</button><button data-mg="clear">🗑 Remove all</button></div>`;
+  }
+  h += `<div class="note">🧠 Runs in your browser — the picture is never uploaded. First use downloads the AI once (object finder ≈45 MB, cut-out ≈6 MB), then it is cached. Works best on clear photos and illustrations; if something is missed, use <b>Tap to add object</b>. Tip: make the clip 3–6 s long so there is time for in and out.</div>`;
+  return h;
+}
+function mgProg(m){ MG_BUSY = m; const e = $('#mgProg'); if(e) e.innerHTML = m; }
+async function magicTap(it, u, v){
+  if(it.type ? it.flip : (it.tf && it.tf.flip)) u = 1 - u;
+  mgProg('✂️ Cutting out…');
+  try{ const L = await magicAddAt(it, u, v);
+    if(!L){ mgProg('⚠ Nothing found there — tap right on the object'); setTimeout(() => { if(MG_BUSY.startsWith('⚠')) mgProg(''); }, 2500); return; }
+    pushUndo(); const mg = ensureMagic(it); mg.layers.push(L); mg.on = true; mgProg(''); renderInspector(); afterEdit();
+  }catch(e){ mgProg('⚠ Cut-out AI could not load (internet needed the first time): ' + esc(e.message||e)); }
+}
+IB.addEventListener('click', async e => {
+  const b = e.target.closest('[data-mg]'); if(!b || b.tagName === 'INPUT') return; const it = selItem(); if(!it) return; const mg = ensureMagic(it), a = b.dataset.mg;
+  if(a === 'tap'){ S.magicPick = !S.magicPick; out.classList.toggle('pick', S.magicPick); renderInspector(); return; }
+  if(a === 'del'){ pushUndo(); mg.layers = mg.layers.filter(l => l.id !== b.dataset.id); if(!mg.layers.length) mg.on = false; renderInspector(); afterEdit(); return; }
+  if(a === 'clear'){ pushUndo(); mg.layers = []; mg.on = false; renderInspector(); afterEdit(); return; }
+  if(a === 'play'){ const st = it.type ? it.start : derived[it.id].start; seek(st); play(); return; }
+  if(a === 'auto'){
+    mgProg('⏳ Starting…'); renderInspector();
+    try{ const layers = await magicAuto(it, (m) => mgProg(m));
+      if(!layers.length){ mgProg('No clear objects found — use 👆 Tap to add object'); }
+      else { pushUndo(); mg.layers = layers.concat(mg.layers.filter(l => !layers.some(n => iou(n.box, l.box) > .7))); mg.on = true; mgProg(''); }
+    }catch(err){ console.error(err); mgProg('⚠ AI could not load (internet needed the first time): ' + esc(err.message||err)); }
+    renderInspector(); afterEdit(); if(mg.on){ const st = it.type ? it.start : derived[it.id].start; seek(st); play(); }
+  }
+});
+IB.addEventListener('change', e => {
+  const it = selItem(); if(!it) return;
+  if(e.target.dataset.mg === 'on'){ pushUndo(); ensureMagic(it).on = e.target.checked; afterEdit(); return; }
+  if(e.target.dataset.mgsel){ pushUndo(); ensureMagic(it)[e.target.dataset.mgsel] = e.target.value; afterEdit(); }
+});
 function animGrid(it, sub){
   const path = sub === 'in' ? 'anim.in' : sub === 'out' ? 'anim.out' : 'anim.loop', cur = getP(it, path), q = (S.animQ||'').toLowerCase().trim();
   let list = animList(it, sub), cat = sub === 'combo' ? 'All' : (S.animCat || 'Trending');
@@ -693,7 +745,7 @@ function inspBody(it, kind, tab, sub){
                      <div class="crow"><span>Ratio</span><select data-g="ratio">${['9:16','16:9','1:1','4:5','4:3','21:9','orig'].map(k=>`<option value="${k}" ${S.ratio===k?'selected':''}>${k==='orig'?'Original':k}</option>`).join('')}</select></div>`)) + KF_NOTE;
     case 'audio': return audioBody(it, kind, sub);
     case 'speed': return speedBody(it, kind, sub);
-    case 'anim': return animBody(it, kind, sub);
+    case 'anim': return sub === 'magic' ? magicBody(it) : animBody(it, kind, sub);
     case 'trans': return transBody(it);
     case 'gfx': { const g = GFXMAP[it.gfx] || {}; let b = '';
       if(g.text != null) b += `<div class="crow"><span>Text</span></div><input type="text" data-p="text" value="${esc(it.text||'')}" style="width:100%;margin:-6px 0 10px">`;

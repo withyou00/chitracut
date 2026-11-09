@@ -1040,9 +1040,10 @@ function transState(type,p,W,H){
 const texT = new WeakMap();
 function drawClip(c,tex,ex){
   if(ex.a <= 0.001) return;
-  const el = isImg(c) ? images[c.mediaId] : vids[c.id]; if(!el) return;
+  let el = isImg(c) ? images[c.mediaId] : vids[c.id]; if(!el) return;
   const isI = el.tagName === 'IMG';
-  const vw = isI ? el.naturalWidth : el.videoWidth, vh = isI ? el.naturalHeight : el.videoHeight;
+  if(isI && c.magic && c.magic.on && typeof magicFrame === 'function'){ const dd = derived[c.id], mf = dd && magicFrame(c, S.time - dd.start, dd.dur); if(mf) el = mf; }   // v23 magic animate
+  const vw = isI ? (el.naturalWidth || el.width) : el.videoWidth, vh = isI ? (el.naturalHeight || el.height) : el.videoHeight;
   if(!vw) return;
   tex = texFor(c.id).tex;
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -1260,8 +1261,10 @@ function drawSticker(ctx,o,u,size){
   ctx.fillText(o.text, 0, px*.05);
   return {hw:px*.6, hh:px*.6};
 }
-function mediaEl(o){ return o.type === 'image' ? images[o.mediaId] : ovVids[o.id]; }
-function elSize(el){ return el.tagName === 'IMG' ? [el.naturalWidth, el.naturalHeight] : [el.videoWidth, el.videoHeight]; }
+function mediaEl(o){
+  if(o.type === 'image'){ const im = images[o.mediaId]; if(im && o.magic && o.magic.on && typeof magicFrame === 'function'){ const mf = magicFrame(o, S.time - o.start, o.dur); if(mf) return mf; } return im; }
+  return ovVids[o.id]; }
+function elSize(el){ return el.tagName === 'IMG' ? [el.naturalWidth, el.naturalHeight] : el.tagName === 'CANVAS' ? [el.width, el.height] : [el.videoWidth, el.videoHeight]; }
 function drawMediaLayer(ctx,o,an,cx,cy,rot,size,opacity,u){
   const el = mediaEl(o); if(!el) return null;
   const [vw,vh] = elSize(el), isV = el.tagName === 'VIDEO';
@@ -1655,6 +1658,14 @@ function fitCanvas(){
 
 /* ---- preview drag / pinch / wheel / color pick ---- */
 const pts = new Map(); let wheelT = 0, wheelTimer = 0;
+// player point → normalised position inside an item's picture (0..1), or null when outside it
+function itemUV(it, p){
+  let g;
+  if(it.type){ const h = hits.get(it.id); if(!h) return null; const sc = h.s||1; g = {cx:h.cx, cy:h.cy, rot:h.rot, hw:h.hw*sc, hh:h.hh*sc}; }
+  else { g = geo[it.id]; if(!g) return null; }
+  const dx = p.x - g.cx, dy = p.y - g.cy, c = Math.cos(-g.rot), s = Math.sin(-g.rot), lx = dx*c - dy*s, ly = dx*s + dy*c;
+  const u = (lx/g.hw + 1)/2, v = (ly/g.hh + 1)/2; return u < 0 || u > 1 || v < 0 || v > 1 ? null : [u, v];
+}
 function toCv(e){ const r=out.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*out.width, y:(e.clientY-r.top)/r.height*out.height}; }
 function hitAt(p){
   const zo=zOrder();
@@ -1711,6 +1722,7 @@ function startCDrag(it,p,undone){ cdrag={it,p0:p,x0:ev(it,it.type?'x':'tf.x'),y0
 out.addEventListener('pointerdown',e=>{
   if(exporting) return;
   const p=toCv(e);
+  if(S.magicPick){ const it = selItem(); if(it && typeof magicTap === 'function'){ const uv = itemUV(it, p); if(uv) magicTap(it, uv[0], uv[1]); } return; }
   if(S.pick){
     const it=selItem(); if(it && it.ck){
       const d=octx.getImageData(clamp(p.x|0,0,out.width-1),clamp(p.y|0,0,out.height-1),1,1).data;

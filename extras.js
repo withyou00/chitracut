@@ -1814,3 +1814,201 @@ function stabAt(c, st){
   const f = (st - T[lo])/Math.max(1e-6, T[hi] - T[lo]), L = (a) => a[lo] + (a[hi] - a[lo])*f;
   return {dx:L(d.cx), dy:L(d.cy), r:L(d.ca), s:L(d.cs), z:d.z};
 }
+
+/* =====================================================================
+   v23: MAGIC ANIMATE — AI finds the people / animals / objects in a photo,
+   cuts each one out, fills the hole behind it, and animates every object
+   separately (in + out, from left / right / top / bottom, pop, rise…)
+   Models (downloaded once, then cached, run in the browser):
+     • object finder : DETR ResNet-50 (Apache-2.0) via transformers.js
+     • cut-out       : MediaPipe "magic touch" interactive segmenter (Apache-2.0)
+   ===================================================================== */
+function ensureMagic(it){ if(!it.magic) it.magic = MAGIC_DEF(); return it.magic; }
+const MAGIC_DEF = () => ({on:false, layers:[], inS:'auto', outS:'auto', inDur:.7, outDur:.5, stag:.15, order:'lr', bg:'static'});
+const MAGIC_STYLES = [['auto','Auto'],['left','Left'],['right','Right'],['top','Top'],['bottom','Bottom'],['pop','Pop'],['rise','Rise'],['fade','Fade'],['spin','Spin']];
+const MAGIC_RT = {};
+let ISEG = null, isegLoading = null, DET = null, detLoading = null;
+function loadISeg(){
+  if(ISEG) return Promise.resolve(ISEG);
+  if(!isegLoading) isegLoading = (async () => {
+    const v = await import(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/vision_bundle.mjs`);
+    const fs = await v.FilesetResolver.forVisionTasks(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}/wasm`);
+    const opts = d => ({baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite', delegate:d}, outputCategoryMask:false, outputConfidenceMasks:true});
+    try{ ISEG = await v.InteractiveSegmenter.createFromOptions(fs, opts('GPU')); }catch(e){ ISEG = await v.InteractiveSegmenter.createFromOptions(fs, opts('CPU')); }
+    return ISEG;
+  })().catch(e => { isegLoading = null; throw e; });
+  return isegLoading;
+}
+function loadDetector(onProg){
+  if(DET) return Promise.resolve(DET);
+  if(!detLoading) detLoading = (async () => {
+    const T = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2');
+    T.env.allowLocalModels = false;
+    DET = await T.pipeline('object-detection', 'Xenova/detr-resnet-50', {dtype:'q8', progress_callback: p => { if(onProg && p.status === 'progress' && /onnx/.test(p.file||'')) onProg(p.progress/100); }});
+    return DET;
+  })().catch(e => { detLoading = null; throw e; });
+  return detLoading;
+}
+function magicSrc(it){ const el = images[it.mediaId]; if(!el || !el.naturalWidth) return null;
+  const k = Math.min(1, 1024/Math.max(el.naturalWidth, el.naturalHeight)), c = document.createElement('canvas');
+  c.width = Math.round(el.naturalWidth*k); c.height = Math.round(el.naturalHeight*k); c.getContext('2d').drawImage(el, 0, 0, c.width, c.height); return c; }
+// one tap / one detected box → soft object mask (Float32, src size) or null
+function isegAt(src, x, y){
+  return new Promise(res => { try{
+    ISEG.segment(src, {keypoint:{x, y}}, r => {
+      const ms = r.confidenceMasks || []; if(!ms.length){ res(null); return; }
+      const w = ms[0].width, h = ms[0].height, px = Math.min(w-1, Math.round(x*w)) + Math.min(h-1, Math.round(y*h))*w;
+      let best = null, bv = -1; for(const m of ms){ const a = m.getAsFloat32Array(); if(a[px] > bv){ bv = a[px]; best = a; } }
+      res(best && bv > .4 ? {a:Float32Array.from(best), w, h} : null);
+    });
+  }catch(e){ res(null); } });
+}
+function maskStats(m, box){
+  let ins = 0, all = 0, boxN = 0; const [x0,y0,x1,y1] = box.map((v,i) => Math.round(v*(i%2 ? m.h : m.w)));
+  for(let y=0;y<m.h;y++) for(let x=0;x<m.w;x++){ const v = m.a[y*m.w+x] > .5; if(v) all++; const inb = x>=x0 && x<=x1 && y>=y0 && y<=y1; if(inb){ boxN++; if(v) ins++; } }
+  return {fill: ins/Math.max(1,boxN), leak: all ? 1 - ins/all : 1, cov: all/(m.w*m.h)};
+}
+// crop mask to its bounding box and store as a small PNG (kept inside the project)
+function maskToLayer(m, label, limitBox, src){
+  let x0 = m.w, y0 = m.h, x1 = -1, y1 = -1; const [bx0,by0,bx1,by1] = limitBox ? [limitBox[0]*m.w, limitBox[1]*m.h, limitBox[2]*m.w, limitBox[3]*m.h] : [0,0,m.w,m.h];
+  for(let y=0;y<m.h;y++) for(let x=0;x<m.w;x++){ if(x<bx0||x>bx1||y<by0||y>by1){ m.a[y*m.w+x] = 0; continue; } if(m.a[y*m.w+x] > .5){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
+  if(x1 < 0) return null;
+  x0 = Math.max(0, x0-3); y0 = Math.max(0, y0-3); x1 = Math.min(m.w-1, x1+3); y1 = Math.min(m.h-1, y1+3);
+  const cw = x1-x0+1, ch = y1-y0+1, c = document.createElement('canvas'); c.width = cw; c.height = ch;
+  const x = c.getContext('2d'), id = x.createImageData(cw, ch);
+  for(let y=0;y<ch;y++) for(let xx=0;xx<cw;xx++){ const v = clamp((m.a[(y+y0)*m.w + xx+x0] - .35)/.3, 0, 1); const i = (y*cw+xx)*4; id.data[i] = id.data[i+1] = id.data[i+2] = 255; id.data[i+3] = v*255; }
+  x.putImageData(id, 0, 0);
+  let t = '';
+  if(src){ const k = Math.min(1, 96/Math.max(cw, ch)), tc = document.createElement('canvas'); tc.width = Math.max(1, Math.round(cw*k)); tc.height = Math.max(1, Math.round(ch*k)); const tx = tc.getContext('2d');
+    tx.drawImage(src, x0/m.w*src.width, y0/m.h*src.height, cw/m.w*src.width, ch/m.h*src.height, 0, 0, tc.width, tc.height); tx.globalCompositeOperation = 'destination-in'; tx.drawImage(c, 0, 0, tc.width, tc.height); t = tc.toDataURL('image/png'); }
+  return {id:nid(), label:label||'object', box:[x0/m.w, y0/m.h, (x1+1)/m.w, (y1+1)/m.h], m:c.toDataURL('image/png'), t};
+}
+async function magicAddAt(it, x, y){
+  await loadISeg(); const src = magicSrc(it); if(!src) throw new Error('Image not loaded');
+  const m = await isegAt(src, x, y); if(!m) return null;
+  const st = maskStats(m, [0,0,1,1]); if(st.cov > .7 || st.cov < .0005) return null;   // that was the background, not an object
+  return maskToLayer(m, 'object', null, src);
+}
+async function magicAuto(it, onProg){
+  const src = magicSrc(it); if(!src) throw new Error('Image not loaded');
+  onProg && onProg('🤖 Loading object finder (first time ~45 MB)…', 0);
+  const det = await loadDetector(p => onProg && onProg(`🤖 Downloading object finder… ${Math.round(p*100)}%`, p*.5));
+  onProg && onProg('🔎 Finding people & objects…', .55);
+  let found = await det(src.toDataURL('image/jpeg', .9), {threshold:.6, percentage:true});
+  found = found.map(d => ({label:d.label, s:d.score, b:[d.box.xmin, d.box.ymin, d.box.xmax, d.box.ymax]}))
+    .filter(d => (d.b[2]-d.b[0])*(d.b[3]-d.b[1]) > .002 && (d.b[2]-d.b[0])*(d.b[3]-d.b[1]) < .6)
+    .sort((a,b) => (b.b[2]-b.b[0])*(b.b[3]-b.b[1]) - (a.b[2]-a.b[0])*(a.b[3]-a.b[1])).slice(0, 14);
+  if(!found.length) return [];
+  onProg && onProg('✂️ Loading cut-out AI…', .6); await loadISeg();
+  const layers = [];
+  for(let i=0;i<found.length;i++){
+    const d = found[i], [x0,y0,x1,y1] = d.b, w = x1-x0, h = y1-y0; onProg && onProg(`✂️ Cutting out ${d.label} (${i+1}/${found.length})`, .6 + .4*i/found.length);
+    const pad = [Math.max(0,x0-w*.06), Math.max(0,y0-h*.06), Math.min(1,x1+w*.06), Math.min(1,y1+h*.06)];
+    let U = null;
+    for(const [kx, ky] of [[.5,.5],[.5,.3],[.5,.7],[.35,.5],[.65,.5]]){
+      const m = await isegAt(src, x0 + w*kx, y0 + h*ky); if(!m) continue;
+      const st = maskStats(m, d.b); if(st.fill < .06 || st.leak > .45) continue;
+      if(!U) U = m; else for(let j=0;j<U.a.length;j++) U.a[j] = Math.max(U.a[j], m.a[j]);
+      if(maskStats(U, d.b).fill > .45) break;
+    }
+    if(!U) continue;
+    const L = maskToLayer(U, d.label, pad, src); if(L && !layers.some(o => iou(o.box, L.box) > .7)) layers.push(L);
+  }
+  return layers;
+}
+function iou(a, b){ const ix = Math.max(0, Math.min(a[2],b[2]) - Math.max(a[0],b[0])), iy = Math.max(0, Math.min(a[3],b[3]) - Math.max(a[1],b[1])), I = ix*iy;
+  return I / ((a[2]-a[0])*(a[3]-a[1]) + (b[2]-b[0])*(b[3]-b[1]) - I); }
+// ---- fill the holes behind the objects (push-pull inpainting) ----
+function inpaint(img, hole, W, H){
+  const w = Math.min(W, 480), h = Math.round(H*w/W), c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d', {willReadFrequently:true}); x.drawImage(img, 0, 0, w, h); const d = x.getImageData(0,0,w,h).data;
+  const hm = document.createElement('canvas'); hm.width = w; hm.height = h; const hx = hm.getContext('2d', {willReadFrequently:true}); hx.drawImage(hole, 0, 0, w, h); const md = hx.getImageData(0,0,w,h).data;
+  let lv = {w, h, r:new Float32Array(w*h), g:new Float32Array(w*h), b:new Float32Array(w*h), a:new Float32Array(w*h)};
+  for(let i=0;i<w*h;i++){ const k = md[i*4+3] > 20 ? 0 : 1; lv.a[i] = k; lv.r[i] = d[i*4]*k; lv.g[i] = d[i*4+1]*k; lv.b[i] = d[i*4+2]*k; }
+  const pyr = [lv];
+  while(lv.w > 2 && lv.h > 2){ const nw = lv.w>>1, nh = lv.h>>1, n = {w:nw, h:nh, r:new Float32Array(nw*nh), g:new Float32Array(nw*nh), b:new Float32Array(nw*nh), a:new Float32Array(nw*nh)};
+    for(let y=0;y<nh;y++) for(let xx=0;xx<nw;xx++){ let r=0,g=0,b=0,a=0; for(const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]]){ const j = (y*2+dy)*lv.w + xx*2+dx; r+=lv.r[j]; g+=lv.g[j]; b+=lv.b[j]; a+=lv.a[j]; }
+      const o = y*nw+xx; n.r[o]=r; n.g[o]=g; n.b[o]=b; n.a[o]=a; }
+    for(let i=0;i<nw*nh;i++){ const a = n.a[i]; if(a > 0){ n.r[i]/=a; n.g[i]/=a; n.b[i]/=a; n.a[i] = Math.min(1, a); n.r[i]*=n.a[i]; n.g[i]*=n.a[i]; n.b[i]*=n.a[i]; } }
+    pyr.push(n); lv = n; }
+  for(let L=pyr.length-2; L>=0; L--){ const f = pyr[L], c2 = pyr[L+1];
+    for(let y=0;y<f.h;y++) for(let xx=0;xx<f.w;xx++){ const i = y*f.w+xx, a = f.a[i]; if(a >= 1) continue;
+      const cx = Math.min(c2.w-1, xx>>1), cy = Math.min(c2.h-1, y>>1), j = cy*c2.w+cx, ca = Math.max(1e-6, c2.a[j]);
+      f.r[i] = f.r[i] + (1-a)*c2.r[j]/ca; f.g[i] = f.g[i] + (1-a)*c2.g[j]/ca; f.b[i] = f.b[i] + (1-a)*c2.b[j]/ca; f.a[i] = 1; } }
+  const id = x.createImageData(w, h); for(let i=0;i<w*h;i++){ id.data[i*4] = pyr[0].r[i]; id.data[i*4+1] = pyr[0].g[i]; id.data[i*4+2] = pyr[0].b[i]; id.data[i*4+3] = 255; }
+  x.putImageData(id, 0, 0);
+  // final: original picture, with the filled colour shown only inside the (feathered) holes
+  const outC = document.createElement('canvas'); outC.width = W; outC.height = H; const ox = outC.getContext('2d');
+  const fill = document.createElement('canvas'); fill.width = W; fill.height = H; const fx = fill.getContext('2d');
+  fx.filter = `blur(${Math.max(2, W/180)}px)`; fx.drawImage(c, 0, 0, W, H); fx.filter = 'none';
+  fx.globalCompositeOperation = 'destination-in'; fx.filter = `blur(${Math.max(1.5, W/500)}px)`; fx.drawImage(hole, 0, 0, W, H); fx.filter = 'none';
+  ox.drawImage(img, 0, 0, W, H); ox.drawImage(fill, 0, 0); return outC;
+}
+function loadDataImg(src){ return new Promise((r, j) => { const i = new Image(); i.onload = () => r(i); i.onerror = j; i.src = src; }); }
+async function buildMagic(it){
+  const el = images[it.mediaId], mg = it.magic; if(!el || !el.naturalWidth || !mg) return;
+  const key = it.mediaId + ':' + mg.layers.map(l => l.id).join(','); const rt = MAGIC_RT[it.id];
+  if(rt && (rt.key === key)) return;
+  MAGIC_RT[it.id] = {key, ready:false};
+  const k = Math.min(1, 1600/Math.max(el.naturalWidth, el.naturalHeight)), W = Math.round(el.naturalWidth*k), H = Math.round(el.naturalHeight*k);
+  const hole = document.createElement('canvas'); hole.width = W; hole.height = H; const hx = hole.getContext('2d');
+  const cuts = [];
+  for(const L of mg.layers){
+    let mi; try{ mi = await loadDataImg(L.m); }catch(e){ continue; }
+    const bx = L.box[0]*W, by = L.box[1]*H, bw = (L.box[2]-L.box[0])*W, bh = (L.box[3]-L.box[1])*H;
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bw)); c.height = Math.max(1, Math.round(bh)); const x = c.getContext('2d');
+    x.drawImage(el, L.box[0]*el.naturalWidth, L.box[1]*el.naturalHeight, (L.box[2]-L.box[0])*el.naturalWidth, (L.box[3]-L.box[1])*el.naturalHeight, 0, 0, c.width, c.height);
+    x.globalCompositeOperation = 'destination-in'; x.drawImage(mi, 0, 0, c.width, c.height);
+    // the hole is a little bigger than the object so no outline is left behind
+    hx.save(); hx.filter = `blur(${Math.max(2, W/300)}px)`; for(const [dx,dy] of [[0,0],[-3,0],[3,0],[0,-3],[0,3]]) hx.drawImage(mi, bx+dx*W/800, by+dy*W/800, bw, bh); hx.restore();
+    cuts.push({id:L.id, c, x:bx, y:by, w:bw, h:bh});
+  }
+  const bg = inpaint(el, hole, W, H), comp = document.createElement('canvas'); comp.width = W; comp.height = H;
+  if(MAGIC_RT[it.id] && MAGIC_RT[it.id].key === key) MAGIC_RT[it.id] = {key, ready:true, W, H, bg, cuts, comp};
+  if(typeof render === 'function') try{ render(performance.now()); }catch(e){}
+}
+const eOutCubic = p => 1 - Math.pow(1-p, 3), eInCubic = p => p*p*p, eOutBack = p => { const c1 = 1.7; return 1 + (c1+1)*Math.pow(p-1,3) + c1*Math.pow(p-1,2); };
+function magicPose(style, p, cut, W, H, isIn){
+  // p: 0 = hidden, 1 = in place
+  if(style === 'auto'){ const cx = (cut.x + cut.w/2)/W, cy = (cut.y + cut.h/2)/H, d = {left:cx, right:1-cx, top:cy, bottom:1-cy};
+    style = Object.keys(d).reduce((a,b) => d[a] <= d[b] ? a : b); }
+  const e = isIn ? (style === 'pop' ? eOutBack(p) : eOutCubic(p)) : 1 - eInCubic(1-p);
+  const o = {dx:0, dy:0, s:1, a:1, r:0};
+  if(style === 'left') o.dx = -(cut.x + cut.w + 8)*(1-e);
+  else if(style === 'right') o.dx = (W - cut.x + 8)*(1-e);
+  else if(style === 'top') o.dy = -(cut.y + cut.h + 8)*(1-e);
+  else if(style === 'bottom') o.dy = (H - cut.y + 8)*(1-e);
+  else if(style === 'pop'){ o.s = Math.max(0, e); o.a = clamp(p*3, 0, 1); }
+  else if(style === 'rise'){ o.dy = cut.h*.35*(1-e); o.a = clamp(p*1.6, 0, 1); }
+  else if(style === 'fade') o.a = p;
+  else if(style === 'spin'){ o.s = Math.max(0, e); o.r = (1-e)*Math.PI*1.5; o.a = clamp(p*2, 0, 1); }
+  return o;
+}
+function magicFrame(it, lt, dur){
+  const mg = it.magic; if(!mg || !mg.on || !mg.layers.length) return null;
+  const rt = MAGIC_RT[it.id]; if(!rt || !rt.ready){ buildMagic(it); return null; }
+  const {W, H, bg, cuts, comp} = rt, x = comp.getContext('2d'), n = cuts.length;
+  let order = cuts.map((c,i) => i);
+  if(mg.order === 'lr') order.sort((a,b) => cuts[a].x - cuts[b].x);
+  else if(mg.order === 'size') order.sort((a,b) => cuts[b].w*cuts[b].h - cuts[a].w*cuts[a].h);
+  else if(mg.order === 'rand') order.sort((a,b) => ((cuts[a].x*7919 + cuts[a].y*104729) % 97) - ((cuts[b].x*7919 + cuts[b].y*104729) % 97));
+  let st = mg.stag, inD = mg.inDur, outD = mg.outS === 'none' ? 0 : mg.outDur;
+  const need = inD + outD + st*(n-1)*(outD ? 2 : 1); if(need > dur*.95){ const k = dur*.95/need; st *= k; inD *= k; outD *= k; }
+  x.setTransform(1,0,0,1,0,0); x.globalAlpha = 1; x.clearRect(0,0,W,H);
+  const bgA = mg.bg === 'fade' ? clamp(lt/Math.max(.2, inD), 0, 1) : 1;
+  if(mg.bg === 'zoom'){ const z = 1 + .08*(1 - eOutCubic(clamp(lt/Math.max(.3, inD + st*(n-1)), 0, 1))); x.globalAlpha = bgA; x.drawImage(bg, W*(1-z)/2, H*(1-z)/2, W*z, H*z); }
+  else { x.globalAlpha = bgA; x.drawImage(bg, 0, 0); }
+  order.forEach((ci, k) => {
+    const cut = cuts[ci], tIn = (lt - k*st)/inD, tOut = outD ? (dur - lt - (n-1-k)*st)/outD : 9;
+    let o;
+    if(tIn < 1) o = tIn <= 0 ? null : magicPose(mg.inS, tIn, cut, W, H, true);
+    else if(tOut < 1) o = tOut <= 0 ? null : magicPose(mg.outS === 'none' ? 'fade' : mg.outS, tOut, cut, W, H, false);
+    else o = {dx:0, dy:0, s:1, a:1, r:0};
+    if(!o || o.a <= 0 || o.s <= 0) return;
+    const cx = cut.x + cut.w/2 + o.dx, cy = cut.y + cut.h/2 + o.dy;
+    x.setTransform(o.s*Math.cos(o.r), o.s*Math.sin(o.r), -o.s*Math.sin(o.r), o.s*Math.cos(o.r), cx, cy); x.globalAlpha = o.a;
+    x.drawImage(cut.c, -cut.w/2, -cut.h/2, cut.w, cut.h);
+  });
+  x.setTransform(1,0,0,1,0,0); x.globalAlpha = 1;
+  return comp;
+}

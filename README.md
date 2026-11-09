@@ -169,3 +169,16 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 ## Phase 22 — Playhead drag fix
 - While you drag the playhead, the pointer is kept inside the track area. Holding it at the left or right edge, or past it over the track names, keeps scrolling the timeline. You can always drag back to 0:00, even when the timeline is scrolled far right.
 - The playhead line is hidden when it is scrolled out of view, so it never sits over the track names.
+
+## Phase 23 — ✨ Magic animate (photos)
+- Where to find it: select a photo (main track or overlay) › **Animation › ✨ Magic**.
+- **Finding the objects:**
+  - **Auto-detect** finds people, animals, vehicles, furniture and other objects with DETR ResNet-50 (Apache-2.0, run with transformers.js).
+  - Each object is then cut out with the MediaPipe "magic touch" interactive segmenter (Apache-2.0).
+  - **Tap to add object** cuts out anything you tap in the player. Each found object can be removed with ✕.
+- **Animation:**
+  - The hole behind each object is filled automatically (push-pull inpainting).
+  - Each object then animates on its own — **In:** Auto (nearest edge), Left, Right, Top, Bottom, Pop, Rise, Fade, Spin; **Out:** the same, or None.
+  - You can set the in/out duration, the delay between objects, the order (left→right, biggest first, random) and the background (stays, fades in, zooms in).
+- Everything runs in the browser; the picture is never uploaded. The models download once (≈45 MB + ≈6 MB) and are then cached.
+- The objects and settings are saved inside the project and export like any other clip.
