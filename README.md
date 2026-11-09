@@ -136,3 +136,12 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - Music or audio longer than the video is cut at that point.
 - The part of the timeline after the end is shown dimmed (striped, red line).
 - An audio-only project still uses the audio length.
+
+## Phase 18 — Import to library + premium filters
+- **Import:** files now go only into the **Media** library, not straight onto the timeline.
+  - Click **＋** on a file (or drag it) to put it on the timeline; **PiP** adds it as an overlay.
+  - Clicking a tile only selects it.
+- **Filters:** 85 colour grades in 12 categories — Trending, HD, Portrait, Landscape, Cinematic, Food, Night, Film, Retro, B&W, Mood and Basic.
+  - New grades use selective colour (HSL): for example, greens shift to teal while skin stays natural.
+  - **HD** looks also add GPU sharpening, shadow lift and a vignette.
+  - Each filter is previewed on a photo that suits it.

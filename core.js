@@ -848,7 +848,7 @@ function texFor(id){
 }
 let holdT = 0;
 
-function fxParams(c){ const p={...c.adj}, f=FILTERS[c.filter]||{}, k=c.filterAmt/100; for(const key in f) p[key]=(p[key]||0)+f[key]*k; return p; }
+function fxParams(c){ const p={...c.adj}, k=c.filterAmt/100; let f=FILTERS[c.filter]||{}; if(c.filter && c.filter.startsWith('pf:') && typeof PF_MAP !== 'undefined') f = (PF_MAP[c.filter.slice(3)]||{}).adj || {}; for(const key in f) p[key]=(p[key]||0)+f[key]*k; return p; }
 function setFx(c){
   const p = fxParams(c);
   gl.uniform1f(U.u_b,p.brightness/100); gl.uniform1f(U.u_c,p.contrast/100); gl.uniform1f(U.u_s,p.saturation/100);
@@ -1455,16 +1455,18 @@ async function addAudioMedia(f,knownDur){
   return registerMedia({id:nid(),name:f.name,url,type:'audio',duration:dur,thumb:'',w:0,h:0},f);
 }
 async function importFiles(files){
+  // v18: import only adds files to the Media library — the user chooses what goes on the timeline (＋ button or drag)
+  let n = 0;
   for(const f of files){
     try{
-      if(f.type.startsWith('video/')){ const m=await addVideoMedia(f); pushUndo(); S.clips.push(newClip(m)); }
-      else if(f.type.startsWith('image/')){ const m=await addImageMedia(f); pushUndo(); S.clips.push(newClip(m)); }
-      else if(f.type.startsWith('audio/')){ const m=await addAudioMedia(f); pushUndo(); S.audios.push(newAudioItem(m,{start:0})); }
+      if(f.type.startsWith('video/')){ await addVideoMedia(f); n++; }
+      else if(f.type.startsWith('image/')){ await addImageMedia(f); n++; }
+      else if(f.type.startsWith('audio/')){ await addAudioMedia(f); n++; }
     }catch(e){ alert(f.name+': '+e.message); }
   }
-  if(S.ratio==='orig') setCanvas();
-  if(!S.sel && S.clips[0]) S.sel = S.clips[0].id;
-  afterEdit(); renderMediaPanel();
+  if(n && S.ltab !== 'media'){ S.ltab = 'media'; if(typeof renderLeft === 'function') renderLeft(); }
+  renderMediaPanel(); updateHint();
+  if(n && typeof toast === 'function') toast(`${n} file${n>1?'s':''} imported — click ＋ or drag to the timeline`);
 }
 function addPip(m){
   const o = m.type === 'video'
@@ -1501,7 +1503,8 @@ function restore(s){
 }
 function undo(){ if(!undoS.length) return; redoS.push(snap()); restore(undoS.pop()); }
 function redo(){ if(!redoS.length) return; undoS.push(snap()); restore(redoS.pop()); }
-function afterEdit(){ layout(); renderTimeline(); renderInspector(); seek(Math.min(S.time,S.total)); $('#hint').style.display=(S.clips.length||S.overlays.length||S.audios.length)?'none':''; }
+function afterEdit(){ layout(); renderTimeline(); renderInspector(); seek(Math.min(S.time,S.total)); $('#hint').style.display=(S.clips.length||S.overlays.length||S.audios.length)?'none':''; updateHint(); }
+function updateHint(){ const h = $('#hint'); if(h) h.innerHTML = S.media.length ? '<b>Add to timeline</b><br>Click <b>＋</b> on a file in Media, or drag it onto the timeline' : '<b>Add media</b><br>Press <b>Import</b> on the left or drag video / photo / music here'; }
 function split(){
   const fr=selFree();
   if(fr){
@@ -2378,7 +2381,9 @@ function overlayToClip(o, t){
   S.clips.splice(insertIndexAt(t), 0, c); S.sel = c.id; afterEdit();
 }
 function insertMediaClip(m, t){
-  pushUndo(); const c = newClip(m); S.clips.splice(insertIndexAt(t), 0, c); S.sel = c.id; afterEdit();
+  pushUndo(); const c = newClip(m); S.clips.splice(insertIndexAt(t), 0, c); S.sel = c.id;
+  if(S.ratio === 'orig' && S.clips.length === 1) setCanvas();
+  afterEdit();
 }
 function moveClipTo(c, t){
   const i = S.clips.indexOf(c), j = insertIndexAt(t, c); if(i === j) return;

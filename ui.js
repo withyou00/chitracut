@@ -127,6 +127,7 @@ function renderLeft(){
   LC.innerHTML = leftContent(S.ltab, sub); fillRanges(LC); paintGfxTiles(); paintV8(LC, visTarget());
 }
 function renderMediaPanel(){ renderLeft(); }
+function toast(msg){ let t = $('#toast'); if(!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); } t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2800); }
 let gfxAnim = null;
 function paintGfxTiles(){ LC.querySelectorAll('canvas[data-gfxc]').forEach(c => paintGfx(c, c.dataset.gfxc, (GFXMAP[c.dataset.gfxc]||{}).thumbT || 1)); }
 LC.addEventListener('mouseover', e => {
@@ -240,13 +241,13 @@ function leftContent(tab, sub){
       let tiles;
       if(cat === 'Basic'){ const th = SCENES.portrait.src; tiles = Object.keys(FILTERS).map(k=>`<button class="tile ${cur===k?'on':''}" data-filt="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join(''); }
       else {
-        const th = pfThumbs(it), list = cat === 'Featured' ? PF_FEATURED.map(id => PF_MAP[id]) : PRO_FILTERS.filter(f => f.cat === cat);
+        const list = (cat === 'Featured' ? PF_FEATURED.map(id => PF_MAP[id]) : PRO_FILTERS.filter(f => f.cat === cat)).filter(Boolean), th = pfThumbs(list);
         tiles = `<button class="tile ${cur==='none'?'on':''}" data-filt="none"><div class="tth">${ic('ban')}</div><span>None</span></button>` +
           list.map(f=>`<button class="tile ${cur==='pf:'+f.id?'on':''}" data-filt="pf:${f.id}"><div class="tth"><img class="pfimg" src="${th[f.id]}"></div><span>${f.name}</span></button>`).join('');
       }
       return head + `<div class="tiles">${tiles}</div>
         ${it && cur !== 'none' ? `<div style="margin-top:14px"><div class="ltitle" style="margin:0 0 6px">${esc(filterName(cur))}</div>${sl(it,'Strength','filterAmt',0,100)}</div><div class="btns">${it.type!=='adjust'?`<button data-all="filter">Apply to all clips</button><button data-addfl="${cur}">${ic('layers')} Add as filter layer</button>`:''}</div>` : ''}
-        <div class="lnote">🎬 Cinematic colour grades — applied as real 3D LUTs on the GPU. Fine-tune light and colour in <b>Adjust</b> on the right.</div>`;
+        <div class="lnote">🎬 ${PRO_FILTERS.length} pro colour grades — selective colour (HSL) + real 3D LUTs on the GPU; <b>HD</b> looks also add detail. Use <b>Strength</b> to blend, and <b>Adjust</b> on the right to fine-tune.</div>`;
     }
     case 'adjust': {
       const it = visTarget(), addB = `<div class="lhead"><button class="primary" data-addadj="1">${ic('plus')} Adjustment layer</button></div>`;
@@ -294,7 +295,8 @@ LC.addEventListener('click', async e => {
   if(t.id === 'cDelAll'){ const n = S.overlays.filter(o=>o.caption).length; if(n && confirm(n+' captions — delete?')){ pushUndo(); S.overlays = S.overlays.filter(o=>!o.caption); afterEdit(); } return; }
   if(d.delm){ deleteMedia(d.delm); return; }
   if(d.pip){ addPip(media(d.pip)); return; }
-  const mid = d.addm || (t.classList.contains('mtile') ? d.mid : null);
+  const mid = d.addm;
+  if(!mid && t.classList.contains('mtile')){ LC.querySelectorAll('.mtile.pick').forEach(x => x.classList.remove('pick')); t.classList.add('pick'); return; }
   if(mid){
     const m = media(mid); if(!m || m.missing) return;
     if(m.type === 'audio') addAudioAt(m, {start:S.time}); else insertMediaClip(m, S.mainEnd + 1);

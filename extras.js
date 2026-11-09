@@ -469,6 +469,21 @@ function applyTracking(o, pts, box){
    teal-orange, fade, mono …). It is baked into a 25³ LUT on first use, so playback costs one texture lookup. */
 const lumF = (r,g,b) => .2126*r + .7152*g + .0722*b;
 function scurve(v,k){ v = clamp(v,0,1); if(k >= 0){ const e = 1 + k*1.6; return v < .5 ? .5*Math.pow(2*v,e) : 1 - .5*Math.pow(2*(1-v),e); } return .5 + (v-.5)*(1+k*.7); }
+// selective colour (like an HSL panel): each band = [centre hue°, width°, hue shift°, saturation ×, lightness +]
+function hueSat(c){ const mx = Math.max(...c), mn = Math.min(...c), d = mx - mn; if(d < 1e-5) return [0, 0];
+  let h = mx === c[0] ? ((c[1]-c[2])/d) % 6 : mx === c[1] ? (c[2]-c[0])/d + 2 : (c[0]-c[1])/d + 4; h *= 60; if(h < 0) h += 360; return [h, d]; }
+function rotHue(c, deg){ const a = deg*Math.PI/180, cs = Math.cos(a), sn = Math.sin(a), k = 1/Math.sqrt(3), dot = (c[0]+c[1]+c[2])*k;
+  const cx = [k*(c[2]-c[1]), k*(c[0]-c[2]), k*(c[1]-c[0])];
+  return c.map((v,i) => v*cs + cx[i]*sn + k*dot*(1-cs)); }
+function hslBands(c, bands){
+  const [h, d] = hueSat(c); if(d < .01) return c; const sw = clamp(d*5, 0, 1);
+  let sh = 0, sm = 0, la = 0, wsum = 0;
+  for(const [cen, wid, dh, smul, dl] of bands){ let dd = Math.abs(h - cen); if(dd > 180) dd = 360 - dd; if(dd >= wid) continue;
+    const w = .5*(1 + Math.cos(Math.PI*dd/wid))*sw; sh += dh*w; sm += (smul-1)*w; la += (dl||0)*w; wsum += w; }
+  if(!wsum) return c;
+  if(sh) c = rotHue(c, sh);
+  const l = lumF(...c); c = c.map(v => l + (v-l)*(1+sm) + la); return c;
+}
 function gradeFn(p){
   return (r,g,b) => {
     let c = [r,g,b];
@@ -482,6 +497,7 @@ function gradeFn(p){
       const warm = clamp((c[0]-c[2])*3, 0, 1), k = p.to;
       c[0] += k*(-.07*(1-l) + .08*l*(.5+warm*.5)); c[1] += k*(.015*(1-l) + .01*l); c[2] += k*(.08*(1-l) - .09*l*(.5+warm*.5));
     }
+    if(p.hsl) c = hslBands(c, p.hsl);
     if(p.greens){ const gr = clamp((c[1] - Math.max(c[0],c[2]))*4, 0, 1); c = c.map((v,i) => v + gr*p.greens[i]); }
     if(p.blues){ const bl = clamp((c[2] - Math.max(c[0],c[1]))*4, 0, 1); c = c.map((v,i) => v + bl*p.blues[i]); }
     l = lumF(...c);
@@ -554,9 +570,56 @@ const PRO_FILTERS = [
   PF('horror','Horror','Mood',{ti:-.3,sat:-.6,con:.5,ex:-.2,sh:[.3,.5,.4],shA:.3}),
   PF('dream','Dreamy','Mood',{ex:.15,con:-.2,fade:.18,ti:.25,sat:.1}),
 ];
+// ---- v18: premium grades (selective colour + HD detail), named and tuned in-house ----
+const PF2 = (id,name,cat,p,adj) => ({id,name,cat,p,adj});
+PRO_FILTERS.push(
+  // Trending
+  PF2('emerald','Emerald Lake','Trending',{con:.22,vib:.25,hsl:[[110,55,22,1.25,-.04],[200,50,8,1.3,-.05],[28,25,0,1.05,.01]],sh:[.35,.5,.55],shA:.15},{sharpen:15}),
+  PF2('forestamber','Forest Amber','Trending',{con:.28,t:.2,hsl:[[100,60,18,.85,-.05],[30,30,-4,1.22,.02],[210,50,-6,.9,0]],hi:[.8,.62,.4],hiA:.18},{vignette:15}),
+  PF2('amberteal','Amber Teal','Trending',{to:1.3,con:.3,hsl:[[30,30,0,1.18,.02],[190,60,12,1.25,-.04]]},{sharpen:12}),
+  PF2('clearsky','Clear Sky','Trending',{ex:.05,con:.15,vib:.35,hsl:[[215,55,-4,1.35,-.06],[180,30,10,1.2,0]]},{sharpen:25,highlights:-12}),
+  PF2('autumnglow','Autumn Glow','Trending',{t:.35,con:.2,hsl:[[90,55,-38,1.3,0],[40,30,-10,1.25,.02]],hi:[.85,.6,.35],hiA:.2},{vignette:12}),
+  PF2('sunsetgold','Sunset Gold','Trending',{t:.65,con:.26,sat:.08,hsl:[[30,35,-3,1.3,.02],[220,50,15,.9,-.04]],hi:[.9,.62,.3],hiA:.3,lift:[.02,.01,0]},{vignette:18}),
+  PF2('sunnymeadow','Sunny Meadow','Trending',{ex:.08,vib:.3,hsl:[[110,55,-12,1.3,.04],[205,45,0,1.2,-.02]],hi:[.8,.75,.5],hiA:.12},{sharpen:15,shadows:12}),
+  PF2('freshlime','Fresh Lime','Trending',{ex:.06,con:.15,hsl:[[100,50,-10,1.4,.03],[190,45,-8,1.25,0]],ti:-.15},{sharpen:15}),
+  PF2('neoncity','Neon City','Trending',{ex:-.08,con:.35,t:-.25,hsl:[[220,50,8,1.35,-.03],[320,45,0,1.35,0],[0,25,0,1.25,0]],sh:[.3,.4,.7],shA:.25},{vignette:22}),
+  PF2('peachsoft','Peach Soft','Trending',{t:.18,ti:.15,sat:-.05,fade:.05,lift:[.03,.015,.01],hsl:[[25,30,-2,1.05,.04]]}),
+  // HD — detail + tone (these also sharpen the picture on the GPU)
+  PF2('ultra8k','Ultra 8K','HD',{con:.2,vib:.35,hsl:[[215,50,0,1.15,-.03]]},{sharpen:55,shadows:10,highlights:-10}),
+  PF2('hdboost','HD Boost','HD',{con:.15,vib:.3,ex:.03},{sharpen:40,shadows:18,highlights:-15}),
+  PF2('hdcam','HD Camera','HD',{con:.12,vib:.25,t:.05},{sharpen:35,shadows:22,highlights:-20}),
+  PF2('hdsun','HD Sunlight','HD',{t:.35,ex:.08,vib:.3,hi:[.85,.7,.45],hiA:.18},{sharpen:30,highlights:-10}),
+  PF2('hddark','HD Dark','HD',{ex:-.12,con:.38,sat:.05,sh:[.35,.45,.55],shA:.15},{sharpen:38,vignette:25}),
+  PF2('hdglow','HD Glow','HD',{lift:[.025,.02,.02],fade:.03,vib:.2,hi:[.8,.7,.6],hiA:.15},{sharpen:18,highlights:10}),
+  PF2('cinedark','Cinematic Dark','HD',{to:.8,ex:-.15,con:.42,sat:-.15},{vignette:35,sharpen:22}),
+  PF2('crisp','Crisp Clear','HD',{con:.18,vib:.25},{sharpen:60}),
+  // Portrait (skin-safe)
+  PF2('focus','Soft Focus','Portrait',{fade:.04,sat:-.05,hsl:[[25,30,-2,.95,.04]],lift:[.02,.015,.015]},{vignette:22}),
+  PF2('porcelain','Porcelain','Portrait',{ex:.06,sat:-.12,t:-.1,hsl:[[25,35,0,.85,.06]]},{highlights:-10}),
+  PF2('radiant','Radiant Skin','Portrait',{t:.2,hsl:[[25,30,-2,1.05,.05]],hi:[.85,.7,.55],hiA:.15},{highlights:10,sharpen:10}),
+  PF2('dewy','Dewy Glow','Portrait',{lift:[.03,.03,.035],fade:.06,vib:.15,ti:.1}),
+  PF2('bronze','Bronze Tan','Portrait',{t:.5,con:.2,hsl:[[25,30,-3,1.2,-.03]]},{vignette:15}),
+  PF2('seoulbright','Seoul Bright','Portrait',{ex:.1,sat:-.08,ti:.12,fade:.04,hsl:[[210,50,-10,1.1,0],[25,30,0,.95,.04]]}),
+  // Landscape
+  PF2('alpine','Alpine Fresh','Landscape',{ex:.03,con:.18,hsl:[[215,55,0,1.3,-.05],[110,50,10,1.15,0]]},{sharpen:20}),
+  PF2('tropical','Tropical','Landscape',{t:.15,hsl:[[190,55,-8,1.35,0],[110,50,-5,1.2,.02]],hi:[.8,.7,.5],hiA:.12},{sharpen:12}),
+  PF2('oceandeep','Ocean Deep','Landscape',{t:-.2,con:.22,hsl:[[210,60,0,1.25,-.08],[180,40,10,1.15,-.03]]},{vignette:15}),
+  PF2('redbridge','Bridge Red','Landscape',{con:.3,hsl:[[5,30,0,1.3,0],[215,55,0,1.1,-.05]],t:-.1},{sharpen:15}),
+  // Food
+  PF2('tasty','Tasty Warm','Food',{t:.3,con:.15,hsl:[[10,35,0,1.3,0],[35,25,0,1.2,.02]]},{sharpen:25}),
+  PF2('freshsalad','Fresh Salad','Food',{ex:.05,hsl:[[100,55,-5,1.35,.03],[0,25,0,1.2,0]]},{sharpen:22}),
+  PF2('cafemocha','Cafe Mocha','Food',{t:.4,sat:-.1,fade:.08,con:.2,hsl:[[30,35,0,1.1,-.02]]},{vignette:20}),
+  PF2('sweettreat','Sweet Treat','Food',{ex:.06,ti:.12,vib:.2,hsl:[[330,40,0,1.25,.02],[25,25,0,1.1,.02]]}),
+  // Night
+  PF2('nightpop','Night Pop','Night',{ex:.12,vib:.3,con:.15},{shadows:35,sharpen:20}),
+  PF2('purplenight','Purple Night','Night',{ti:.4,t:-.3,con:.25,hsl:[[260,50,0,1.3,0],[320,45,-10,1.3,0]]},{vignette:25}),
+  PF2('sodium','Street Light','Night',{t:.3,con:.25,hsl:[[35,30,0,1.25,.02],[210,50,-10,.8,-.03]]},{vignette:20}),
+  PF2('cyberneon','Cyber Neon','Night',{con:.35,hsl:[[200,50,0,1.4,0],[320,45,0,1.4,0],[30,30,150,.6,-.04]]},{vignette:22,sharpen:15})
+);
+PRO_FILTERS.forEach(f => { if(!f.fn) f.fn = gradeFn(f.p); });
 const PF_MAP = {}; PRO_FILTERS.forEach(f => { PF_MAP[f.id] = f; f.fn = gradeFn(f.p); });
-const PF_CATS = ['Featured','Cinematic','Portrait','Landscape','Film','Retro','B&W','Mood','Basic'];
-const PF_FEATURED = ['teal','blockbuster','goldenhour','film400','moody','natural','nature','bwclassic','cyber','fadedfilm','cinewarm','bleach'];
+const PF_CATS = ['Featured','Trending','HD','Portrait','Landscape','Cinematic','Food','Night','Film','Retro','B&W','Mood','Basic'];
+const PF_FEATURED = ['emerald','amberteal','clearsky','sunsetgold','hdboost','cinedark','radiant','autumnglow','neoncity','teal','blockbuster','goldenhour','film400','moody','natural','nature','bwclassic','cyber','fadedfilm','cinewarm','bleach'];
 const PRO_LUTS = {};
 function proLut(id){
   if(PRO_LUTS[id]) return PRO_LUTS[id];
@@ -574,7 +637,6 @@ function proLut(id){
 }
 function filterName(k){ if(!k || k === 'none') return 'None'; if(k.startsWith('pf:')) return (PF_MAP[k.slice(3)]||{}).name || k; return FILTER_NAMES[k] || k; }
 // real previews: the grade is applied (on the CPU) to a small frame of the selected clip
-const pfThumbCache = {key:'', urls:{}};
 function sampleFrame(it){
   const c = document.createElement('canvas'); c.width = 96; c.height = 64; const x = c.getContext('2d', {willReadFrequently:true});
   const sc = SCENES.portrait; if(sc.complete && sc.naturalWidth){ const k = Math.max(96/sc.naturalWidth, 64/sc.naturalHeight); x.drawImage(sc, (96-sc.naturalWidth*k)/2, (64-sc.naturalHeight*k)/2, sc.naturalWidth*k, sc.naturalHeight*k); return {c, key:'scene'+SCENES.ver}; }
@@ -589,19 +651,33 @@ function sampleFrame(it){
   x.fillStyle = '#b8323a'; x.fillRect(52,50,28,14);
   return {c, key:'sample'};
 }
-function pfThumbs(it){
-  const {c, key} = sampleFrame(it);
-  if(pfThumbCache.key === key) return pfThumbCache.urls;
-  const x = c.getContext('2d', {willReadFrequently:true}), src = x.getImageData(0,0,96,64), urls = {};
-  urls._orig = c.toDataURL('image/jpeg', .8);
-  for(const f of PRO_FILTERS){
-    const d = new ImageData(96,64), s = src.data, o = d.data;
-    for(let i=0;i<s.length;i+=4){ const r = f.fn(s[i]/255, s[i+1]/255, s[i+2]/255); o[i] = r[0]*255; o[i+1] = r[1]*255; o[i+2] = r[2]*255; o[i+3] = 255; }
-    x.putImageData(d,0,0); urls[f.id] = c.toDataURL('image/jpeg', .8);
-  }
-  pfThumbCache.key = key; pfThumbCache.urls = urls; return urls;
+// each grade is previewed on a photo that suits it (people for portrait looks, landscapes for nature looks…)
+const PF_POOL = {Portrait:['r1027','r64','r91','r1005','r338','cat'], Landscape:['r1015','r1018','r1039','temple','flower','r1043','r1050'], Food:['coffee','r1080'],
+  Night:['rocket','space','r1067'], HD:['temple','r1015','cat','flower','r1067','rocket'], Trending:['r1018','temple','flower','r1027','r1050','cat','r1015','coffee','r1067','r64'],
+  'B&W':['cat','temple','r1005'], _:['r1027','temple','flower','cat','r1015','coffee','r64','r1018']};
+function pfPreviewImg(f){
+  const pool = PF_POOL[f.cat] || PF_POOL._, idx = PRO_FILTERS.filter(x => x.cat === f.cat).indexOf(f);
+  const ok = pool.filter(k => PHOTOS[k]);
+  if(ok.length) return [ok[idx % ok.length], PHOTOS[ok[idx % ok.length]]];
+  const l = SCENES.list; return ['s' + (idx % l.length), l[idx % l.length]];
 }
-
+const pfThumbCache = {};
+const PFW = 132, PFH = 96;
+function pfThumbs(list){
+  const urls = {}, c = document.createElement('canvas'); c.width = PFW; c.height = PFH; const x = c.getContext('2d', {willReadFrequently:true}), src = {};
+  for(const f of list){
+    const [key, img] = pfPreviewImg(f), ck = f.id + '|' + key + '|' + photoVer;
+    if(pfThumbCache[ck]){ urls[f.id] = pfThumbCache[ck]; continue; }
+    if(!img || !img.complete || !img.naturalWidth){ urls[f.id] = ''; continue; }
+    if(!src[key]){ const k = Math.max(PFW/img.naturalWidth, PFH/img.naturalHeight); x.drawImage(img, (PFW-img.naturalWidth*k)/2, (PFH-img.naturalHeight*k)/2, img.naturalWidth*k, img.naturalHeight*k); src[key] = x.getImageData(0,0,PFW,PFH); }
+    const d = new ImageData(PFW, PFH), s = src[key].data, o = d.data;
+    for(let i=0;i<s.length;i+=4){ const r = f.fn(s[i]/255, s[i+1]/255, s[i+2]/255); o[i] = r[0]*255; o[i+1] = r[1]*255; o[i+2] = r[2]*255; o[i+3] = 255; }
+    x.putImageData(d,0,0);
+    const vg = f.adj && f.adj.vignette; if(vg){ const g = x.createRadialGradient(PFW/2,PFH/2,PFH*.35,PFW/2,PFH/2,PFW*.7); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,`rgba(0,0,0,${vg/100*.9})`); x.fillStyle = g; x.fillRect(0,0,PFW,PFH); }
+    urls[f.id] = pfThumbCache[ck] = c.toDataURL('image/jpeg', .85);
+  }
+  return urls;
+}
 /* ---------------- REVERSE AUDIO (offline, new media) ---------------- */
 async function reverseAudioItem(it){
   const m = media(it.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file not found');
