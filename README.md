@@ -56,6 +56,11 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 
 > Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ — 1 ನಿಮಿಷದ video ಗೆ ಸುಮಾರು 1 ನಿಮಿಷ. ಆ ಸಮಯದಲ್ಲಿ tab ತೆರೆದಿಡಿ. 2K/4K export ಗೆ ಶಕ್ತಿಶಾಲಿ PC ಬೇಕು — ನಿಧಾನದ device ನಲ್ಲಿ frames ಕಡಿಮೆಯಾಗಬಹುದು.
 
+## 📱 Phone app + Offline (v11)
+- **Phone layout:** ಮೇಲೆ Player, ಮಧ್ಯ Timeline, ಕೆಳಗೆ CapCut ತರಹ tool bar. Tool ಒತ್ತಿದರೆ panel Player ಕೆಳಗೆ ತೆರೆಯುತ್ತದೆ — preview ನೋಡುತ್ತಲೇ apply ಮಾಡಿ, ✓ ಒತ್ತಿ ಮುಚ್ಚಿ. Clip select ಮಾಡಿದಾಗ tool bar ಅದರ tools (Split, Animation, Speed, Filters…) ತೋರಿಸುತ್ತದೆ. Timeline: ಒಂದು ಬೆರಳು = scroll, tap = playhead, ಎರಡು ಬೆರಳು = zoom.
+- **Install:** ಮೇಲಿನ ⬇ **Install app** ಬಟನ್ (Android/PC Chrome, Edge). iPhone: Safari › Share › Add to Home Screen.
+- **Offline:** ಒಮ್ಮೆ ತೆರೆದ ನಂತರ internet ಇಲ್ಲದೆಯೂ editing, effects, filters, export ಎಲ್ಲವೂ ಕೆಲಸ ಮಾಡುತ್ತವೆ. Home ನಲ್ಲಿ **Offline ready** ಒತ್ತಿದರೆ ಕನ್ನಡ fonts ಮತ್ತು Remove BG AI ಕೂಡ ಉಳಿಯುತ್ತವೆ. Auto captions / Text-to-speech ಮೊದಲ ಬಾರಿ internet ನಲ್ಲಿ ಬಳಸಿದ ನಂತರ offline ನಲ್ಲೂ ಕೆಲಸ ಮಾಡುತ್ತವೆ.
+
 ## 🚀 GitHub ನಲ್ಲಿ ಉಚಿತವಾಗಿ ಹಾಕುವುದು (5 ನಿಮಿಷ)
 1. github.com ನಲ್ಲಿ account ತೆರೆಯಿರಿ → **New repository** → ಹೆಸರು `chitracut` → **Public** → Create.
 2. **Add file → Upload files** → ಈ folder ನ ಎಲ್ಲಾ files (`index.html, style.css, core.js, extras.js, ui.js, manifest.json, sw.js, icon-192.png, icon-512.png, README.md`) drag ಮಾಡಿ → **Commit**.

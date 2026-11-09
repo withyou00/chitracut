@@ -392,7 +392,7 @@ function renderInspector(){
   if(!it){
     $('#rtabs').innerHTML = ''; $('#rsub').innerHTML = '';
     IB.innerHTML = `<div class="empty">${ic('cursor')}Timeline ನಲ್ಲಿ clip, text ಅಥವಾ audio select ಮಾಡಿ.<br>ಅದರ settings ಇಲ್ಲಿ ಕಾಣುತ್ತವೆ.</div>`;
-    refreshLeftLive(); return;
+    refreshLeftLive(); renderMTools(); return;
   }
   let tabs = RT[kind];
   if((kind === 'clip' || kind === 'clipimg') && S.clips.indexOf(it) === 0) tabs = tabs.filter(t => t[0] !== 'trans');
@@ -403,7 +403,7 @@ function renderInspector(){
     sub = S.rs[tab]; if(!subs.some(s => s[0] === sub)) sub = S.rs[tab] = subs[0][0];
     $('#rsub').innerHTML = `<div class="seg">${subs.map(([k,n])=>`<button data-rsub="${k}" class="${k===sub?'on':''}">${n}</button>`).join('')}</div>`;
   } else $('#rsub').innerHTML = '';
-  normItem(it); IB.innerHTML = inspBody(it, kind, tab, sub); fillRanges(IB); updKfBtn(); refreshLeftLive(); paintV8(IB, it);
+  normItem(it); IB.innerHTML = inspBody(it, kind, tab, sub); fillRanges(IB); updKfBtn(); refreshLeftLive(); paintV8(IB, it); renderMTools();
 }
 const KF_NOTE = '<div class="note">◆ <b>Keyframe:</b> playhead ಇಡಿ → ◆ ಒತ್ತಿ → playhead ಮುಂದೆ ಸರಿಸಿ → ಮೌಲ್ಯ ಬದಲಿಸಿ. ಎರಡರ ನಡುವೆ ತಾನಾಗಿ animation ಆಗುತ್ತದೆ.</div>';
 function transformSec(it){
@@ -1240,11 +1240,14 @@ async function showHome(){
       ${list.length ? `<div class="plist">${list.map(p=>`<div class="pcard" data-open="${p.id}"><div class="pt" style="${p.thumb?`background-image:url(${p.thumb})`:''}">${p.thumb?'':ic('film')}</div><div class="pn">${esc(p.name)}</div>
           <div class="pd"><span>${new Date(p.updated).toLocaleDateString()} ${new Date(p.updated).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span><span class="pb"><button class="ib sm" data-ren="${p.id}" title="Rename">${ic('edit')}</button><button class="ib sm" data-delp="${p.id}" title="Delete">${ic('trash')}</button></span></div></div>`).join('')}</div>`
         : '<div class="hempty">ಇನ್ನೂ project ಇಲ್ಲ — ಮೇಲಿನ <b>Create project</b> ಒತ್ತಿ ಶುರು ಮಾಡಿ</div>'}
+      <div class="hoff">${offlineCard()}</div>
       <div class="hstore">${store}</div></main>`;
   $('#home').style.display = 'flex';
 }
 $('#home').addEventListener('click', async e => {
   const t = e.target;
+  if(t.closest('#hOffline')){ prepareOffline(t.closest('#hOffline')); return; }
+  if(t.closest('#hInstall')){ doInstall(); return; }
   if(t.closest('#hBack')){ hideHome(); return; }
   if(t.closest('[data-hscroll]')){ $('#hProj').scrollIntoView({behavior:'smooth'}); return; }
   const ren = t.closest('[data-ren]'), dp = t.closest('[data-delp]');
@@ -1903,3 +1906,122 @@ $('#modal').addEventListener('click', async e => {
   pushUndo(); const cl = newClip(m); cl.out = 1; S.clips.unshift(cl); if(S.clips[1]) S.clips[1].trans = {type:'fade', dur:.4};
   hideModal(); $('#modalBox').classList.remove('wide'); afterEdit(); renderLeft(); seek(0);
 });
+
+/* =====================================================================
+   MOBILE APP LAYOUT (CapCut-mobile style)
+   player on top · timeline in the middle · tool bar at the bottom ·
+   every panel opens as a sheet below the player, so the preview stays visible
+   ===================================================================== */
+Object.assign(IC, {
+  speed:'<path d="M12 21a9 9 0 1 1 9-9"/><path d="M12 12l5-4"/><circle cx="12" cy="12" r="1.5"/>',
+  anim:'<path d="M5 19c3-1 4-4 5-7s3-6 9-7"/><circle cx="5" cy="19" r="2"/><path d="M15 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>', back:'<path d="M15 5l-7 7 7 7"/>', install:'<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
+  wifi:'<path d="M2 9a15 15 0 0 1 20 0"/><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/>'
+});
+var MQ = matchMedia('(max-width:900px)');
+function isMob(){ return matchMedia('(max-width:900px)').matches; }
+var MT = document.createElement('nav'); MT.id = 'mtools'; $('#app').appendChild(MT);
+['left','right'].forEach(id => { const h = document.createElement('div'); h.className = 'shead'; h.innerHTML = `<span class="stitle"></span><button class="sdone" title="Done">${ic('check')}</button>`; $('#'+id).prepend(h); h.querySelector('.sdone').onclick = closeSheets; });
+const RT_IC = {video:'film', audio:'music2', speed:'speed', anim:'anim', trans:'trans', adjust:'adjust', track:'target', tts:'mic', text:'text', sticker:'sticker', gfx:'library', layer:'layers'};
+function sheetTop(){ const r = $('#player').getBoundingClientRect(); document.documentElement.style.setProperty('--sheetTop', Math.round(r.bottom + 4) + 'px'); }
+addEventListener('resize', () => { if(isMob()){ sheetTop(); fitCanvas(); } });
+function openSheet(side, title){
+  sheetTop(); document.body.classList.remove('sheetL','sheetR'); document.body.classList.add(side === 'left' ? 'sheetL' : 'sheetR');
+  $('#' + side + ' .stitle').textContent = title; $(side === 'left' ? '#lcontent' : '#inspBody').scrollTop = 0;
+  requestAnimationFrame(fitCanvas);
+}
+function closeSheets(){ document.body.classList.remove('sheetL','sheetR'); renderMTools(); requestAnimationFrame(fitCanvas); }
+function renderMTools(){
+  if(!isMob() || !MT) return;
+  const it = selItem(), B = (k, icon, label, cls='') => `<button data-mt="${k}" class="${cls}">${ic(icon)}<span>${label}</span></button>`;
+  let h = '';
+  if(!it){
+    if(document.body.classList.contains('sheetR')) document.body.classList.remove('sheetR');
+    h = B('import','import','Import','acc') + LTABS.map(([k,n,i]) => B('L:'+k, i, n)).join('');
+  } else {
+    const kind = kindOf(it); let tabs = RT[kind] || [];
+    if((kind === 'clip' || kind === 'clipimg') && S.clips.indexOf(it) === 0) tabs = tabs.filter(t => t[0] !== 'trans');
+    const vis = !it.type || isMediaOv(it) || it.type === 'adjust';
+    h = B('back','back','Back','bk') + B('A:split','split','Split') + tabs.map(([k,n]) => B('R:'+k, RT_IC[k]||'edit', n)).join('') +
+      (vis ? B('L:filters','filters','Filters') + B('L:effects','effects','Effects') : '') +
+      B('A:dup','copy','Duplicate') + B('A:del','trash','Delete','del');
+  }
+  MT.innerHTML = h;
+}
+MT.addEventListener('click', e => {
+  const b = e.target.closest('[data-mt]'); if(!b) return; const k = b.dataset.mt, label = b.textContent.trim();
+  if(k === 'import'){ $('#fileIn').click(); return; }
+  if(k === 'back'){ S.sel = null; selMulti.clear(); closeSheets(); renderTimeline(); renderInspector(); return; }
+  if(k === 'A:split'){ split(); return; } if(k === 'A:dup'){ dup(); return; } if(k === 'A:del'){ del(); closeSheets(); return; }
+  if(k.startsWith('L:')){ S.ltab = k.slice(2); renderLeft(); openSheet('left', label); return; }
+  if(k.startsWith('R:')){ const it = selItem(); if(!it) return; S.rt[kindOf(it)] = k.slice(2); renderInspector(); openSheet('right', label); }
+});
+MQ.addEventListener('change', () => { closeSheets(); renderMTools(); setTimeout(() => { HEADW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--head')) || 150; fitCanvas(); renderTimeline(); }, 50); });
+renderMTools();
+// touch: one finger on empty timeline = scroll, tap = move playhead, two fingers = zoom
+const tlTouch = new Map(); let pinch0 = null, pan = null;
+TL.addEventListener('pointerdown', e => {
+  if(e.pointerType !== 'touch') return;
+  tlTouch.set(e.pointerId, e.clientX);
+  if(tlTouch.size === 2){ const [a,b] = [...tlTouch.values()]; pinch0 = {d:Math.max(20, Math.abs(a-b)), pps:S.pps}; drag = null; pan = null; e.stopImmediatePropagation(); return; }
+  const empty = !e.target.closest('.it,.clip,.thead,.ruler,.tmark,[data-tk],[data-th]');
+  if(empty){ pan = {x0:e.clientX, y0:e.clientY, sl:TL.scrollLeft, st:TL.scrollTop, moved:false}; e.stopImmediatePropagation(); }
+}, true);
+TL.addEventListener('pointermove', e => {
+  if(e.pointerType !== 'touch') return;
+  if(tlTouch.has(e.pointerId)) tlTouch.set(e.pointerId, e.clientX);
+  if(pinch0 && tlTouch.size === 2){ const [a,b] = [...tlTouch.values()]; setZoom(pinch0.pps * Math.max(20, Math.abs(a-b)) / pinch0.d); e.stopImmediatePropagation(); return; }
+  if(pan){ const dx = e.clientX - pan.x0, dy = e.clientY - pan.y0; if(Math.abs(dx) + Math.abs(dy) > 6) pan.moved = true; TL.scrollLeft = pan.sl - dx; TL.scrollTop = pan.st - dy; e.stopImmediatePropagation(); }
+}, true);
+const tlUp = e => {
+  if(e.pointerType !== 'touch') return; tlTouch.delete(e.pointerId);
+  if(tlTouch.size < 2) pinch0 = null;
+  if(pan){ const p = pan; pan = null; if(!p.moved && e.type === 'pointerup'){ if(selMulti.size){ selMulti.clear(); renderTimeline(); } seek(tAt(e.clientX)); } e.stopImmediatePropagation(); }
+};
+TL.addEventListener('pointerup', tlUp, true); TL.addEventListener('pointercancel', tlUp, true);
+
+/* =====================================================================
+   INSTALL AS APP + OFFLINE
+   ===================================================================== */
+let installEvt = null;
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IB_BTN = document.createElement('button'); IB_BTN.id = 'btnInstall'; IB_BTN.innerHTML = ic('install') + '<span>Install app</span>'; IB_BTN.onclick = () => doInstall();
+$('#btnCover').before(IB_BTN);
+const OFF = document.createElement('span'); OFF.id = 'offBadge'; OFF.innerHTML = ic('wifi') + ' Offline'; $('.ptitle').appendChild(OFF);
+function updNet(){ OFF.style.display = navigator.onLine ? 'none' : ''; }
+addEventListener('online', updNet); addEventListener('offline', updNet); updNet();
+function updInstallBtn(){ IB_BTN.style.display = !standalone() && (installEvt || isIOS) ? '' : 'none'; }
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; updInstallBtn(); });
+addEventListener('appinstalled', () => { installEvt = null; updInstallBtn(); });
+updInstallBtn();
+async function doInstall(){
+  if(installEvt){ installEvt.prompt(); const r = await installEvt.userChoice; if(r.outcome === 'accepted'){ installEvt = null; updInstallBtn(); } return; }
+  showModal(`<h3 style="margin-top:0">📲 ChitraCut ಅನ್ನು app ಆಗಿ install ಮಾಡಿ</h3>
+    ${isIOS ? `<p><b>iPhone / iPad (Safari):</b></p><ol><li>ಕೆಳಗಿನ <b>Share</b> ಬಟನ್ (⬆ ಚೌಕ) ಒತ್ತಿ</li><li><b>Add to Home Screen</b> ಆರಿಸಿ</li><li><b>Add</b> ಒತ್ತಿ</li></ol>`
+      : `<p><b>Android (Chrome):</b> ಮೇಲಿನ ⋮ menu › <b>Install app</b> / <b>Add to Home screen</b></p><p><b>PC (Chrome / Edge):</b> address bar ನ ಬಲಭಾಗದ ⊕ install icon ಒತ್ತಿ</p>`}
+    <p style="color:var(--mute)">Install ಆದ ನಂತರ home screen ನಲ್ಲಿ ChitraCut icon ಬರುತ್ತದೆ — browser ಇಲ್ಲದೆ app ತರಹ full screen ನಲ್ಲಿ ತೆರೆಯುತ್ತದೆ, internet ಇಲ್ಲದೆಯೂ ಕೆಲಸ ಮಾಡುತ್ತದೆ.</p>
+    <div class="btns" style="justify-content:flex-end"><button class="primary" id="xCancel">OK</button></div>`);
+}
+function offlineCard(){
+  const inst = standalone() ? '✅ App ಆಗಿ install ಆಗಿದೆ' : `<button id="hInstall">${ic('install')} App ಆಗಿ install ಮಾಡಿ</button>`;
+  return `<div class="ocard"><div><b>${ic('wifi')} Internet ಇಲ್ಲದೆ ಬಳಸಿ</b><span>Editing, effects, filters, export ಎಲ್ಲವೂ offline ನಲ್ಲಿ ಕೆಲಸ ಮಾಡುತ್ತವೆ. ಒಮ್ಮೆ internet ಇದ್ದಾಗ "Offline ready" ಒತ್ತಿದರೆ ಕನ್ನಡ fonts ಮತ್ತು Remove BG AI ಕೂಡ ಉಳಿಯುತ್ತವೆ.</span></div>
+    <div class="obtn">${inst}<button id="hOffline">${ic('install')} Offline ready ಮಾಡಿ</button></div></div>`;
+}
+async function prepareOffline(btn){
+  if(!navigator.onLine) return alert('ಈಗ internet ಇಲ್ಲ — internet ಇದ್ದಾಗ ಒತ್ತಿ');
+  btn.disabled = true; const say = m => btn.innerHTML = m;
+  try{
+    if(navigator.storage && navigator.storage.persist) await navigator.storage.persist();
+    say('⏳ Fonts…');
+    const css = document.querySelector('link[href*="fonts.googleapis"]').href, txt = await (await fetch(css)).text();
+    const urls = [...new Set([...txt.matchAll(/url\((https:[^)]+)\)/g)].map(m => m[1]))];
+    // Kannada + Latin subsets are what we use; others (cyrillic, vietnamese…) are skipped
+    const blocks = txt.split('@font-face').filter(b => /U\+0C80|U\+0000-00FF/.test(b)), need = new Set(blocks.map(b => (b.match(/url\((https:[^)]+)\)/)||[])[1]).filter(Boolean));
+    let i = 0; const list = urls.filter(u => need.has(u));
+    for(const u of list){ await fetch(u, {mode:'no-cors'}).catch(()=>{}); say(`⏳ Fonts ${++i}/${list.length}`); }
+    say('⏳ Remove BG AI…'); await loadSeg().catch(()=>{});
+    say('✅ Offline ready');
+  }catch(err){ say('⚠ ' + err.message); btn.disabled = false; }
+}
+if(/[?&]new=1/.test(location.search)) setTimeout(() => { newProject(); }, 900);

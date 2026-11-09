@@ -380,19 +380,12 @@ textarea:focus{border-color:var(--acc)}
 /* ---------- mobile ---------- */
 @media (max-width:900px){
   :root{--head:84px}
-  #app{display:flex;flex-direction:column;height:auto;min-height:100vh;gap:5px}
-  #top{height:44px;flex:none}
-  #player{order:1;height:44vh;flex:none}
-  #bottom{order:2;height:270px;flex:none}
-  #left{order:3;height:420px;flex:none}
-  #right{order:4;min-height:380px;flex:none}
-  #lsub{width:94px}
-  .prow{grid-template-columns:80px 1fr 56px}
   .hside{display:none}
   .hmain{padding:16px}
   .hbanner{height:110px;font-size:22px}
   #projName{max-width:130px}
   .logo span{display:none}
+}
 }
 
 /* ---------- v6 additions ---------- */
@@ -600,3 +593,62 @@ body.resizing iframe,body.resizing canvas{pointer-events:none}
 .xto .xpath{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
 .xto .ib{padding:4px 6px}
 #xSaveHint .xhint{margin:0 0 6px 102px;line-height:1.5}
+
+/* ===== v11: mobile app layout ===== */
+#mtools,.shead{display:none}
+#btnInstall{display:flex;align-items:center;gap:6px;padding:6px 12px;margin-right:6px}
+#btnInstall svg{width:15px;height:15px}
+#offBadge{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 8px;border-radius:10px;background:#5a3a00;color:#ffcf4a;font-size:11px}
+#offBadge svg{width:12px;height:12px}
+.ocard{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0 6px}
+.ocard b{display:flex;align-items:center;gap:6px;margin-bottom:4px}.ocard b svg{width:16px;height:16px}
+.ocard span{color:var(--mute);font-size:12px;display:block;max-width:560px}
+.ocard .obtn{display:flex;gap:8px;flex-wrap:wrap}
+.ocard button{display:flex;align-items:center;gap:6px}.ocard button svg{width:14px;height:14px}
+@media (max-width:900px){
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  input,textarea{-webkit-user-select:text;user-select:text}
+  #app{display:grid;height:100vh;height:100dvh;min-height:0;grid-template-columns:minmax(0,1fr);grid-template-rows:44px minmax(170px,38vh) minmax(0,1fr) auto;
+    grid-template-areas:"top" "player" "bottom" "mt";gap:4px;padding:0 4px;padding-top:env(safe-area-inset-top)}
+  #top{grid-area:top;height:44px}
+  #player{grid-area:player;height:auto;min-height:0}
+  #bottom{grid-area:bottom;height:auto;min-height:0;grid-column:auto}
+  #left,#right{display:none}
+  body.sheetL #left,body.sheetR #right{display:flex;flex-direction:column;position:fixed;left:0;right:0;bottom:0;top:var(--sheetTop,46vh);z-index:30;margin:0;border-radius:16px 16px 0 0;
+    box-shadow:0 -10px 30px #000c;animation:sheetUp .18s ease-out;padding-bottom:env(safe-area-inset-bottom)}
+  @keyframes sheetUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+  .shead{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 6px 16px;border-bottom:1px solid var(--line);flex:none}
+  .shead .stitle{font-weight:700;font-size:14px}
+  .shead .sdone{width:40px;height:34px;border-radius:9px;background:var(--acc);color:#04262b;display:flex;align-items:center;justify-content:center;padding:0}
+  .shead .sdone svg{width:20px;height:20px;stroke-width:2.6}
+  #ltabs,#rtabs{display:none}
+  #lbody{flex-direction:column;flex:1;min-height:0}
+  #lsub{width:auto;flex:none;display:flex;flex-direction:row;overflow-x:auto;gap:4px;padding:6px 8px;border-right:0;border-bottom:1px solid var(--line)}
+  #lsub button{flex:none;white-space:nowrap;padding:6px 12px;border-radius:16px}
+  #lcontent{flex:1;min-height:0;overflow:auto;padding:10px 12px}
+  #inspBody{flex:1;min-height:0;overflow:auto}
+  #rsub{flex:none}
+  #mtools{grid-area:mt;display:flex;gap:2px;overflow-x:auto;padding:4px 2px calc(4px + env(safe-area-inset-bottom));background:#151517;border-top:1px solid var(--line);scrollbar-width:none}
+  #mtools::-webkit-scrollbar{display:none}
+  #mtools button{flex:none;width:66px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px 5px;background:none;border:0;border-radius:10px;color:#d4d5d9;font-size:10.5px}
+  #mtools button svg{width:22px;height:22px}
+  #mtools button:active{background:var(--panel3)}
+  #mtools button.acc{color:var(--acc)}#mtools button.del{color:#ff7b7b}
+  #mtools button.bk{width:52px;border-right:1px solid var(--line);border-radius:0}
+  #tl{touch-action:none}
+  #tools{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  #tools::-webkit-scrollbar{display:none}
+  .pfoot{padding:4px 8px;gap:6px}
+  .pfoot .tcs{font-size:11px}
+  #selBg{display:none}
+  .phead{display:none}
+  #saveState,#btnCover span,#btnInstall span,#btnExport span{display:none}
+  #btnCover,#btnInstall{padding:6px 9px;margin-right:4px}
+  .modalbg .box{width:calc(100% - 16px);max-height:92dvh;overflow:auto;padding:16px}
+  .xrow>span{flex-basis:78px}
+  #xSaveHint .xhint{margin-left:0}
+  .prow{grid-template-columns:84px 1fr 52px}
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(76px,1fr))}
+  .split{display:none}
+}
