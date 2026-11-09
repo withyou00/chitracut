@@ -118,3 +118,15 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
   - 10 layouts (new: Split, Polaroid).
   - Title font choice, 9 text styles and a text-size slider.
   - Correct fonts for every Indian script.
+
+## Phase 15 — Transform handles & keyframe fixes
+- **Player handles:** select a video, photo, text or sticker to get a white box in the player.
+  - Drag a **corner** to scale up or down.
+  - Drag the **round handle** at the top to rotate; it snaps at 0° and 90°.
+  - Drag inside the box to move it.
+  - Mouse wheel and two-finger pinch still work.
+- **Keyframes:**
+  - Pressing ◆ shows a yellow ◆ badge on the player, a "Keyframe added" label, and a ◆ mark on the timeline clip.
+  - After the first keyframe, moving, scaling or rotating at another time adds a keyframe automatically.
+  - A filled ◆ means you are on a keyframe; an outline ◆ means the item has keyframes.
+- **Fonts:** the player redraws as soon as a font finishes downloading, so a newly chosen font (e.g. Anek Kannada) shows immediately.

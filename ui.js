@@ -1432,6 +1432,7 @@ function maskEditTarget(){
 }
 const trackEditTarget = () => { const it = selItem(); return it && S.trackEdit === it.id && S.trackBox ? it : null; };
 function drawGizmos(ctx){
+  drawTfGizmo(ctx);
   const u = Math.min(out.width, out.height), lw = Math.max(2, u/320);
   const mi = maskEditTarget();
   if(mi){

@@ -178,13 +178,14 @@ function atKf(it){ if(!it || !it.kf || !it.kf.length) return null; const t = kfT
 function setVal(it,path,v){
   if(it.kf && it.kf.length && kfList(it).includes(path)){
     let k = atKf(it);
-    if(!k){ const t = kfTime(it); k = {t, v:{}}; for(const p of kfList(it)) k.v[p] = ev(it,p,t); it.kf.push(k); it.kf.sort((a,b)=>a.t-b.t); }
+    if(!k){ const t = kfTime(it); k = {t, v:{}}; for(const p of kfList(it)) k.v[p] = ev(it,p,t); it.kf.push(k); it.kf.sort((a,b)=>a.t-b.t); kfFlash = performance.now(); if(typeof renderTimeline === 'function') setTimeout(renderTimeline, 0); }
     k.v[path] = v;
   } else setP(it,path,v);
 }
 function inRange(it){ if(it.type) return S.time >= it.start && S.time <= it.start+it.dur; const d=derived[it.id]; return S.time >= d.start && S.time <= d.start+d.dur; }
 function toggleKf(){
-  const it = selItem(); if(!it || !kfList(it).length) return;
+  const it = selItem(); if(!it) return alert('Select a clip, photo or text on the timeline first, then press ◆');
+  if(!kfList(it).length) return alert('Keyframes work on video, photo, text and sticker items');
   if(!inRange(it)) return alert('Move the playhead inside this item, then press ◆');
   pushUndo(); it.kf = it.kf || [];
   const k = atKf(it);
@@ -193,9 +194,9 @@ function toggleKf(){
     it.kf.splice(it.kf.indexOf(k),1);
   } else {
     const t = kfTime(it), v = {}; for(const p of kfList(it)) v[p] = ev(it,p,t);
-    it.kf.push({t,v}); it.kf.sort((a,b)=>a.t-b.t);
+    it.kf.push({t,v}); it.kf.sort((a,b)=>a.t-b.t); kfFlash = performance.now();
   }
-  renderTimeline(); renderInspector();
+  renderTimeline(); renderInspector(); render(performance.now());
 }
 function jumpKf(dir){
   const it = selItem(); if(!it || !it.kf || !it.kf.length) return; const t = kfTime(it);
@@ -1086,6 +1087,7 @@ function render(now){
 
 /* ================= OVERLAYS ================= */
 const loadedFonts = new Set();
+if(document.fonts) document.fonts.addEventListener('loadingdone', () => { try{ if(!exporting) render(performance.now()); }catch(e){} });
 const BASE_FONTS = new Set(['Inter','Noto Sans Kannada','Baloo Tamma 2','Anek Kannada','Tiro Kannada','Noto Serif Kannada','Poppins','Montserrat','Bebas Neue','Anton','Pacifico','Lobster','Dancing Script','Permanent Marker','Oswald']);
 const fontCss = new Set();
 function fontLink(f){
@@ -1097,8 +1099,7 @@ function ensureFont(f){
   if(loadedFonts.has(f) || !document.fonts) return; loadedFonts.add(f);
   const css = fontLink(f);
   if(css){ const smp = (FONT_LIB.find(x => x[0] === f) || [])[2] || ''; css.then(() => Promise.all([document.fonts.load(`700 40px "${f}"`, smp + ' Aa'), document.fonts.load(`400 40px "${f}"`, smp + ' Aa')])).then(() => { try{ if(typeof render === 'function') render(performance.now()); }catch(e){} }).catch(()=>{}); return; }
-  document.fonts.load(`700 40px "${f}"`, 'ಕನ್ನಡ Aa').catch(()=>{});
-  document.fonts.load(`400 40px "${f}"`, 'ಕನ್ನಡ Aa').catch(()=>{});
+  Promise.all([document.fonts.load(`700 40px "${f}"`, 'ಕನ್ನಡ Aa'), document.fonts.load(`400 40px "${f}"`, 'ಕನ್ನಡ Aa')]).then(() => { try{ if(!exporting) render(performance.now()); }catch(e){} }).catch(()=>{});
 }
 function rr(ctx,x,y,w,h,r){ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else ctx.rect(x,y,w,h); }
 const LETTER_ANIMS = ['letterPop','letterFade','letterBounce','wordPop'];
@@ -1312,7 +1313,7 @@ function drawOverlays(ctx){
     if(box){
       const h = {cx, cy, rot, s:an.s, hw:box.hw, hh:box.hh};
       hits.set(o.id, h);
-      if(S.sel === o.id && !exporting && !S.pick) drawSel(ctx,h,u);
+      
     }
   }
 }
@@ -1641,6 +1642,44 @@ function hitAt(p){
   return null;
 }
 const sizePath = it => it.type ? 'size' : 'tf.scale';
+const rotPath = it => it.type ? 'rot' : 'tf.rot';
+let kfFlash = 0;
+// on-screen box of the selected item (canvas px, full scale) → for the CapCut-style transform handles
+function gizmoOf(it){
+  if(!it || it.type === 'audio' || it.type === 'adjust' || exporting) return null;
+  if(it.type){ const h = hits.get(it.id); if(!h) return null; const s = Math.max(.05, h.s||1); return {cx:h.cx, cy:h.cy, rot:h.rot, hw:h.hw*s, hh:h.hh*s}; }
+  if(!inRange(it) || S.mainHide) return null; const g = geo[it.id]; return g ? {cx:g.cx, cy:g.cy, rot:g.rot, hw:g.hw, hh:g.hh} : null;
+}
+const pxK = () => { const r = out.getBoundingClientRect(); return out.width / Math.max(1, r.width); };   // canvas px per screen px
+function gizmoPts(g){
+  const c = Math.cos(g.rot), s = Math.sin(g.rot), k = pxK(), m = 11*k;
+  const P = (x, y) => ({x:clamp(g.cx + x*c - y*s, m, out.width - m), y:clamp(g.cy + x*s + y*c, m, out.height - m)});   // keep handles reachable inside the player
+  const R = (x, y) => ({x:g.cx + x*c - y*s, y:g.cy + x*s + y*c});
+  return {raw:[R(-g.hw,-g.hh), R(g.hw,-g.hh), R(g.hw,g.hh), R(-g.hw,g.hh)], corners:[P(-g.hw,-g.hh), P(g.hw,-g.hh), P(g.hw,g.hh), P(-g.hw,g.hh)], rot:(() => { const r = P(0, -g.hh - 34*k), t = P(0, -g.hh); return Math.hypot(r.x-t.x, r.y-t.y) < 20*k ? P(0, -g.hh + 34*k) : r; })(), top:P(0,-g.hh)};
+}
+function gizmoHit(g, p){
+  const q = gizmoPts(g), tol = 16*pxK(), d = a => Math.hypot(a.x-p.x, a.y-p.y);
+  if(d(q.rot) < tol) return 'rot';
+  if(q.corners.some(c => d(c) < tol)) return 'scale';
+  return null;
+}
+function drawTfGizmo(ctx){
+  const it = selItem(); if(!it || S.pick || trackEditTarget() || maskEditTarget()) return;
+  const g = gizmoOf(it); if(!g) return;
+  const k = pxK(), lw = 1.6*k, q = gizmoPts(g), on = atKf(it), has = it.kf && it.kf.length;
+  ctx.save(); ctx.lineWidth = lw; ctx.strokeStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 3*k;
+  ctx.beginPath(); q.raw.forEach((c,i) => i ? ctx.lineTo(c.x,c.y) : ctx.moveTo(c.x,c.y)); ctx.closePath(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(q.top.x, q.top.y); ctx.lineTo(q.rot.x, q.rot.y); ctx.stroke();
+  ctx.fillStyle = '#fff'; q.corners.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, 6*k, 0, 7); ctx.fill(); });
+  ctx.beginPath(); ctx.arc(q.rot.x, q.rot.y, 9*k, 0, 7); ctx.fill();
+  ctx.shadowBlur = 0; ctx.strokeStyle = '#111'; ctx.lineWidth = 1.6*k; ctx.beginPath(); ctx.arc(q.rot.x, q.rot.y, 4.5*k, -2.4, 1.6); ctx.stroke();
+  // keyframe badge: filled ◆ = on a keyframe, outline ◆ = item has keyframes (moving now will add one)
+  if(has){ const b = q.corners[0], sz = 7*k; ctx.save(); ctx.translate(b.x + 16*k, b.y - 16*k); ctx.rotate(Math.PI/4);
+    ctx.fillStyle = on ? '#ffcf3d' : 'rgba(0,0,0,.55)'; ctx.strokeStyle = '#ffcf3d'; ctx.lineWidth = 2*k; ctx.fillRect(-sz,-sz,sz*2,sz*2); ctx.strokeRect(-sz,-sz,sz*2,sz*2); ctx.restore(); }
+  if(performance.now() - kfFlash < 1400){ const b = q.corners[0]; ctx.font = `700 ${13*k}px Inter,sans-serif`; const t = '◆ Keyframe added', w = ctx.measureText(t).width;
+    ctx.fillStyle = 'rgba(0,0,0,.75)'; rr(ctx, b.x + 30*k, b.y - 27*k, w + 14*k, 22*k, 6*k); ctx.fill(); ctx.fillStyle = '#ffcf3d'; ctx.fillText(t, b.x + 37*k, b.y - 11*k); }
+  ctx.restore();
+}
 const sizeOf = it => ev(it, sizePath(it));
 function setSize(it,v){ setVal(it, sizePath(it), Math.round(clamp(v,5,it.type ? (isMediaOv(it)?300:400) : 400))); }
 function startCDrag(it,p,undone){ cdrag={it,p0:p,x0:ev(it,it.type?'x':'tf.x'),y0:ev(it,it.type?'y':'tf.y'),undo:!!undone}; }
@@ -1656,11 +1695,14 @@ out.addEventListener('pointerdown',e=>{
   }
   pts.set(e.pointerId,p); out.setPointerCapture(e.pointerId);
   if(pts.size===2 && cdrag){ const [a,b]=[...pts.values()]; cdrag.pinch={d0:Math.hypot(a.x-b.x,a.y-b.y),s0:sizeOf(cdrag.it)}; return; }
+  const si = selItem(), gz = pts.size === 1 && si && gizmoOf(si), hd = gz && gizmoHit(gz, p);
+  if(hd){ cdrag = {it:si, p0:p, mode:hd, cx:gz.cx, cy:gz.cy, d0:Math.max(4, Math.hypot(p.x-gz.cx, p.y-gz.cy)), s0:sizeOf(si), a0:Math.atan2(p.y-gz.cy, p.x-gz.cx), r0:ev(si, rotPath(si)), undo:false}; return; }
   const it = hitAt(p) || active; if(!it) return;
   if(S.sel!==it.id){ S.sel=it.id; renderTimeline(); renderInspector(); }
   cdrag=null; startCDrag(it,p);
 });
 out.addEventListener('pointermove',e=>{
+  if(!cdrag && e.pointerType === 'mouse'){ const si = selItem(), g = si && gizmoOf(si), h = g && gizmoHit(g, toCv(e)); out.style.cursor = h === 'rot' ? 'grab' : h === 'scale' ? 'nwse-resize' : ''; }
   if(!cdrag || !pts.has(e.pointerId)) return;
   const p=toCv(e); pts.set(e.pointerId,p); const it=cdrag.it;
   if(cdrag.pinch && pts.size>=2){
@@ -1669,6 +1711,8 @@ out.addEventListener('pointermove',e=>{
   }
   const dx=p.x-cdrag.p0.x, dy=p.y-cdrag.p0.y;
   if(!cdrag.undo){ if(Math.hypot(dx,dy)<3) return; pushUndo(); cdrag.undo=true; }
+  if(cdrag.mode === 'scale'){ setSize(it, cdrag.s0 * Math.hypot(p.x-cdrag.cx, p.y-cdrag.cy) / cdrag.d0); return; }
+  if(cdrag.mode === 'rot'){ let r = cdrag.r0 + (Math.atan2(p.y-cdrag.cy, p.x-cdrag.cx) - cdrag.a0)*180/Math.PI; r = ((r + 540) % 360) - 180; for(const sn of [-180,-90,0,90,180]) if(Math.abs(r-sn) < 4) r = sn; setVal(it, rotPath(it), Math.round(r)); return; }
   if(it.type){ setVal(it,'x',clamp(cdrag.x0+dx/out.width*100,-20,120)); setVal(it,'y',clamp(cdrag.y0+dy/out.height*100,-20,120)); }
   else { setVal(it,'tf.x',Math.round(cdrag.x0+dx/PK())); setVal(it,'tf.y',Math.round(cdrag.y0-dy/PK())); }
 });
