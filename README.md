@@ -151,3 +151,17 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - **Clean edges:** the key colour is removed from semi-transparent edge pixels, so there is no white or green halo around letters and hair. The matte is softened over neighbouring pixels to remove jagged edges.
 - **Spill remove:** only applies to coloured screens (green/blue), so it no longer greys out a logo when keying white.
 - The ratio label in the player header now updates correctly when a project opens.
+
+## Phase 20/21 — Stabilization + timeline fixes
+- **🎥 Stabilization** is in Video › Basic, for video clips.
+  - **Smooth** keeps intentional camera moves and has a Strength slider. **Tripod** locks the shot completely.
+  - **Max crop** limits how far the auto zoom can go.
+  - How it works:
+    - It analyses every frame (at 320 px) with block matching and fits a robust move/rotate/zoom model to each frame.
+    - It smooths the camera path, then auto-zooms just enough to hide the black edges.
+  - Changing the strength re-smooths instantly, without analysing again.
+  - Tested on a synthetic hand-shake clip: tracking error is under 1 px and frame-to-frame shake drops by about 80%.
+- **Timeline:**
+  - Clicking or dragging the timeline scrollbar no longer moves the playhead.
+  - Dragging the playhead to the edge of the timeline scrolls it.
+- **Scrubbing:** if the browser's video decoder stops answering a seek, ChitraCut restarts the seek after 0.45 s. The picture follows the playhead again (including when you drag it backwards) instead of freezing.

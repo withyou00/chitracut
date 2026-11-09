@@ -513,9 +513,12 @@ function activate(c,src){
 // while scrubbing, never interrupt a running seek: remember the newest target and jump there when the
 // current seek finishes — the picture keeps updating instead of blinking black
 function scrubTo(v, t){
-  if(!v.seeking){ v._pend = null; v.currentTime = t; return; }
+  const now = performance.now();
+  // a seek normally finishes in a few ms; if the browser never reports it (stuck decoder), restart it so
+  // the picture follows the playhead again instead of freezing
+  if(!v.seeking || now - (v._seekT || 0) > 450){ v._pend = null; v._seekT = now; v.currentTime = t; return; }
   v._pend = t;
-  if(!v._hook){ v._hook = true; v.addEventListener('seeked', () => { const p = v._pend; if(p != null){ v._pend = null; if(Math.abs(v.currentTime - p) > .02) v.currentTime = p; } }); }
+  if(!v._hook){ v._hook = true; v.addEventListener('seeked', () => { const p = v._pend; if(p != null){ v._pend = null; if(Math.abs(v.currentTime - p) > .02){ v._seekT = performance.now(); v.currentTime = p; } } }); }
 }
 function deactivate(){ if(active && !isImg(active) && vids[active.id]) vids[active.id].pause(); active = null; }
 function syncSecondary(){
@@ -592,6 +595,7 @@ function pause(){
 function updatePlayBtn(){ const b=$('#btnPlay'); if(b) b.innerHTML = ic(S.playing ? 'pause' : 'play'); }
 
 let lastNow = 0, pairKey = '', lastSyncT = -1;
+var HEAVY = 0;
 function tick(now){
   requestAnimationFrame(tick);
   const dt = Math.min(.1, (now - lastNow)/1000 || 0); lastNow = now;
@@ -642,7 +646,7 @@ function tick(now){
       ch.vol.gain.value = g;
     }
   }
-  render(now);
+  if(!(HEAVY && !S.playing && !exporting)) render(now);   // pause preview redraws while a heavy analysis runs (faster on phones)
   updatePH();
   syncInsp();
   if(exporting && rec && rec.state === 'recording') $('#ovBar').style.width = (S.total ? S.time/(expEnd || S.total)*100 : 0) + '%';
@@ -1033,6 +1037,7 @@ function transState(type,p,W,H){
   }
   return {A,B,sc,clear};
 }
+const texT = new WeakMap();
 function drawClip(c,tex,ex){
   if(ex.a <= 0.001) return;
   const el = isImg(c) ? images[c.mediaId] : vids[c.id]; if(!el) return;
@@ -1044,7 +1049,7 @@ function drawClip(c,tex,ex){
   const fresh = isI || (el.readyState >= 2 && !el.seeking);
   if(fresh || exporting || texOwn.get(tex) !== c.id){
     if(!isI && el.readyState < 2) return;
-    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el); texOwn.set(tex, c.id); }catch(e){ return; }
+    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el); texOwn.set(tex, c.id); if(!isI) texT.set(tex, el.currentTime); }catch(e){ return; }
   }
   const W=cv.width, H=cv.height, d=derived[c.id], lt=S.time-d.start, st=localToSrc(c,lt);
   gl.uniform2f(U.u_px,1/vw,1/vh);
@@ -1061,9 +1066,12 @@ function drawClip(c,tex,ex){
   const an = animState(c,lt,d.dur), fm = fxMotion(c,W,H);
   const fo = ex.fx || an.fx; if(fo){ gl.uniform1f(U.u_fx, FX_T[fo[0]]||0); gl.uniform1f(U.u_fxA, fo[1]); gl.uniform1f(U.u_sec, S.time); }
   if(!ex.mT && an.mT){ gl.uniform1f(U.u_trT, an.mT); gl.uniform1f(U.u_trP, an.mP); }
-  const k = Math.min(W/vw,H/vh)*ev(c,'tf.scale',st)/100*an.s*ex.s*fm.s;
+  const sb = c.stab && c.stab.mode !== 'off' && typeof stabAt === 'function' ? stabAt(c, (!isI && texT.has(tex)) ? texT.get(tex) : st) : null;   // use the time of the frame actually shown   // v20 stabilization
+  const k = Math.min(W/vw,H/vh)*ev(c,'tf.scale',st)/100*an.s*ex.s*fm.s*(sb ? sb.z*Math.exp(sb.s) : 1);
   const hw = vw*k/2*an.sx*(ex.sx||1), hh = vh*k/2*an.sy;
-  const ox = ev(c,'tf.x',st)*PK()+an.dx+ex.dx+fm.dx, oy = ev(c,'tf.y',st)*PK()-an.dy-ex.dy-fm.dy, rot = ev(c,'tf.rot',st)*Math.PI/180+an.r+ex.r;
+  let ox = ev(c,'tf.x',st)*PK()+an.dx+ex.dx+fm.dx, oy = ev(c,'tf.y',st)*PK()-an.dy-ex.dy-fm.dy, rot = ev(c,'tf.rot',st)*Math.PI/180+an.r+ex.r;
+  if(sb){ const fl = c.tf.flip ? -1 : 1, sx = sb.dx*2*hw*fl, sy = sb.dy*2*hh, cs = Math.cos(rot), sn = Math.sin(rot);
+    ox += sx*cs - sy*sn; oy -= sx*sn + sy*cs; rot += sb.r*fl; }
   gl.uniform2f(U.u_half, hw*(c.tf.flip?-1:1), hh);
   gl.uniform2f(U.u_off, ox, oy);
   gl.uniform1f(U.u_rot, -rot);

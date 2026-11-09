@@ -1668,3 +1668,149 @@ async function makeThumbnails(opt, onProg){
 function thumbStyle(opt){ THUMB_FONT = opt.font || ''; THUMB_SCALE = (opt.scale || 100)/100; const th = THUMB_THEMES[opt.theme || 'auto']; THUMB_THEME = !th ? null : typeof th === 'string' ? (TFX_MAP[th] || {}).st || null : th; }
 function renderThumb(t, W, H, opt){ thumbStyle(opt); const c = document.createElement('canvas'); c.width = W; c.height = H; THUMB_LAYOUTS[t.name](c.getContext('2d'), W, H, t.F, opt); return c; }
 async function thumbFonts(extra, sample){ if(!document.fonts) return; const fs = ['Anton','Baloo Tamma 2','Bebas Neue','Montserrat', ...(extra||[]).filter(Boolean)]; await Promise.all(fs.map(async f => { const css = fontLink(f); if(css) await css; ensureFont(f); return Promise.race([document.fonts.load(`900 60px "${f}"`, (sample || 'ಕನ್ನಡ') + ' AB'), new Promise(r => setTimeout(r, 2500))]).catch(()=>{}); })); }
+
+/* =====================================================================
+   v20: VIDEO STABILIZATION — global motion analysis (block matching +
+   robust similarity fit), trajectory smoothing, auto crop-zoom.
+   Analysis is stored per clip (raw camera path), so changing strength
+   re-smooths instantly without analysing again.
+   ===================================================================== */
+const STAB_MODES = [['off','Off'],['smooth','Smooth'],['tripod','Tripod (lock)']];
+async function analyzeStab(c, onProg, cancel){
+  const m = media(c.mediaId); if(!m || m.type !== 'video') throw new Error('Stabilization works on video clips');
+  const v = mkVideo(null); v.muted = true;
+  await new Promise((r, j) => { v.onloadedmetadata = r; v.onerror = () => j(new Error('Cannot read this video')); v.src = m.url; });
+  const vw = v.videoWidth, vh = v.videoHeight, AW = vw >= vh ? 320 : 240, AH = Math.max(60, Math.round(AW*vh/vw));   // v21: higher analysis resolution → ~0.5 px precision
+  const cnv = document.createElement('canvas'); cnv.width = AW; cnv.height = AH; const x = cnv.getContext('2d', {willReadFrequently:true});
+  const len = c.out - c.in, fps = len > 90 ? 12 : len > 45 ? 18 : len > 20 ? 24 : 30, n = Math.max(2, Math.floor(len*fps) + 1);   // every frame for short clips → catches fast hand shake
+  const gray = () => { x.drawImage(v, 0, 0, AW, AH); const d = x.getImageData(0,0,AW,AH).data, g = new Float32Array(AW*AH); for(let i=0,j=0;i<g.length;i++,j+=4) g[i] = d[j]*.299 + d[j+1]*.587 + d[j+2]*.114; return g; };
+  const half = g => { const w = AW>>1, h = AH>>1, o = new Float32Array(w*h); for(let y=0;y<h;y++) for(let xx=0;xx<w;xx++){ const i = (y*2)*AW + xx*2; o[y*w+xx] = (g[i] + g[i+1] + g[i+AW] + g[i+AW+1])*.25; } return o; };
+  const B = 16, GX = 12, GY = Math.max(5, Math.round(12*AH/AW)), R = fps >= 24 ? 20 : 28;
+  // block matching between two frames → motion vectors
+  function vectors(p, q, ph, qh){
+    const vs = [], W2 = AW>>1, H2 = AH>>1, b2 = B>>1;
+    for(let gy=0; gy<GY; gy++) for(let gx=0; gx<GX; gx++){
+      const bx = Math.round((gx + .5)*AW/GX - B/2), by = Math.round((gy + .5)*AH/GY - B/2);
+      if(bx < R+2 || by < R+2 || bx + B > AW-R-2 || by + B > AH-R-2) continue;
+      let tex = 0; for(let yy=0;yy<B;yy++) for(let xx=1;xx<B;xx++){ const i = (by+yy)*AW + bx+xx; tex += Math.abs(p[i]-p[i-1]) + (yy ? Math.abs(p[i]-p[i-AW]) : 0); }
+      if(tex < B*B*3) continue;   // flat block (sky, wall) — no reliable motion
+      // coarse search on half resolution
+      const hx = bx>>1, hy = by>>1, r2 = R>>1; let best = Infinity, cdx = 0, cdy = 0;
+      for(let dy=-r2; dy<=r2; dy++) for(let dx=-r2; dx<=r2; dx++){
+        let s = 0; for(let yy=0;yy<b2 && s<best;yy++){ const a = (hy+yy)*W2 + hx, b = (hy+yy+dy)*W2 + hx+dx; for(let xx=0;xx<b2;xx++) s += Math.abs(ph[a+xx] - qh[b+xx]); }
+        if(s < best){ best = s; cdx = dx*2; cdy = dy*2; }
+      }
+      // refine at full resolution ±2 px, then sub-pixel by parabola fit
+      let bst = Infinity, fx = cdx, fy = cdy; const S3 = {};
+      for(let dy=cdy-2; dy<=cdy+2; dy++) for(let dx=cdx-2; dx<=cdx+2; dx++){
+        let s = 0; for(let yy=0;yy<B;yy++){ const a = (by+yy)*AW + bx, b = (by+yy+dy)*AW + bx+dx; for(let xx=0;xx<B;xx++) s += Math.abs(p[a+xx] - q[b+xx]); }
+        S3[dx+','+dy] = s; if(s < bst){ bst = s; fx = dx; fy = dy; }
+      }
+      const sp = (a, m0, b) => { const d = a - 2*m0 + b; return d > 1e-6 ? clamp(.5*(a - b)/d, -.5, .5) : 0; };
+      const sx = S3[(fx-1)+','+fy], sx2 = S3[(fx+1)+','+fy], sy = S3[fx+','+(fy-1)], sy2 = S3[fx+','+(fy+1)];
+      const ox = sx != null && sx2 != null ? sp(sx, bst, sx2) : 0, oy = sy != null && sy2 != null ? sp(sy, bst, sy2) : 0;
+      vs.push([bx + B/2 - AW/2, by + B/2 - AH/2, fx + ox, fy + oy, bst/(B*B)]);
+    }
+    return vs;
+  }
+  // robust similarity fit: x' = a·x − b·y + tx, y' = b·x + a·y + ty
+  function fit(vs){
+    let use = vs.filter(v => v[4] < 40);
+    if(use.length < 4) use = vs;
+    if(use.length < 3) return [0,0,0,0];
+    let res = [0,0,0,0];
+    for(let it=0; it<3; it++){
+      const n2 = use.length; let mx=0,my=0,mx2=0,my2=0; for(const v of use){ mx += v[0]; my += v[1]; mx2 += v[0]+v[2]; my2 += v[1]+v[3]; } mx/=n2; my/=n2; mx2/=n2; my2/=n2;
+      let num1=0,num2=0,den=0; for(const v of use){ const xa = v[0]-mx, ya = v[1]-my, xb = v[0]+v[2]-mx2, yb = v[1]+v[3]-my2; num1 += xa*xb + ya*yb; num2 += xa*yb - ya*xb; den += xa*xa + ya*ya; }
+      const a = den ? num1/den : 1, b = den ? num2/den : 0, tx = mx2 - (a*mx - b*my), ty = my2 - (b*mx + a*my);
+      res = [tx, ty, Math.atan2(b, a), Math.log(Math.max(.5, Math.hypot(a, b)))];
+      const err = use.map(v => Math.hypot(a*v[0] - b*v[1] + tx - v[0] - v[2], b*v[0] + a*v[1] + ty - v[1] - v[3]));
+      const med = [...err].sort((p,q) => p-q)[err.length>>1], lim = Math.max(.6, med*2.5);
+      const keep = use.filter((v,i) => err[i] <= lim); if(keep.length < 4 || keep.length === use.length) break; use = keep;
+    }
+    return res;
+  }
+  const T = [], X = [0], Y = [0], A = [0], Sc = [0]; let prev = null, prevH = null; HEAVY++;
+  const motion = (t, g) => {
+    const gh = half(g); T.push(t);
+    if(prev){ const [tx, ty, da, ds] = fit(vectors(prev, g, prevH, gh)); const k = X.length - 1;
+      X.push(X[k] + tx); Y.push(Y[k] + ty); A.push(A[k] + da); Sc.push(Sc[k] + ds); }
+    prev = g; prevH = gh; onProg && onProg(Math.min(1, (t - c.in)/Math.max(.05, len)));
+  };
+  const take = t => motion(t, gray());
+  try{
+    if(v.requestVideoFrameCallback){
+      // fast path: the browser decodes the clip continuously; each callback only COPIES the frame (cheap, so the
+      // copied picture is exactly the frame reported by mediaTime). Motion maths runs from a queue; playback
+      // pauses if the queue gets long, so slow phones never mislabel frames.
+      await seekTo(v, c.in);
+      await new Promise(res => {
+        let next = c.in, done = false, lastT = -1, busy = false; const Q = [];
+        const end = () => { if(done) return; done = true; v.pause(); drain(true); };
+        const drain = fin => {
+          if(busy) return; busy = true;
+          const step = () => {
+            const t0 = performance.now();
+            while(Q.length && performance.now() - t0 < 12){ const [t, g] = Q.shift(); motion(t, g); }
+            if(!done && Q.length < 4 && v.paused && !v.ended && !(cancel && cancel.flag)) v.play().catch(()=>{});
+            if(Q.length) setTimeout(step, 0); else { busy = false; if(done) res(); }
+          };
+          step();
+        };
+        const cb = (now, md) => {
+          if(done) return; const t = md.mediaTime;
+          if(cancel && cancel.flag){ end(); return; }
+          if(t > lastT + 1e-4 && t >= next - 1e-3 && t <= c.out + .05){ Q.push([t, gray()]); lastT = t; next = t + 1/fps*.98; }
+          if(Q.length > 24) v.pause();
+          drain();
+          if(t >= c.out - .03 || v.ended){ end(); return; }
+          v.requestVideoFrameCallback(cb);
+        };
+        v.requestVideoFrameCallback(cb); v.onended = end;
+        v.playbackRate = fps >= 30 ? 1 : fps >= 24 ? 1.5 : 2; v.play().catch(end);
+        setTimeout(end, (len/ v.playbackRate + 20)*1000*4);
+      });
+    }
+    if(T.length < Math.min(n, 6)){   // fallback: frame-by-frame seeking
+      T.length = 0; X.length = 1; Y.length = 1; A.length = 1; Sc.length = 1; prev = null;
+      for(let i=0; i<n && !(cancel && cancel.flag); i++){ const t = Math.min(c.out - .02, c.in + i/fps); await seekTo(v, t); await waitFrame(v); take(t); }
+    }
+  } finally { HEAVY = Math.max(0, HEAVY - 1); v.pause(); v.removeAttribute('src'); v.load(); v.remove(); }
+  if(cancel && cancel.flag) return null;
+  const r4 = a => a.map(v => Math.round(v*1000)/1000);
+  return {t:r4(T), x:r4(X.slice(0,T.length)), y:r4(Y.slice(0,T.length)), a:r4(A.slice(0,T.length)), s:r4(Sc.slice(0,T.length)), w:AW, h:AH};
+}
+const stabCache = {};
+function gaussSmooth(arr, sigma){
+  const n = arr.length; if(sigma <= .01 || n < 3) return arr.slice();
+  const r = Math.ceil(sigma*3), w = []; for(let k=-r;k<=r;k++) w.push(Math.exp(-k*k/(2*sigma*sigma)));
+  const at = i => { if(i < 0) return 2*arr[0] - arr[Math.min(n-1, -i)]; if(i >= n) return 2*arr[n-1] - arr[Math.max(0, 2*n-2-i)]; return arr[i]; };   // odd reflection keeps the path's direction at the ends
+  return arr.map((_, i) => { let s = 0, ws = 0; for(let k=-r;k<=r;k++){ s += at(i+k)*w[k+r]; ws += w[k+r]; } return s/ws; });
+}
+function stabData(c){
+  const st = c.stab; if(!st || st.mode === 'off' || !st.raw || st.raw.t.length < 2) return null;
+  const key = st.mode + ':' + st.level + ':' + st.raw.t.length + ':' + st.raw.t[0] + ':' + (st.crop ?? 'a');
+  const hit = stabCache[c.id]; if(hit && hit.key === key) return hit;
+  const R = st.raw, n = R.t.length, fps = n > 1 ? (n - 1)/Math.max(.05, R.t[n-1] - R.t[0]) : 15;
+  const mean = a => a.reduce((p,q) => p+q, 0)/a.length;
+  let sm;
+  if(st.mode === 'tripod'){ sm = [R.x, R.y, R.a, R.s].map(a => { const m0 = mean(a); return a.map(() => m0); }); }
+  else { const sig = fps*(.15 + 2.4*Math.pow((st.level ?? 60)/100, 1.4)); sm = [R.x, R.y, R.a, R.s].map(a => gaussSmooth(a, sig)); sm[3] = gaussSmooth(R.s, sig*2); }
+  // correction = smooth path − shaky path (move the picture back where a steady camera would see it)
+  const cx = R.x.map((v,i) => (sm[0][i] - v)/R.w), cy = R.y.map((v,i) => (sm[1][i] - v)/R.h), ca = R.a.map((v,i) => sm[2][i] - v), cs = R.s.map((v,i) => sm[3][i] - v);
+  // auto zoom so no black borders show (95th percentile, capped)
+  const asp = Math.max(R.w/R.h, R.h/R.w), need = cx.map((_,i) => { const zr = Math.abs(Math.cos(ca[i])) + asp*Math.abs(Math.sin(ca[i])); return Math.max(1/(1 - Math.min(.45, 2*Math.abs(cx[i]))), 1/(1 - Math.min(.45, 2*Math.abs(cy[i]))))*zr/Math.exp(Math.min(0, cs[i])); }).sort((p,q) => p-q);
+  const auto = need[Math.floor(need.length*.95)] || 1, maxZ = 1 + (st.crop ?? 25)/100;
+  const z = Math.min(maxZ, Math.max(1, auto));
+  const lim = (1 - 1/z)/2 + .002;   // never move further than the crop allows
+  for(let i=0;i<n;i++){ cx[i] = clamp(cx[i], -lim, lim); cy[i] = clamp(cy[i], -lim, lim); }
+  return stabCache[c.id] = {key, t:R.t, cx, cy, ca, cs, z, auto};
+}
+function stabAt(c, st){
+  const d = stabData(c); if(!d) return null; const T = d.t, n = T.length;
+  if(st <= T[0]) return {dx:d.cx[0], dy:d.cy[0], r:d.ca[0], s:d.cs[0], z:d.z};
+  if(st >= T[n-1]) return {dx:d.cx[n-1], dy:d.cy[n-1], r:d.ca[n-1], s:d.cs[n-1], z:d.z};
+  let lo = 0, hi = n - 1; while(hi - lo > 1){ const m = (lo + hi) >> 1; if(T[m] <= st) lo = m; else hi = m; }
+  const f = (st - T[lo])/Math.max(1e-6, T[hi] - T[lo]), L = (a) => a[lo] + (a[hi] - a[lo])*f;
+  return {dx:L(d.cx), dy:L(d.cy), r:L(d.ca), s:L(d.cs), z:d.z};
+}

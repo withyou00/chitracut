@@ -67,7 +67,30 @@ let HEADW = 150, apEl = null;
 
 /* ---------------- HELPERS ---------------- */
 function kindOf(it){ if(!it) return null; if(!it.type) return isImg(it) ? 'clipimg' : 'clip'; return it.type === 'video' ? 'ovvideo' : it.type === 'image' ? 'ovimage' : it.type; }
-let curveSel = -1, trackRun = null;
+let curveSel = -1, trackRun = null, stabRun = null;
+// ---- v20: stabilization panel ----
+function stabSec(it){
+  const st = it.stab || {mode:'off'}, has = st.raw && st.raw.t && st.raw.t.length > 1, run = stabRun && stabRun.id === it.id;
+  let b = `<div class="chiprow">${STAB_MODES.map(([k,n]) => `<button data-stab="${k}" class="${(st.mode||'off')===k?'on':''}">${n}</button>`).join('')}</div>`;
+  if(run) b += `<div class="prog"><div id="stabBar" style="width:${Math.round(stabRun.p*100)}%"></div></div><div id="stabStat" style="color:var(--mute);min-height:18px">Analysing camera shake… ${Math.round(stabRun.p*100)}%</div><div class="btns"><button data-stabact="cancel">Cancel</button></div>`;
+  else if(st.mode && st.mode !== 'off'){
+    if(st.mode === 'smooth') b += sl(it,'Strength','stab.level',0,100);
+    b += sl(it,'Max crop (%)','stab.crop',0,50);
+    const d = has ? stabData(it) : null;
+    if(d) b += `<div class="crow"><span>Auto zoom</span><b style="color:var(--text)">${Math.round((d.z-1)*100)}%${d.auto > d.z + .01 ? ' <small style="color:#ffb44a">(limited by max crop)</small>' : ''}</b></div>`;
+    b += `<div class="btns"><button data-stabact="redo">${ic('target')} ${has ? 'Analyse again' : 'Analyse'}</button></div>`;
+  }
+  b += '<div class="note">🎥 Removes hand shake: ChitraCut tracks the camera movement, smooths it, and zooms slightly so no black edges show. <b>Smooth</b> keeps intentional pans; <b>Tripod</b> locks the shot completely. Higher strength or crop = steadier but more zoom.</div>';
+  return sec('stab', '🎥 Stabilization', b);
+}
+async function runStab(it){
+  if(stabRun) return; pause(); stabRun = {id:it.id, flag:false, p:0}; renderInspector();
+  try{
+    const raw = await analyzeStab(it, p => { stabRun.p = p; const b = $('#stabBar'); if(b) b.style.width = (p*100)+'%'; const s = $('#stabStat'); if(s) s.textContent = `Analysing camera shake… ${Math.round(p*100)}%`; }, stabRun);
+    if(raw){ pushUndo(); it.stab.raw = raw; delete stabCache[it.id]; }
+  }catch(err){ alert('Stabilization failed: ' + err.message); }
+  stabRun = null; renderInspector(); renderTimeline(); render(performance.now());
+}
 const itemStart = it => it.type ? it.start : derived[it.id].start;
 const itemDur = it => it.type ? it.dur : derived[it.id].dur;
 function thumbFor(it){ if(it && it.type === 'gfx'){ const c = document.createElement('canvas'); c.width = 160; c.height = 90; paintGfx(c, it.gfx, (GFXMAP[it.gfx]||{}).thumbT||1); return c.toDataURL(); }
@@ -663,7 +686,7 @@ function inspBody(it, kind, tab, sub){
         '<div class="note">💆 Detects skin tones and smooths / brightens them. 30–60 is enough — more looks artificial.</div>', {reset:'resetRt'})
         + (!it.type ? '<div class="btns"><button data-all="rt">Apply to all clips</button></div>' : '');
       if(sub === 'effect') return fxBody(it);
-      return transformSec(it) + opacitySec(it) +
+      return transformSec(it) + opacitySec(it) + (kind === 'clip' ? stabSec(it) : '') +
         (it.type ? sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+(kind==='ovimage'?sl(it,'Duration','dur',.3,60,.1):'')) +
                    '<div class="btns">'+[['dup','copy','Duplicate'],['del','trash','Delete']].map(([a,i,t])=>`<button data-act="${a}">${ic(i)} ${t}</button>`).join('')+'</div>'
                  : sec('cv','Canvas', `<div class="crow"><span>Background</span><select data-g="bg">${[['black','Black'],['blur','Blur'],['white','White']].map(([k,n])=>`<option value="${k}" ${S.bg===k?'selected':''}>${n}</option>`).join('')}</select></div>
@@ -883,6 +906,13 @@ async function doDenoise(it, on){
 }
 IB.addEventListener('change', e => { editing = false; if(e.target.type === 'range') e.target.blur(); renderTimeline(); });
 IB.addEventListener('click', e => {
+  const sbm = e.target.closest('[data-stab]'), sba = e.target.closest('[data-stabact]');
+  if(sbm || sba){ const it = selItem(); if(!it || it.type) return;
+    if(sba){ if(sba.dataset.stabact === 'cancel'){ if(stabRun) stabRun.flag = true; return; } runStab(it); return; }
+    const mode = sbm.dataset.stab; pushUndo(); it.stab = Object.assign({mode:'off', level:60, crop:25}, it.stab || {}, {mode});
+    renderInspector(); render(performance.now());
+    if(mode !== 'off' && !(it.stab.raw && it.stab.raw.t && it.stab.raw.t.length > 1)) runStab(it);
+    return; }
   const t = e.target.closest('button'); if(!t) return; const it = selItem();
   if(t.dataset.trk){ trackAction(t.dataset.trk, it); return; }
   doClick(t, it);
@@ -1030,8 +1060,10 @@ function zoneAt(y){ const m = $('.trow.main'); if(!m) return 'main'; const r = m
 function setZone(z){ TL.classList.remove('z-overlay','z-main','z-audio'); if(z) TL.classList.add('z-' + z); }
 
 const isLocked = it => !!(it && it.type && S.trk && S.trk[it.type === 'audio' ? 'au' : 'ov'][it.track] && S.trk[it.type === 'audio' ? 'au' : 'ov'][it.track].lock);
+// a press on the timeline's own scrollbar must only scroll — never move the playhead or start a selection box
+const onTLScrollbar = e => { if(e.target !== TL && e.target !== $('#tlInner')) return false; const r = TL.getBoundingClientRect(); return e.clientY > r.top + TL.clientHeight || e.clientX > r.left + TL.clientWidth; };
 TL.addEventListener('pointerdown', e => {
-  if(exporting || recState || e.button > 0) return;
+  if(exporting || recState || e.button > 0 || onTLScrollbar(e)) return;
   const tk = e.target.closest('[data-tk]');
   if(tk){ const [kind,t,key] = tk.dataset.tk.split(':'), st = trkState(kind, +t); st[key] = !st[key]; renderTimeline(); seek(S.time); return; }
   const th = e.target.closest('[data-th]');
@@ -1144,7 +1176,12 @@ TL.addEventListener('pointermove', e => {
       o.dur = ne - drag.start0;
     }
     layout(); renderTimeline();
-  } else if(drag.type === 'seek' && e.buttons) seek(tAt(e.clientX));
+  } else if(drag.type === 'seek' && e.buttons){
+    seek(tAt(e.clientX));
+    // dragging the playhead to the edge scrolls the timeline
+    const r = TL.getBoundingClientRect(), L = r.left + HEADW, R = r.left + TL.clientWidth;
+    if(e.clientX > R - 30) TL.scrollLeft += Math.min(40, (e.clientX - R + 30)); else if(e.clientX < L + 20 && TL.scrollLeft > 0) TL.scrollLeft -= Math.min(40, (L + 20 - e.clientX));
+  }
 });
 function endDrag(e){
   const d = drag; drag = null; if(!d) return;
@@ -2110,7 +2147,7 @@ renderMTools();
 // touch: one finger on empty timeline = scroll, tap = move playhead, two fingers = zoom
 const tlTouch = new Map(); let pinch0 = null, pan = null;
 TL.addEventListener('pointerdown', e => {
-  if(e.pointerType !== 'touch') return;
+  if(e.pointerType !== 'touch' || onTLScrollbar(e)) return;
   tlTouch.set(e.pointerId, e.clientX);
   if(tlTouch.size === 2){ const [a,b] = [...tlTouch.values()]; pinch0 = {d:Math.max(20, Math.abs(a-b)), pps:S.pps}; drag = null; pan = null; e.stopImmediatePropagation(); return; }
   const empty = !e.target.closest('.it,.clip,.thead,.ruler,.tmark,[data-tk],[data-th]');
