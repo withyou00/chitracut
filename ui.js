@@ -1051,9 +1051,25 @@ function renderTimeline(){
   updatePH();
 }
 function updatePH(){
-  const x = S.time*S.pps; $('#ph').style.left = (HEADW + x) + 'px';
+  const x = S.time*S.pps, ph = $('#ph'); ph.style.left = (HEADW + x) + 'px';
+  ph.style.visibility = (x < TL.scrollLeft - 1 || x > TL.scrollLeft + TL.clientWidth - HEADW + 1) ? 'hidden' : '';
   $('#tcCur').textContent = fmtF(S.time); $('#tcTot').textContent = fmtF(S.total);
   if(S.playing){ const vis = TL.clientWidth - HEADW; if(x > TL.scrollLeft + vis - 40 || x < TL.scrollLeft) TL.scrollLeft = x - 40; }
+}
+// playhead drag: the pointer is kept inside the visible track area; holding it at (or past) an edge keeps scrolling,
+// so you can always drag back to 0:00 even when the timeline is scrolled far to the right
+function seekDragStep(){
+  if(!drag || drag.type !== 'seek') return;
+  const r = TL.getBoundingClientRect(), L = r.left + HEADW, R = r.left + TL.clientWidth, x = drag.cx;
+  if(x < L + 24 && TL.scrollLeft > 0) TL.scrollLeft -= Math.min(60, 4 + (L + 24 - x)*.6);
+  else if(x > R - 24) TL.scrollLeft += Math.min(60, 4 + (x - R + 24)*.6);
+  seek(Math.max(0, tAt(clamp(x, L, R))));
+}
+function seekEdgeLoop(){
+  if(!drag || drag.type !== 'seek'){ return; }
+  const r = TL.getBoundingClientRect(), L = r.left + HEADW, R = r.left + TL.clientWidth;
+  if((drag.cx < L + 24 && TL.scrollLeft > 0) || drag.cx > R - 24) seekDragStep();
+  drag.loop = setTimeout(seekEdgeLoop, 16);
 }
 const tAt = x => { const rb = $('#rulerBody'); return rb ? (x - rb.getBoundingClientRect().left)/S.pps : 0; };
 function zoneAt(y){ const m = $('.trow.main'); if(!m) return 'main'; const r = m.getBoundingClientRect(); return y < r.top ? 'overlay' : y <= r.bottom ? 'main' : 'audio'; }
@@ -1176,12 +1192,7 @@ TL.addEventListener('pointermove', e => {
       o.dur = ne - drag.start0;
     }
     layout(); renderTimeline();
-  } else if(drag.type === 'seek' && e.buttons){
-    seek(tAt(e.clientX));
-    // dragging the playhead to the edge scrolls the timeline
-    const r = TL.getBoundingClientRect(), L = r.left + HEADW, R = r.left + TL.clientWidth;
-    if(e.clientX > R - 30) TL.scrollLeft += Math.min(40, (e.clientX - R + 30)); else if(e.clientX < L + 20 && TL.scrollLeft > 0) TL.scrollLeft -= Math.min(40, (L + 20 - e.clientX));
-  }
+  } else if(drag.type === 'seek' && e.buttons){ drag.cx = e.clientX; seekDragStep(); if(!drag.loop) drag.loop = setTimeout(seekEdgeLoop, 16); }
 });
 function endDrag(e){
   const d = drag; drag = null; if(!d) return;
@@ -1209,6 +1220,7 @@ function endDrag(e){
   }
 }
 TL.addEventListener('pointerup', endDrag);
+TL.addEventListener('scroll', () => { const x = S.time*S.pps, ph = $('#ph'); if(ph) ph.style.visibility = (x < TL.scrollLeft - 1 || x > TL.scrollLeft + TL.clientWidth - HEADW + 1) ? 'hidden' : ''; }, {passive:true});
 TL.addEventListener('pointercancel', e => endDrag(e));
 // drag & drop from library / OS
 TL.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); TL.classList.add('dragging'); setZone(zoneAt(e.clientY)); });

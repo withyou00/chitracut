@@ -165,3 +165,7 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
   - Clicking or dragging the timeline scrollbar no longer moves the playhead.
   - Dragging the playhead to the edge of the timeline scrolls it.
 - **Scrubbing:** if the browser's video decoder stops answering a seek, ChitraCut restarts the seek after 0.45 s. The picture follows the playhead again (including when you drag it backwards) instead of freezing.
+
+## Phase 22 — Playhead drag fix
+- While you drag the playhead, the pointer is kept inside the track area. Holding it at the left or right edge, or past it over the track names, keeps scrolling the timeline. You can always drag back to 0:00, even when the timeline is scrolled far right.
+- The playhead line is hidden when it is scrolled out of view, so it never sits over the track names.
