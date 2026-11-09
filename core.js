@@ -91,7 +91,16 @@ const ANIM_IN = [['none','None'],['fade','Fade In'],['zoomIn','Zoom In'],['zoomO
 const ANIM_OUT = ANIM_IN.map(([k,n]) => [k, n.replace(' In',' Out')]);
 const ANIM_LOOP = [['none','None'],['kenburns','Ken Burns'],['zoomOutSlow','Slow Zoom Out'],['pulse','Pulse'],['sway','Sway'],['zoomInOut','Zoom In-Out'],['rock','Rock'],['wobble','Wobble'],['jelly','Jelly'],['glitchLoop','Glitch'],['flashLoop','Flash'],['rotateLoop','Rotate'],['shakeLoop','Shake'],['heartbeat','Heartbeat'],['bounceLoop','Bounce'],['blurPulse','Blur Pulse']];
 const VOICES = [['none','None'],['michog','Mic Hog'],['megaphone','Megaphone'],['telephone','Telephone'],['robot','Robot'],['lofi','Lo-Fi'],['deep','Deep'],['radio','Radio'],['chipmunk','Chipmunk'],['monster','Monster'],['studio','Studio Voice'],['podcast','Podcast'],['cave','Cave'],['underwater','Underwater']];
-const TRANS = [['none','None'],['fade','Dissolve'],['black','Fade Black'],['white','Flash White'],['slideL','Slide Left'],['slideR','Slide Right'],['slideU','Slide Up'],['slideD','Slide Down'],['wipeL','Wipe Left'],['wipeR','Wipe Right'],['zoomIn','Zoom In'],['zoomOut','Zoom Out'],['spin','Spin'],['glitch','Glitch'],['circleOpen','Circle Open'],['circleClose','Circle Close'],['diamond','Diamond'],['clock','Clock Wipe'],['blinds','Blinds'],['blindsV','Blinds V'],['dissolve','Pixel Dissolve'],['doors','Doors'],['barn','Barn Door'],['heart','Heart'],['star','Star'],['luma','Luma Fade'],['blurDissolve','Blur'],['pixelT','Pixelate'],['zoomBlur','Zoom Blur'],['whipL','Whip Left'],['whipR','Whip Right'],['flashShake','Shake & Flash'],['rgbGlitch','RGB Glitch'],['spinZoom','Spin Zoom'],['flip','Flip'],['cube','Cube'],['dropIn','Drop In']];
+const TRANS = [['none','None'],['pullIn','Pull In'],['pullOut','Pull Out'],['zoomRotate','Zoom Rotate'],['spinBlur','Spin Blur'],['whipU','Whip Up'],['whipD','Whip Down'],['glare','Glare'],['filmBurn','Film Burn'],['inkSpread','Ink Spread'],['swirlT','Swirl'],['waveT','Wave'],['fisheyeT','Fisheye'],['blackFlashT','Black Flash'],['shakeZoom','Shake Zoom'],['stretchT','Stretch'],['squeezeT','Squeeze'],['lightSweepT','Light Sweep'],['prismT','Prism'],['bounceUp','Bounce Up'],['zoomPunch','Zoom Punch'],['split3T','Split'],['vertigoT','Vertigo'],['fade','Dissolve'],['black','Fade Black'],['white','Flash White'],['slideL','Slide Left'],['slideR','Slide Right'],['slideU','Slide Up'],['slideD','Slide Down'],['wipeL','Wipe Left'],['wipeR','Wipe Right'],['zoomIn','Zoom In'],['zoomOut','Zoom Out'],['spin','Spin'],['glitch','Glitch'],['circleOpen','Circle Open'],['circleClose','Circle Close'],['diamond','Diamond'],['clock','Clock Wipe'],['blinds','Blinds'],['blindsV','Blinds V'],['dissolve','Pixel Dissolve'],['doors','Doors'],['barn','Barn Door'],['heart','Heart'],['star','Star'],['luma','Luma Fade'],['blurDissolve','Blur'],['pixelT','Pixelate'],['zoomBlur','Zoom Blur'],['whipL','Whip Left'],['whipR','Whip Right'],['flashShake','Shake & Flash'],['rgbGlitch','RGB Glitch'],['spinZoom','Spin Zoom'],['flip','Flip'],['cube','Cube'],['dropIn','Drop In']];
+const TRANS_CATS = [['Trending',['pullIn','zoomBlur','whipL','glare','flashShake','rgbGlitch','spinBlur','filmBurn','shakeZoom','inkSpread','zoomPunch','fade']],
+  ['Basic',['fade','black','white','luma','blurDissolve','dissolve','zoomIn','zoomOut']],
+  ['Camera',['pullIn','pullOut','zoomRotate','spinBlur','whipL','whipR','whipU','whipD','zoomPunch','vertigoT','shakeZoom']],
+  ['Light',['glare','filmBurn','lightSweepT','white','flashShake','prismT']],
+  ['Glitch',['glitch','rgbGlitch','pixelT','blackFlashT','split3T']],
+  ['Slide',['slideL','slideR','slideU','slideD','wipeL','wipeR','bounceUp','dropIn']],
+  ['Shape',['circleOpen','circleClose','diamond','clock','blinds','blindsV','doors','barn','heart','star','inkSpread']],
+  ['3D',['flip','cube','spin','spinZoom','stretchT','squeezeT']],
+  ['Distort',['swirlT','waveT','fisheyeT','zoomBlur','prismT']]];
 const FONTS = [['Noto Sans Kannada','ಕನ್ನಡ Sans'],['Baloo Tamma 2','ಬಲೂ ತಮ್ಮ'],['Anek Kannada','ಅನೇಕ್'],['Tiro Kannada','ತಿರೋ'],['Noto Serif Kannada','ಕನ್ನಡ Serif'],['Poppins','Poppins'],['Montserrat','Montserrat'],['Oswald','Oswald'],['Bebas Neue','Bebas Neue'],['Anton','Anton'],['Pacifico','Pacifico'],['Lobster','Lobster'],['Dancing Script','Dancing'],['Permanent Marker','Marker']];
 const TEXT_PRESETS = [
   {color:'#ffffff',strokeW:0,bgOn:false,shadow:30,shadowColor:'#000000'},
@@ -112,12 +121,24 @@ const MASKS = [['none','None'],['linear','Linear'],['mirror','Mirror'],['circle'
 const MASK_T = {none:0,linear:1,mirror:2,circle:3,rect:4,heart:5,star:6};
 const BLENDS = [['source-over','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['color-dodge','Color Dodge'],['color-burn','Color Burn'],['hard-light','Hard Light'],['soft-light','Soft Light'],['difference','Difference'],['exclusion','Exclusion'],['hue','Hue'],['saturation','Saturation'],['color','Color'],['luminosity','Luminosity']];
 const FX = [['none','None'],['rgbsplit','RGB Split'],['glitch','Glitch'],['vhs','VHS'],['oldfilm','Old Film'],['shake','Shake'],['zoompulse','Zoom Pulse'],['flash','Flash'],['rainbow','Rainbow'],['pixelate','Pixelate'],['blur','Blur'],['mirror','Mirror'],['kaleido','4-Split'],['invert','Invert'],
+  ['blackflash','Black Flash'],['vertigo','Vertigo'],['split3','3 Split'],['split9','9 Split'],['rollshutter','Rolling Shutter'],['zoomlens','Zoom Lens'],['tiltshift','Tilt Shift'],['lightsweep','Light Sweep'],['prism','Prism'],['bokeh','Bokeh'],['snow','Snow'],['rain','Rain'],['sparkle','Sparkle'],['filmframe','Film Frame'],['neonglow','Neon Glow'],['sepiaburn','Sepia Burn'],['strobecolor','Color Strobe'],['lensflare','Lens Flare'],['colorpop','Red Pop'],['infrared','Infrared'],['heartbeat','Heartbeat'],['cambounce','Camera Bounce'],['shake2','Hard Shake'],
   ['fisheye','Fisheye'],['wave','Wave'],['swirl','Swirl'],['edgeneon','Neon Edges'],['posterize','Posterize'],['duotone','Duotone'],['thermal','Thermal'],['nightvision','Night Vision'],['crt','CRT TV'],['mirrorv','Mirror V'],['letterbox','Cinema Bars'],['lightleak','Light Leak'],['chroma','Lens Aberration'],['glow','Dreamy Glow']];
-const FX_CATS = [['Trending',['glitch','rgbsplit','shake','zoompulse','flash','lightleak','glow','letterbox']],['Retro',['vhs','oldfilm','crt','posterize','duotone']],['Distort',['fisheye','wave','swirl','pixelate','blur','chroma']],['Color',['rainbow','invert','thermal','nightvision','edgeneon']],['Split',['mirror','mirrorv','kaleido']]];
+const FX_CATS = [['Trending',['glitch','lightleak','blackflash','lightsweep','shake','zoompulse','bokeh','sparkle','prism','vertigo','rgbsplit','filmframe','heartbeat']],
+  ['Cinematic',['letterbox','filmframe','lensflare','lightleak','tiltshift','sepiaburn','glow','oldfilm','lightsweep','blackflash']],
+  ['Party',['strobecolor','rainbow','sparkle','bokeh','neonglow','edgeneon','flash','heartbeat','cambounce']],
+  ['Light',['flash','lightsweep','lensflare','glow','bokeh','lightleak','blackflash','neonglow']],
+  ['Retro',['vhs','oldfilm','crt','posterize','duotone','sepiaburn','filmframe']],
+  ['Glitch',['glitch','rgbsplit','rollshutter','chroma','prism','pixelate','strobecolor']],
+  ['Lens',['fisheye','zoomlens','tiltshift','blur','vertigo','wave','swirl']],
+  ['Motion',['shake','shake2','zoompulse','heartbeat','cambounce','vertigo']],
+  ['Split',['split3','split9','mirror','mirrorv','kaleido']],
+  ['Weather',['snow','rain','sparkle','bokeh']],
+  ['Color',['colorpop','infrared','thermal','nightvision','invert','duotone','posterize','rainbow']]];
 const BFX = [['none','None'],['portraitBlur','Portrait Blur'],['colorPop','Color Pop'],['spotlight','Spotlight'],['bodyGlow','Body Glow'],['neonOutline','Neon Outline'],['bgTint','Color Background'],['ghost','Ghost Echo']];
 const BFX_T = {none:0,portraitBlur:1,colorPop:2,spotlight:3,bodyGlow:4,neonOutline:5,bgTint:6,ghost:7};
 const FX_T = {none:0,rgbsplit:1,glitch:2,vhs:3,pixelate:4,mirror:5,kaleido:6,invert:7,blur:8,oldfilm:9,shake:10,zoompulse:11,flash:12,bright:13,rainbow:14,
-  fisheye:16,wave:17,swirl:18,edgeneon:19,posterize:20,duotone:21,thermal:22,nightvision:23,crt:24,mirrorv:25,letterbox:26,lightleak:27,chroma:28,glow:29};
+  fisheye:16,wave:17,swirl:18,edgeneon:19,posterize:20,duotone:21,thermal:22,nightvision:23,crt:24,mirrorv:25,letterbox:26,lightleak:27,chroma:28,glow:29,
+  blackflash:30,vertigo:31,split3:32,split9:33,rollshutter:34,zoomlens:35,tiltshift:36,lightsweep:37,prism:38,bokeh:39,snow:40,rain:41,sparkle:42,filmframe:43,neonglow:44,sepiaburn:45,strobecolor:46,lensflare:47,colorpop:48,infrared:49,heartbeat:0,cambounce:0,shake2:0};
 const CAP_LANGS = [['kannada','ಕನ್ನಡ'],['english','English'],['hindi','हिन्दी'],['tamil','தமிழ்'],['telugu','తెలుగు'],['marathi','मराठी'],['malayalam','മലയാളം']];
 const SR_LANGS = [['kn-IN','ಕನ್ನಡ'],['en-IN','English (India)'],['hi-IN','हिन्दी'],['ta-IN','தமிழ்'],['te-IN','తెలుగు'],['mr-IN','मराठी'],['ml-IN','മലയാളം']];
 
@@ -712,6 +733,11 @@ vec4 fetch(vec2 u){float I=u_fxA;
  if(u_fx>17.5&&u_fx<18.5){vec2 d=u-.5;float r=length(d);float a=I*6.*pow(max(0.,.5-r)*2.,2.)*sin(u_sec*.9+1.2);float cs=cos(a),sn=sin(a);d=vec2(d.x*cs-d.y*sn,d.x*sn+d.y*cs);return tx(.5+d);}
  if(u_fx>24.5&&u_fx<25.5){u.y=u.y<.5?u.y:1.-u.y;return tx(u);}
  if(u_fx>27.5&&u_fx<28.5){return split3(u,(u-.5)*.035*I);}
+ if(u_fx>30.5&&u_fx<31.5){vec2 d=u-.5;float z=1.-.14*I*(.5+.5*sin(u_sec*3.));float a=.07*I*sin(u_sec*1.7);d=vec2(d.x*cos(a)-d.y*sin(a),d.x*sin(a)+d.y*cos(a))*z;return tx(.5+d);}
+ if(u_fx>31.5&&u_fx<32.5){u.y=.3333+fract(u.y*3.)/3.;return tx(u);}
+ if(u_fx>32.5&&u_fx<33.5){return tx(fract(u*3.));}
+ if(u_fx>33.5&&u_fx<34.5){u.x+=sin(u.y*12.+u_sec*8.)*.015*I+(rnd(vec2(floor(u.y*40.),floor(u_sec*10.)))-.5)*.012*I;return tx(u);}
+ if(u_fx>34.5&&u_fx<35.5){vec4 s=vec4(0.);for(int i=0;i<12;i++)s+=tx(.5+(u-.5)*(1.-float(i)*.012*I));return s/12.;}
  if(u_fx>7.5&&u_fx<8.5){vec4 s=vec4(0.);vec2 r=u_px*(1.+I*14.);
   for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++)s+=tx(u+vec2(float(i),float(j))*r);return s/25.;}
  return tx(u);}
@@ -755,6 +781,21 @@ void main(){vec3 c;float ta=1.;float I=u_fxA;
   vec3 lk=vec3(1.,.45,.12)*smoothstep(.65,0.,distance(uv,p1))*.9+vec3(1.,.2,.55)*smoothstep(.55,0.,distance(uv,p2))*.6;c=c+lk*I*(1.-c*.5);}
  else if(u_fx>28.5&&u_fx<29.5){vec3 bl=vec3(0.);for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++)bl+=tx(uv+vec2(float(i),float(j))*u_px*6.).rgb;bl/=25.;
   c=c+max(bl-.55,0.)*1.2*I;c=mix(c,c*vec3(1.03,1.,1.06)+.03,I*.5);}
+ else if(u_fx>29.5&&u_fx<30.5){c=mix(c,vec3(0.),step(.8,fract(u_sec*1.6))*I);}
+ else if(u_fx>35.5&&u_fx<36.5){float b=smoothstep(.12,.42,abs(uv.y-.5))*I;vec3 bl=vec3(0.);for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++)bl+=tx(uv+vec2(float(i),float(j))*u_px*(1.+7.*b)).rgb;c=mix(c,bl/25.,b);float l=dot(c,LW);c=mix(vec3(l),c,1.+.35*I);}
+ else if(u_fx>36.5&&u_fx<37.5){float x=fract(u_sec*.35)*2.6-.8;float band=exp(-pow((uv.x+uv.y*.55-x)*7.,2.));c+=vec3(1.,.95,.85)*band*.75*I;}
+ else if(u_fx>37.5&&u_fx<38.5){vec3 a=tx(uv+vec2(.014,.004)*I).rgb,b=tx(uv-vec2(.014,.004)*I).rgb;c=mix(c,vec3(a.r,c.g,b.b),I);c+=hueRot(vec3(.5,.15,.15),uv.x*6.+u_sec)*.18*I*smoothstep(.25,.75,distance(uv,vec2(.5)));}
+ else if(u_fx>38.5&&u_fx<39.5){float asp=u_px.y/u_px.x;for(int i=0;i<16;i++){float fi=float(i);vec2 p=vec2(rnd(vec2(fi,1.)),fract(rnd(vec2(fi,2.))-u_sec*.03*(.5+rnd(vec2(fi,3.)))));float r=.035+.06*rnd(vec2(fi,4.));float d=length((uv-p)*vec2(asp,1.));c+=hueRot(vec3(1.,.72,.35),fi*.7)*smoothstep(r,r*.65,d)*.28*I;}}
+ else if(u_fx>39.5&&u_fx<40.5){float asp=u_px.y/u_px.x;for(int l=0;l<3;l++){float fl=float(l);float sc=14.+fl*12.;vec2 q=uv*vec2(sc*asp,sc)+vec2(sin(u_sec*.6+fl)*1.5,-u_sec*(1.5+fl*.8));vec2 id=floor(q);vec2 f=fract(q)-.5;float h=rnd(id+fl*7.);if(h>.72){vec2 o=vec2(rnd(id+3.)-.5,rnd(id+5.)-.5)*.5;c+=vec3(smoothstep(.13-fl*.03,.0,length(f-o)))*.95*I;}}}
+ else if(u_fx>40.5&&u_fx<41.5){vec2 q=vec2(uv.x*90.+uv.y*5.,uv.y*5.-u_sec*8.);vec2 id=floor(q);float h=rnd(id);float f=fract(q.y);float s2=step(.9,h)*smoothstep(0.,.25,f)*smoothstep(1.,.45,f)*smoothstep(.45,0.,abs(fract(q.x)-.5));c=c*(1.-.2*I)*vec3(.92,.96,1.05)+vec3(.75,.85,.95)*s2*.55*I;}
+ else if(u_fx>41.5&&u_fx<42.5){float asp=u_px.y/u_px.x;vec2 q=uv*vec2(26.*asp,26.);vec2 id=floor(q);float h=rnd(id);if(h>.92){vec2 f=fract(q)-.5;float tw=pow(.5+.5*sin(u_sec*5.+h*60.),3.);float st=max(0.,1.-abs(f.x)*10.)*max(0.,1.-abs(f.y)*2.5)+max(0.,1.-abs(f.y)*10.)*max(0.,1.-abs(f.x)*2.5);c+=vec3(1.,.95,.8)*st*tw*1.4*I;}}
+ else if(u_fx>42.5&&u_fx<43.5){vec2 b=abs(uv-.5)*2.;float fr=smoothstep(.92,.94,max(b.x,b.y));c=mix(c,c*vec3(1.06,.97,.85),I);float dust=step(.9982,rnd(floor(uv*350.)+floor(u_sec*12.)));float ln=step(.996,rnd(vec2(floor(uv.x*260.),floor(u_sec*9.))));c=mix(c,vec3(.95),dust*I);c=mix(c,c*.55,ln*I);c*=1.+(rnd(vec2(floor(u_sec*14.),3.))-.5)*.12*I;c=mix(c,vec3(.02),fr*I);}
+ else if(u_fx>43.5&&u_fx<44.5){vec2 o=u_px*1.5;float e=abs(dot(tx(uv+vec2(o.x,0.)).rgb-tx(uv-vec2(o.x,0.)).rgb,LW))+abs(dot(tx(uv+vec2(0.,o.y)).rgb-tx(uv-vec2(0.,o.y)).rgb,LW));c+=hueRot(vec3(0.,1.,.9),u_sec*1.2+uv.y*2.)*clamp(e*4.,0.,1.)*1.6*I;}
+ else if(u_fx>44.5&&u_fx<45.5){float l=dot(c,LW);vec3 sp=vec3(l*1.12,l*.9,l*.62);float v=smoothstep(.3,.85,distance(uv,vec2(.5)));sp=mix(sp,vec3(.28,.08,0.),v*.85);c=mix(c,sp,I);}
+ else if(u_fx>45.5&&u_fx<46.5){float k=floor(u_sec*6.);c=mix(c,c*hueRot(vec3(1.,.35,.35),k*1.3)*1.7,I*.65*step(.5,fract(u_sec*3.)));}
+ else if(u_fx>46.5&&u_fx<47.5){float asp=u_px.y/u_px.x;vec2 fp=vec2(.2+.6*fract(u_sec*.06),.22);vec2 a2=vec2(asp,1.);float d=length((uv-fp)*a2);c+=vec3(1.,.9,.72)*(.025/(d+.025))*.45*I;for(int k=1;k<4;k++){vec2 g=.5+(.5-fp)*float(k)*.45;c+=hueRot(vec3(.25,.5,1.),float(k))*smoothstep(.05+.02*float(k),0.,length((uv-g)*a2))*.3*I;}}
+ else if(u_fx>47.5&&u_fx<48.5){float l=dot(c,LW);float red=smoothstep(.12,.32,c.r-max(c.g,c.b));c=mix(c,mix(vec3(l),c,red),I);}
+ else if(u_fx>48.5&&u_fx<49.5){float l=dot(c,LW);vec3 ir=mix(vec3(1.,.45,.75)*l*1.4,vec3(c.g*1.3+.08,c.r*.75,c.b*.9+.12),.35);c=mix(c,ir,I);}
  if(u_bfx>.5&&u_segAv>.5){float m=smoothstep(.3,.7,texture2D(u_seg,uv).r);float J=u_bfxA;
   if(u_bfx<1.5){vec3 bl=vec3(0.);for(int i=-3;i<=3;i++)for(int j=-3;j<=3;j++)bl+=texture2D(u_tex,uv+vec2(float(i),float(j))*u_px*(2.+12.*J)).rgb;bl/=49.;c=mix(bl,c,m);}
   else if(u_bfx<2.5)c=mix(mix(c,vec3(dot(c,LW)),J),c,m);
@@ -827,6 +868,10 @@ function fxMotion(it,W,H){
   const I = f.amount/100, t = S.time*fxRate(f), u = Math.min(W,H);
   if(f.type==='shake'){ r.dx=(Math.sin(t*31)+Math.sin(t*17.3))*.5*u*.03*I; r.dy=(Math.cos(t*27)+Math.sin(t*13.1))*.5*u*.03*I; }
   if(f.type==='zoompulse') r.s = 1 + .18*I*Math.pow(Math.max(0,Math.sin(t*Math.PI*2)),6);
+  if(f.type==='shake2'){ r.dx=(Math.sin(t*41)+Math.sin(t*23.3))*.5*u*.07*I; r.dy=(Math.cos(t*37)+Math.sin(t*19.1))*.5*u*.07*I; r.s=1+.08*I; }
+  if(f.type==='heartbeat'){ const ph=(t*1.2)%1; r.s = 1 + .12*I*(Math.exp(-Math.pow((ph-.1)*18,2)) + .7*Math.exp(-Math.pow((ph-.3)*18,2))); }
+  if(f.type==='cambounce'){ r.dy = -Math.abs(Math.sin(t*Math.PI*1.6))*u*.05*I; r.s = 1+.05*I; }
+  if(f.type==='vertigo') r.s = 1;
   return r;
 }
 function setMask(it,vw,vh){
@@ -947,6 +992,28 @@ function transState(type,p,W,H){
     case 'flip': if(p<.5){ A.sx=Math.max(.001,1-2*p); B.a=0; } else { A.a=0; B.sx=Math.max(.001,2*p-1); } break;
     case 'cube': A.dx=-e*W*.5; A.sx=Math.max(.001,1-e); B.dx=(1-e)*W*.5; B.sx=Math.max(.001,e); break;
     case 'dropIn': B.dy=-(1-bounceOut(p))*H; break;
+    case 'pullIn': A.s=1+e*1.2; A.a=1-e; A.fx=['zoomlens',bell]; B.s=.7+.3*e; B.a=e; B.fx=['zoomlens',bell]; break;
+    case 'pullOut': A.s=1-.4*e; A.a=1-e; A.fx=['zoomlens',bell]; B.s=1.6-.6*e; B.a=e; B.fx=['zoomlens',bell]; break;
+    case 'zoomRotate': A.s=1+e*.8; A.r=e*.6; A.a=1-e; B.s=1.5-.5*e; B.r=-(1-e)*.6; B.a=e; A.fx=['blur',bell*.6]; B.fx=['blur',bell*.6]; break;
+    case 'spinBlur': A.r=e*Math.PI; B.r=-(1-e)*Math.PI; B.a=p>.5?1:0; A.fx=['zoomlens',bell]; B.fx=['zoomlens',bell]; A.s=1+bell*.3; B.s=1+bell*.3; break;
+    case 'whipU': A.dy=-e*H; B.dy=(1-e)*H; A.fx=['blur',bell]; B.fx=['blur',bell]; break;
+    case 'whipD': A.dy=e*H; B.dy=-(1-e)*H; A.fx=['blur',bell]; B.fx=['blur',bell]; break;
+    case 'glare': A.fx=['lightsweep',bell]; B.fx=['bright',bell*.9]; B.a=e; A.dx=-e*W*.15; B.dx=(1-e)*W*.15; break;
+    case 'filmBurn': A.fx=['lightleak',bell]; B.fx=['lightleak',bell]; B.a=e; break;
+    case 'inkSpread': B.mT=12; B.mP=p; A.fx=['blur',bell*.4]; break;
+    case 'swirlT': A.fx=['swirl',bell]; B.fx=['swirl',bell]; B.a=e; break;
+    case 'waveT': A.fx=['wave',bell]; B.fx=['wave',bell]; B.a=e; break;
+    case 'fisheyeT': A.fx=['fisheye',bell]; B.fx=['fisheye',bell]; B.a=clamp((p-.4)/.2,0,1); break;
+    case 'blackFlashT': clear=0; A.a=p<.35?1:0; B.a=p>.65?1:(p>.5?.5:0); break;
+    case 'shakeZoom': { const j=Math.sin(p*80)*W*.04*bell; A.dx=j; B.dx=-j; A.s=1+bell*.4; B.s=1+bell*.4; B.a=p>.5?1:0; break; }
+    case 'stretchT': if(p<.5){ A.sx=1+p*4; A.a=1-p*2; B.a=0; } else { B.sx=1+(1-p)*4; B.a=(p-.5)*2; A.a=0; } break;
+    case 'squeezeT': if(p<.5){ A.sy=Math.max(.001,1-p*2); B.a=0; } else { A.a=0; B.sy=Math.max(.001,(p-.5)*2); } break;
+    case 'lightSweepT': A.fx=['lightsweep',1]; B.fx=['lightsweep',1]; B.a=e; break;
+    case 'prismT': A.fx=['prism',bell]; B.fx=['prism',bell]; B.a=e; A.s=1+bell*.15; B.s=1+bell*.15; break;
+    case 'bounceUp': B.dy=(1-bounceOut(p))*H; break;
+    case 'zoomPunch': B.s=1+.5*Math.pow(1-p,3); A.a=1-clamp(p*3,0,1); B.a=clamp(p*3,0,1); break;
+    case 'split3T': A.fx=['split3',bell]; B.fx=['split3',bell]; B.a=p>.5?1:0; break;
+    case 'vertigoT': A.fx=['vertigo',bell]; B.fx=['vertigo',bell]; A.s=1+bell*.3; B.s=1+bell*.3; B.a=e; break;
   }
   return {A,B,sc,clear};
 }
@@ -2266,3 +2333,48 @@ function previewPlay(from, sec){
   previewTimer = setTimeout(() => { if(!exporting && !recState){ pause(); seek(clamp(from,0,S.total)); } }, sec*1000);
 }
 const fmtF = t => { t = Math.max(0, t||0); const f = Math.floor((t%1)*30); return `${pad(Math.floor(t/3600))}:${pad(Math.floor(t/60)%60)}:${pad(Math.floor(t%60))}:${pad(f)}`; };
+
+/* ---- real previews: draw a sample picture through the actual WebGL effect / transition into a small tile ---- */
+const PV_PLAIN = {filter:'none', filterAmt:0, adj:defAdj(), lut:'', lutAmt:0, mask:defMask(), ck:{on:false}, rt:{smooth:0,bright:0}, fx:defFx(), bfx:defBfx()};
+const pvTex = {};
+function pvTexture(img){
+  const key = img.src; if(pvTex[key]) return pvTex[key];
+  const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t);
+  for(const [k,v] of [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]]) gl.texParameteri(gl.TEXTURE_2D,k,v);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+  return pvTex[key] = {tex:t, w:img.naturalWidth, h:img.naturalHeight};
+}
+// layers: [{img, ex:{s,sx,sy,dx,dy,r,a,fx,mT,mP}, fx:[type,amount], sec}] — dx/dy are in tile pixels
+function glTile(canvas, layers, opt){
+  const w = canvas.width, h = canvas.height; if(w > cv.width || h > cv.height) return;
+  gl.viewport(0,0,w,h); gl.enable(gl.SCISSOR_TEST); gl.scissor(0,0,w,h);
+  const cl = opt && opt.clear != null ? opt.clear : 0; gl.clearColor(cl,cl,cl,1); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2f(U.u_canvas,w,h); gl.uniform2f(U.u_res,w,h);
+  for(const L of layers){
+    const ex = Object.assign({s:1,sx:1,sy:1,dx:0,dy:0,r:0,a:1}, L.ex||{}); if(ex.a <= .001 || !L.img || !L.img.naturalWidth) continue;
+    const T = pvTexture(L.img); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T.tex);
+    gl.uniform2f(U.u_px, 1/T.w, 1/T.h);
+    setFx(PV_PLAIN); gl.uniform1f(U.u_mT,0); gl.uniform1f(U.u_ck,0); gl.uniform1f(U.u_rtS,0); gl.uniform1f(U.u_rtB,0); setSeg({},null);
+    const fo = ex.fx || L.fx; gl.uniform1f(U.u_fx, fo ? FX_T[fo[0]]||0 : 0); gl.uniform1f(U.u_fxA, fo ? fo[1] : 0); gl.uniform1f(U.u_sec, L.sec||0);
+    gl.uniform1f(U.u_trT, ex.mT||0); gl.uniform1f(U.u_trP, ex.mP||0);
+    if(L.sc){ gl.scissor(...L.sc); }
+    const k = Math.max(w/T.w, h/T.h)*ex.s;
+    gl.uniform2f(U.u_half, T.w*k/2*ex.sx, T.h*k/2*ex.sy); gl.uniform2f(U.u_off, ex.dx, -ex.dy); gl.uniform1f(U.u_rot, -ex.r);
+    gl.uniform1f(U.u_alpha, ex.a); gl.uniform1f(U.u_blur, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    if(L.sc) gl.scissor(0,0,w,h);
+  }
+  gl.disable(gl.SCISSOR_TEST); gl.uniform1f(U.u_trT,0);
+  const x = canvas.getContext('2d'); x.clearRect(0,0,w,h); x.drawImage(cv, 0, cv.height - h, w, h, 0, 0, w, h);
+}
+function fxPreview(canvas, img, type, t){
+  const f = {type, amount:75, speed:50}, m = fxMotion({fx:f}, canvas.width, canvas.height), sec = t*fxRate(f);
+  const ex = {s:m.s, dx:0, dy:0};
+  if(['shake','shake2','heartbeat','cambounce','zoompulse'].includes(type)){ const S0 = S.time; S.time = t; const mm = fxMotion({fx:f}, canvas.width, canvas.height); S.time = S0; ex.s = mm.s; ex.dx = mm.dx; ex.dy = mm.dy; }
+  glTile(canvas, [{img, fx:[type,.75], sec, ex}]);
+}
+function transPreview(canvas, imgA, imgB, type, p){
+  const w = canvas.width, h = canvas.height, tr = transState(type, p, w, h);
+  const sc = tr.sc ? [tr.sc[0], 0, tr.sc[2], h] : null;
+  glTile(canvas, [{img:imgA, ex:tr.A, sec:p*2}, {img:imgB, ex:tr.B, sec:p*2, sc}], {clear:tr.clear});
+}

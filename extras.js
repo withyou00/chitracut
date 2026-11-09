@@ -1136,3 +1136,138 @@ function drawCover(cnv, frame, o){
   if(o.sub){ x.font = `700 ${px*.42}px Montserrat,"Noto Sans Kannada",sans-serif`; const sy = y + (lines.length/2 + .5)*px*1.15;
     x.save(); x.translate(W/2, sy); const tw = x.measureText(o.sub).width; drawBubble(x, 'pill', tw + px*.5, px*.62, px*.42, '#e62117', '#e62117'); x.fillStyle = '#fff'; x.fillText(o.sub, 0, 0); x.restore(); }
 }
+
+/* =====================================================================
+   v12: VOCAL REMOVER / BGM REMOVER (AI stem separation, runs in the browser)
+   Model: UVR MDX-Net "Inst HQ 3" (ONNX) → instrumental; vocals = mix − instrumental
+   ===================================================================== */
+const STEM_MODEL_URLS = ['models/UVR-MDX-NET-Inst_HQ_3.onnx', 'https://huggingface.co/seanghay/uvr_models/resolve/main/UVR-MDX-NET-Inst_HQ_3.onnx'];
+const MDX_DSP = `
+const NFFT=6144, HOP=1024, DIMF=3072, DIMT=256, NB=NFFT/2+1, CH=HOP*(DIMT-1), TRIM=NFFT/2, GEN=CH-2*TRIM;
+function makeFFT(N){
+  const fac=[]; let n=N; for(const p of [4,2,3,5]) while(n%p===0){ fac.push(p); n/=p; }
+  const C=new Float64Array(N), Sn=new Float64Array(N); for(let k=0;k<N;k++){ C[k]=Math.cos(2*Math.PI*k/N); Sn[k]=-Math.sin(2*Math.PI*k/N); }
+  const tr=new Float64Array(8), ti=new Float64Array(8);
+  function rec(iR,iI,oR,oI,oOff,n,iOff,stride,fi){
+    if(n===1){ oR[oOff]=iR[iOff]; oI[oOff]=iI[iOff]; return; }
+    const p=fac[fi], m=n/p;
+    for(let q=0;q<p;q++) rec(iR,iI,oR,oI,oOff+q*m,m,iOff+q*stride,stride*p,fi+1);
+    const step=N/n, pstep=N/p;
+    for(let k=0;k<m;k++){
+      for(let q=0;q<p;q++){ const idx=oOff+q*m+k, w=(q*k*step)%N, xr=oR[idx], xi=oI[idx]; tr[q]=xr*C[w]-xi*Sn[w]; ti[q]=xr*Sn[w]+xi*C[w]; }
+      for(let r=0;r<p;r++){ let sr=0, si=0; for(let q=0;q<p;q++){ const w=((q*r)%p)*pstep; sr+=tr[q]*C[w]-ti[q]*Sn[w]; si+=tr[q]*Sn[w]+ti[q]*C[w]; } oR[oOff+r*m+k]=sr; oI[oOff+r*m+k]=si; }
+    }
+  }
+  return (iR,iI,oR,oI) => rec(iR,iI,oR,oI,0,N,0,1,0);
+}
+const fft=makeFFT(NFFT), WIN=new Float64Array(NFFT); for(let i=0;i<NFFT;i++) WIN[i]=.5-.5*Math.cos(2*Math.PI*i/NFFT);
+const bR=new Float64Array(NFFT), bI=new Float64Array(NFFT), oR=new Float64Array(NFFT), oI=new Float64Array(NFFT);
+// reflect-padded STFT of one CH-long channel into X (layout [4][DIMF][DIMT]), channel slot c (0 = left, 1 = right)
+function stftInto(x, X, c){
+  const P=NFFT/2, L=x.length, at=i=>{ let j=i-P; if(j<0) j=-j; if(j>=L) j=2*(L-1)-j; return x[j]; };
+  for(let t=0;t<DIMT;t++){
+    for(let i=0;i<NFFT;i++){ bR[i]=at(t*HOP+i)*WIN[i]; bI[i]=0; }
+    fft(bR,bI,oR,oI);
+    const re=(c*2)*DIMF*DIMT, im=(c*2+1)*DIMF*DIMT;
+    for(let f=0;f<DIMF;f++){ X[re+f*DIMT+t]=oR[f]; X[im+f*DIMT+t]=oI[f]; }
+  }
+}
+let WSUM=null;
+function istftFrom(Y, c, out){
+  if(!WSUM){ WSUM=new Float64Array(NFFT+HOP*(DIMT-1)); for(let t=0;t<DIMT;t++) for(let i=0;i<NFFT;i++) WSUM[t*HOP+i]+=WIN[i]*WIN[i]; }
+  const acc=new Float64Array(NFFT+HOP*(DIMT-1)), re=(c*2)*DIMF*DIMT, im=(c*2+1)*DIMF*DIMT;
+  for(let t=0;t<DIMT;t++){
+    for(let f=0;f<NB;f++){ const a=f<DIMF?Y[re+f*DIMT+t]:0, b=f<DIMF?Y[im+f*DIMT+t]:0; bR[f]=a; bI[f]=-b; if(f>0&&f<NFFT/2){ bR[NFFT-f]=a; bI[NFFT-f]=b; } }   // conj for inverse
+    fft(bR,bI,oR,oI);
+    for(let i=0;i<NFFT;i++) acc[t*HOP+i]+=oR[i]/NFFT*WIN[i];
+  }
+  const P=NFFT/2; for(let i=0;i<CH;i++) out[i]=acc[i+P]/Math.max(WSUM[i+P],1e-8);
+}`;
+const STEM_SRC = MDX_DSP + `
+importScripts('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.webgpu.min.js');
+ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+ort.env.wasm.numThreads=self.crossOriginIsolated?Math.min(4,navigator.hardwareConcurrency||2):1;
+let sess=null, ep='';
+async function getModel(urls){
+  const cache=await caches.open('cc-models');
+  for(const u of urls){
+    const abs=new URL(u, self.location.href.startsWith('blob:')?self.__base:self.location.href).href;
+    try{
+      let r=await cache.match(abs);
+      if(!r){ r=await fetch(abs); if(!r.ok) continue;
+        const total=+r.headers.get('content-length')||67e6, rd=r.body.getReader(), parts=[]; let got=0;
+        while(true){ const {done,value}=await rd.read(); if(done) break; parts.push(value); got+=value.length; postMessage({type:'dl',got,total}); }
+        const blob=new Blob(parts); if(blob.size<1e6) continue; await cache.put(abs,new Response(blob)); return await blob.arrayBuffer(); }
+      return await r.arrayBuffer();
+    }catch(e){}
+  }
+  throw new Error('AI model download ಆಗಲಿಲ್ಲ (internet ಬೇಕು — ಮೊದಲ ಬಾರಿ ~67 MB)');
+}
+onmessage=async e=>{
+  const d=e.data; self.__base=d.base;
+  try{
+    if(!sess){
+      const buf=await getModel(d.urls);
+      postMessage({type:'status',msg:'AI model ತೆರೆಯುತ್ತಿದೆ…'});
+      const eps=d.gpu?['webgpu','wasm']:['wasm'];
+      for(const p of eps){ try{ sess=await ort.InferenceSession.create(buf,{executionProviders:[p],graphOptimizationLevel:'all'}); ep=p; break; }catch(err){ sess=null; } }
+      if(!sess) throw new Error('AI model ಓಡಿಸಲು ಆಗಲಿಲ್ಲ');
+    }
+    const L=d.L, R=d.R, n=L.length, pad=GEN+TRIM-(n%GEN), tot=TRIM+n+pad;
+    const mL=new Float32Array(tot), mR=new Float32Array(tot); mL.set(L,TRIM); mR.set(R,TRIM);
+    const oL=new Float32Array(n), oR2=new Float32Array(n), X=new Float32Array(4*DIMF*DIMT), segL=new Float32Array(CH), segR=new Float32Array(CH), tL=new Float32Array(CH), tR=new Float32Array(CH);
+    const chunks=Math.floor((tot-CH)/GEN)+1; let w=0; const t0=Date.now();
+    for(let k=0;k<chunks;k++){
+      const i=k*GEN; segL.set(mL.subarray(i,i+CH)); segR.set(mR.subarray(i,i+CH));
+      stftInto(segL,X,0); stftInto(segR,X,1);
+      const res=await sess.run({input:new ort.Tensor('float32',X,[1,4,DIMF,DIMT])});
+      const Y=res.output.data;
+      istftFrom(Y,0,tL); istftFrom(Y,1,tR);
+      for(let j=TRIM;j<CH-TRIM && w<n;j++,w++){ oL[w]=tL[j]*d.comp; oR2[w]=tR[j]*d.comp; }
+      postMessage({type:'prog',k:k+1,n:chunks,ep,sec:(Date.now()-t0)/1000});
+    }
+    postMessage({type:'done',L:oL,R:oR2},[oL.buffer,oR2.buffer]);
+  }catch(err){ postMessage({type:'error',msg:String(err&&err.message||err)}); }
+};`;
+let stemWorker = null;
+function stopStems(){ if(stemWorker){ stemWorker.terminate(); stemWorker = null; } }
+async function decodeRange(it, sr){
+  const m = media(it.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file ಸಿಗಲಿಲ್ಲ');
+  const ab = await new OfflineAudioContext(2, 1, sr).decodeAudioData(await blob.arrayBuffer());
+  const {from, len} = srcRangeOf(it), s0 = Math.floor(from*sr), n = Math.max(1, Math.min(ab.length - s0, Math.ceil(len*sr)));
+  const L = ab.getChannelData(0).slice(s0, s0+n), R = (ab.numberOfChannels > 1 ? ab.getChannelData(1) : ab.getChannelData(0)).slice(s0, s0+n);
+  return {L, R, n, name:m.name.replace(/\.[^.]+$/,'')};
+}
+// which: 'inst' (remove vocals) | 'vocals' (remove music) | 'both' | 'quick' (fast karaoke, no AI)
+async function separateStems(it, which, onProg){
+  const sr = 44100, {L, R, n, name} = await decodeRange(it, sr);
+  let iL, iR;
+  if(which === 'quick'){   // centre-channel cancel + keep the bass
+    iL = new Float32Array(n); iR = new Float32Array(n); let lp = 0;
+    for(let i=0;i<n;i++){ const mid = (L[i]+R[i])/2, side = (L[i]-R[i])/2; lp += (mid - lp)*.02; iL[i] = side + lp; iR[i] = -side + lp; }
+    let same = 0; for(let i=0;i<n;i+=97) same += Math.abs(L[i]-R[i]); if(same/(n/97) < 1e-4) throw new Error('ಈ audio mono — Quick karaoke stereo ಹಾಡುಗಳಿಗೆ ಮಾತ್ರ. AI remover ಬಳಸಿ.');
+  } else {
+    stopStems();
+    stemWorker = new Worker(URL.createObjectURL(new Blob([STEM_SRC], {type:'text/javascript'})));
+    const res = await new Promise((resolve, reject) => {
+      stemWorker.onmessage = e => { const d = e.data;
+        if(d.type === 'dl') onProg(`⬇ AI model: ${(d.got/1048576).toFixed(0)} / ${(d.total/1048576).toFixed(0)} MB (ಮೊದಲ ಬಾರಿ ಮಾತ್ರ)`, d.got/d.total);
+        else if(d.type === 'status') onProg(d.msg, 0);
+        else if(d.type === 'prog'){ const left = d.sec/d.k*(d.n-d.k); onProg(`🎛 ${d.ep === 'webgpu' ? '⚡ GPU' : 'CPU'} · ${d.k}/${d.n} · ಉಳಿದ ಸಮಯ ~${left < 60 ? Math.ceil(left)+' s' : Math.ceil(left/60)+' min'}`, d.k/d.n); }
+        else if(d.type === 'done') resolve(d); else if(d.type === 'error') reject(new Error(d.msg)); };
+      stemWorker.onerror = e => reject(new Error(e.message || 'worker error'));
+      stemWorker.postMessage({L, R, urls:STEM_MODEL_URLS, base:location.href, comp:1.012, gpu:!!navigator.gpu});
+    });
+    stopStems(); iL = res.L; iR = res.R;
+  }
+  const out = [];
+  const add = async (a, b, label) => { const f = new File([wavMulti([a, b], sr)], `${name} (${label}).wav`, {type:'audio/wav'}); out.push([label, await addAudioMedia(f, n/sr)]); };
+  if(which !== 'vocals') await add(iL, iR, which === 'quick' ? 'Karaoke' : 'Instrumental');
+  if(which === 'vocals' || which === 'both'){ const vL = new Float32Array(n), vR = new Float32Array(n); for(let i=0;i<n;i++){ vL[i] = L[i] - iL[i]; vR[i] = R[i] - iR[i]; } await add(vL, vR, 'Vocals'); }
+  pushUndo();
+  const st = itemStart(it), sp = it.speed || 1;
+  for(const [label, m] of out){ const a = newAudioItem(m, {kind:'extract', start:st, in:0, dur:m.duration/sp, speed:sp, volume:it.volume||100, linkClip:it.id}); S.audios.push(a); S.sel = a.id; }
+  it.prevVolume = it.volume || 100; it.extracted = 'stems'; it.volume = 0;
+  afterEdit(); renderMediaPanel();
+  return out.length;
+}

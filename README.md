@@ -56,6 +56,11 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 
 > Export real-time ನಲ್ಲಿ ಆಗುತ್ತದೆ — 1 ನಿಮಿಷದ video ಗೆ ಸುಮಾರು 1 ನಿಮಿಷ. ಆ ಸಮಯದಲ್ಲಿ tab ತೆರೆದಿಡಿ. 2K/4K export ಗೆ ಶಕ್ತಿಶಾಲಿ PC ಬೇಕು — ನಿಧಾನದ device ನಲ್ಲಿ frames ಕಡಿಮೆಯಾಗಬಹುದು.
 
+## 🎤 Phase 12
+- **Effects:** CapCut ತರಹ ಎಡ sidebar categories — Trending, Cinematic, Party, Light, Retro, Glitch, Lens, Motion, Split, Weather, Color · ಹೊಸ 23 (Black Flash, Light Sweep, Bokeh, Snow, Rain, Sparkle, Lens Flare, Film Frame, Prism, Vertigo, Tilt Shift, 3/9 Split, Heartbeat…) — ಒಟ್ಟು 50+ · **ಪ್ರತಿ tile ನಲ್ಲಿ ನಿಜವಾದ WebGL preview** (mouse ಇಟ್ಟರೆ ಚಲಿಸುತ್ತದೆ)
+- **Transitions:** Trending, Basic, Camera, Light, Glitch, Slide, Shape, 3D, Distort · ಹೊಸ 22 (Pull In/Out, Spin Blur, Glare, Film Burn, Ink Spread, Whip Up/Down, Shake Zoom, Zoom Punch…) — ಒಟ್ಟು 58 · ನಿಜವಾದ preview
+- **Vocal remover / BGM remover:** AI (UVR MDX-Net) browser ನಲ್ಲೇ — ಹಾಡಿನಿಂದ ಧ್ವನಿ ತೆಗೆಯಿರಿ, music ತೆಗೆಯಿರಿ, ಅಥವಾ ಎರಡು tracks ಆಗಿ ಬೇರ್ಪಡಿಸಿ · ⚡ Quick karaoke (AI ಇಲ್ಲದೆ). ಮೊದಲ ಬಾರಿ ~67 MB model; GPU ಇದ್ದರೆ ವೇಗ. *(Model ಅನ್ನು repo ನ `models/` folder ನಲ್ಲಿ ಇಟ್ಟರೆ ಅಲ್ಲಿಂದಲೇ load ಆಗುತ್ತದೆ.)*
+
 ## 📱 Phone app + Offline (v11)
 - **Phone layout:** ಮೇಲೆ Player, ಮಧ್ಯ Timeline, ಕೆಳಗೆ CapCut ತರಹ tool bar. Tool ಒತ್ತಿದರೆ panel Player ಕೆಳಗೆ ತೆರೆಯುತ್ತದೆ — preview ನೋಡುತ್ತಲೇ apply ಮಾಡಿ, ✓ ಒತ್ತಿ ಮುಚ್ಚಿ. Clip select ಮಾಡಿದಾಗ tool bar ಅದರ tools (Split, Animation, Speed, Filters…) ತೋರಿಸುತ್ತದೆ. Timeline: ಒಂದು ಬೆರಳು = scroll, tap = playhead, ಎರಡು ಬೆರಳು = zoom.
 - **Install:** ಮೇಲಿನ ⬇ **Install app** ಬಟನ್ (Android/PC Chrome, Edge). iPhone: Safari › Share › Add to Home Screen.

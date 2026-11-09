@@ -109,7 +109,7 @@ const FILTER_CSS = {none:'',vivid:'saturate(1.45) contrast(1.15)',warm:'sepia(.3
    ===================================================================== */
 const LTABS = [['media','Media','media'],['templates','Templates','library'],['audio','Audio','audio'],['text','Text','text'],['stickers','Stickers','sticker'],['effects','Effects','effects'],['transitions','Transitions','trans'],['captions','Captions','captions'],['filters','Filters','filters'],['adjust','Adjustment','adjust']];
 const LSUB = {media:[['all','All'],['video','Videos'],['image','Photos'],['audio','Audio'],['library','Library']], audio:[['sfx','Sound effects'],['yours','Yours'],['voice','Voice-over'],['tts','Text to speech']],
-  text:[['add','Add text'],['templates','Text templates'],['styles','Text styles'],['effects','Text effects']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[['video','Video effects'],['body','Body effects']], transitions:[['all','Transitions']],
+  text:[['add','Add text'],['templates','Text templates'],['styles','Text styles'],['effects','Text effects']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[...FX_CATS.map(c=>[c[0],c[0]]),['All','All'],['body','🧍 Body effects']], transitions:[...TRANS_CATS.map(c=>[c[0],c[0]]),['All','All']],
   templates:TPL_CATS.map(c=>[c,c]), captions:[['auto','Auto captions'],['edit','Edit captions'],['srt','SRT file']], filters:[['filters','Filters']], adjust:[['lut','LUT'],['adjust','Adjust']]};
 const TEXT_ADD = [
   ['default','Default text',{text:'ನಿಮ್ಮ ಪಠ್ಯ ಇಲ್ಲಿ'}],
@@ -213,19 +213,18 @@ function leftContent(tab, sub){
           ${it && cur !== 'none' ? `<div style="margin-top:14px">${st}${sl(it,'Intensity','bfx.amount',0,100)}${['bodyGlow','neonOutline','bgTint','ghost'].includes(cur)?colorRow(it,'Color','bfx.color',true):''}</div>` : ''}
           <div class="lnote">🧍 Body effects AI ಮೂಲಕ ವ್ಯಕ್ತಿಯನ್ನು ಗುರುತಿಸಿ ಅವರ ಸುತ್ತ / ಹಿನ್ನೆಲೆಗೆ ಮಾತ್ರ effect ಹಾಕುತ್ತದೆ (Portrait blur, Color pop, Glow…). ವ್ಯಕ್ತಿ ಸ್ಪಷ್ಟವಾಗಿ ಕಾಣುವ video ಗೆ ಉತ್ತಮ.</div>`;
       }
-      const cat = S.fxCat || 'All', keys = cat === 'All' ? FX.map(f=>f[0]) : ['none', ...(FX_CATS.find(c=>c[0]===cat)||[0,[]])[1]], cur = it ? it.fx.type : '';
-      return head + `<div class="chiprow">${['All',...FX_CATS.map(c=>c[0])].map(c=>`<button data-fxcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>
-        <div class="tiles">${keys.map(k=>FX.find(f=>f[0]===k)).filter(Boolean).map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-fx="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv fx-${k}" style="background-image:url(${th})"></div>`}</div><span>${n}</span></button>`).join('')}</div>
+      const keys = sub === 'All' ? FX.map(f=>f[0]) : ['none', ...(FX_CATS.find(c=>c[0]===sub)||FX_CATS[0])[1]], cur = it ? it.fx.type : '';
+      return head + `<div class="tiles gtiles">${keys.map(k=>FX.find(f=>f[0]===k)).filter(Boolean).map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-fx="${k}"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-pfx="${k}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div>
         ${it && cur !== 'none' ? `<div style="margin-top:14px">${sl(it,'Intensity','fx.amount',0,100)}${sl(it,'Speed','fx.speed',0,100)}</div>${!it.type?'<div class="btns"><button data-all="fx">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}` : ''}
-        <div class="lnote">⚡ Effect ಮೇಲೆ click ಮಾಡಿದರೆ Player ನಲ್ಲಿ ತಕ್ಷಣ preview ಆಗುತ್ತದೆ. Intensity / Speed ಇಲ್ಲೇ ಕೆಳಗೆ.</div>`;
+        <div class="lnote">⚡ Tile ಮೇಲೆ mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview. Click ಮಾಡಿದರೆ Player ನಲ್ಲಿ ತಕ್ಷಣ ಕಾಣುತ್ತದೆ. ಹಲವು clips ಗೆ ಒಮ್ಮೆಲೆ ಬೇಕಿದ್ದರೆ Adjustment layer ಬಳಸಿ.</div>`;
     }
     case 'transitions': {
       const c = transTarget(), i = c ? S.clips.indexOf(c) : -1, cur = c ? c.trans.type : '';
-      const ta = i > 0 ? thumbFor(S.clips[i-1]) : PLACEHOLDER, tb = c ? thumbFor(c) : PLACEHOLDER;
+      const keys = sub === 'All' ? TRANS.map(t=>t[0]) : ['none', ...(TRANS_CATS.find(z=>z[0]===sub)||TRANS_CATS[0])[1]];
       return `<div class="ltitle" style="margin-top:0">${c ? `Clip ${i} → Clip ${i+1}` : 'Transition ಗೆ ಕನಿಷ್ಠ 2 clips ಬೇಕು'}</div>
-        <div class="tiles">${TRANS.map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-tr="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="tpv t-${k}"><i class="ta" style="background-image:url(${ta})"></i><i class="tb" style="background-image:url(${tb})"></i></div>`}</div><span>${n}</span></button>`).join('')}</div>
+        <div class="tiles gtiles">${keys.map(k=>TRANS.find(t=>t[0]===k)).filter(Boolean).map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-tr="${k}"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-ptr="${k}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div>
         ${c ? '<div class="btns" style="margin-top:12px"><button data-all="trans">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : ''}
-        <div class="lnote">Timeline ನಲ್ಲಿ ಎರಡು clips ನಡುವಿನ <b>⇄</b> ಗುಂಡಿ ಒತ್ತಿದರೂ transition ಆರಿಸಬಹುದು.</div>`;
+        <div class="lnote">Tile ಮೇಲೆ mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview. Timeline ನಲ್ಲಿ ಎರಡು clips ನಡುವಿನ <b>⇄</b> ಒತ್ತಿದರೂ ಆರಿಸಬಹುದು.</div>`;
     }
     case 'captions':
       if(sub === 'edit') return captionsEditor();
@@ -505,6 +504,14 @@ function audioBody(it, kind, sub){
       chk('audio.isolate','Isolate voice','ಮಾತಿನ frequency ಮಾತ್ರ ಉಳಿಸುತ್ತದೆ (basic)', a.isolate));
     h += sec('eq','Equalizer', sl(it,'Bass boost','audio.bass',-15,15)+sl(it,'Treble','audio.treble',-15,15));
   } else h += '<div class="note">PiP video ಗೆ Voice tools ಬೇಕಿದ್ದರೆ ಅದನ್ನು main track ಗೆ ಎಳೆಯಿರಿ ಅಥವಾ Extract audio ಮಾಡಿ.</div>';
+  if(kind === 'audio' || kind === 'clip') h += sec('stem','🎤 Vocal remover / BGM remover', `
+      <div class="sepg"><button data-sep="inst">🎵<b>Vocal remover</b><span>ಹಾಡಿನ ಧ್ವನಿ ತೆಗೆದು music ಮಾತ್ರ</span></button>
+      <button data-sep="vocals">🎤<b>BGM remover</b><span>Music ತೆಗೆದು ಧ್ವನಿ ಮಾತ್ರ</span></button>
+      <button data-sep="both">🎚<b>ಎರಡೂ (2 tracks)</b><span>Vocals + Music ಬೇರೆ ಬೇರೆ</span></button>
+      <button data-sep="quick">⚡<b>Quick karaoke</b><span>ತಕ್ಷಣ, AI ಇಲ್ಲದೆ (stereo ಹಾಡು)</span></button></div>
+      <div id="sepStat" style="color:var(--mute);min-height:18px;margin-top:8px"></div><div class="prog" id="sepProg" style="display:none"><div id="sepBar"></div></div>
+      <div class="btns" id="sepStopB" style="display:none"><button data-sep="stop">✕ Stop</button></div>
+      <div class="note">AI (UVR MDX-Net) ನಿಮ್ಮ browser ನಲ್ಲೇ ಓಡುತ್ತದೆ — ಹಾಡು ಎಲ್ಲಿಗೂ upload ಆಗುವುದಿಲ್ಲ. ಮೊದಲ ಬಾರಿ ~67 MB model download, ನಂತರ offline. GPU ಇರುವ PC ಯಲ್ಲಿ ವೇಗ; phone ನಲ್ಲಿ 3 ನಿಮಿಷದ ಹಾಡಿಗೆ 10+ ನಿಮಿಷ ಆಗಬಹುದು. ಮೂಲ audio mute ಆಗುತ್ತದೆ (right-click › Restore).</div>`);
   if(kind === 'audio') h += sec('beat','🥁 Beat sync', `<div class="crow"><span>Beats</span><b style="color:var(--text)">${it.beats ? `${beatTimes(it).length} · ${it.bpm} BPM` : '—'}</b></div>
       <div class="btns"><button data-beat="detect">🥁 Detect beats</button></div>
       ${it.beats ? `<div class="crow"><span>ಪ್ರತಿ ಎಷ್ಟು beat ಗೆ cut</span><select id="beatEvery">${[1,2,4,8].map(n=>`<option value="${n}" ${(S.beatEvery||2)===n?'selected':''}>${n}</option>`).join('')}</select></div>
@@ -1537,6 +1544,7 @@ function ctxForItem(it){
       hasA ? ['Freeze frame (3s)', freezeFrame, {icon:'pause'}] : null,
       [multi ? `Compound clip (${selMulti.size} clips)` : 'Compound clip… (Ctrl+click ಮಾಡಿ ಹಲವು ಆರಿಸಿ)', () => compoundClips([...selMulti]), {icon:'layers', dis:!multi}],
       hasA ? ['Reverse audio', () => reverseItem(it), {icon:'undo'}] : null,
+      hasA ? ['Vocal / BGM remover…', () => { S.rt.clip = 'audio'; S.rs.audio = 'basic'; S.closed.stem = false; renderInspector(); const x = IB.querySelector('[data-sep]'); if(x) x.scrollIntoView({block:'center'}); }, {icon:'mic'}] : null,
       hasA ? ['Remove silences…', () => { S.rt.clip = 'audio'; S.rs.audio = 'basic'; S.closed.sil = false; renderInspector(); const x = IB.querySelector('[data-sil]'); if(x) x.scrollIntoView({block:'center'}); }, {icon:'wave'}] : null,
       '-', ['Move to overlay track', () => clipToOverlay(it, derived[it.id].start), {icon:'layers'}],
       ['Mirror', () => { flipSel(); renderTimeline(); }, {icon:'flip'}], ['Rotate 90°', rotateSel, {icon:'rotate'}],
@@ -1550,6 +1558,8 @@ function ctxForItem(it){
   if(k === 'audio'){
     const own = it.linkClip && (S.clips.find(c => c.id === it.linkClip) || S.overlays.find(o => o.id === it.linkClip));
     return [...base, own ? ['Video ಗೆ audio ಮರಳಿಸಿ (Restore)', () => restoreAudio(own), {icon:'undo'}] : null,
+      it.extracted ? ['Original audio ಮರಳಿಸಿ (Restore)', () => restoreAudio(it), {icon:'undo'}] : null,
+      ['Vocal / BGM remover…', () => { S.rt.audio = 'audio'; S.rs.audio = 'basic'; S.closed.stem = false; renderInspector(); const x = IB.querySelector('[data-sep]'); if(x) x.scrollIntoView({block:'center'}); }, {icon:'mic'}],
       [it.volume > 0 ? 'Mute' : 'Unmute', () => toggleMuteItem(it), {icon:it.volume > 0 ? 'volx' : 'vol'}], ['Reverse audio', () => reverseItem(it), {icon:'undo'}],
       ['Detect beats / Beat sync', () => { S.rt.audio = 'audio'; S.rs.audio = 'basic'; renderInspector(); doBeat('detect', it); }, {icon:'music2'}],
       ['Audio effects…', () => { S.rt.audio = 'audio'; S.rs.audio = 'fx'; renderInspector(); }, {icon:'wave'}], '-', ...attrs];
@@ -1681,7 +1691,35 @@ function drawAnimTile(c, it, sub, name, p){
   x.restore();
 }
 let aTile = null;
+/* ---- live WebGL previews for effect / transition tiles ---- */
+const SAMPLE_IMG = (() => { const mk = (a,b,sun) => { const c = document.createElement('canvas'); c.width = 160; c.height = 120; const x = c.getContext('2d'), g = x.createLinearGradient(0,0,0,120); g.addColorStop(0,a); g.addColorStop(.6,b); g.addColorStop(.61,'#2f6b35'); g.addColorStop(1,'#1d3d22'); x.fillStyle = g; x.fillRect(0,0,160,120);
+  x.fillStyle = sun; x.beginPath(); x.arc(118,34,15,0,7); x.fill(); x.fillStyle = '#d9a07a'; x.beginPath(); x.ellipse(62,70,16,20,0,0,7); x.fill(); x.fillStyle = '#3a2618'; x.beginPath(); x.ellipse(62,55,17,9,0,Math.PI,0); x.fill(); x.fillStyle = '#c0303a'; x.fillRect(44,88,36,32); const i = new Image(); i.src = c.toDataURL(); return i; };
+  return [mk('#5d9be0','#f2c79a','#ffe9a8'), mk('#3b1d5e','#ff7a59','#ffd36e')]; })();
+function gpvImgs(){
+  const it = visTarget(), c = transTarget(), i = c ? S.clips.indexOf(c) : -1;
+  const fxI = it ? imgOf(thumbFor(it)) : SAMPLE_IMG[0];
+  const A = i > 0 ? imgOf(thumbFor(S.clips[i-1])) : SAMPLE_IMG[0], B = c ? imgOf(thumbFor(c)) : SAMPLE_IMG[1];
+  return {fxI, A: A.src === B.src ? SAMPLE_IMG[0] : A, B};
+}
+function paintGL(root){
+  const cs = root.querySelectorAll('canvas.gpv'); if(!cs.length) return;
+  const im = gpvImgs(), pend = [im.fxI, im.A, im.B].filter(x => !x.complete || !x.naturalWidth);
+  if(pend.length){ pend.forEach(x => x.addEventListener('load', () => paintGL(root), {once:true})); }
+  cs.forEach(c => { try{ c.dataset.pfx ? fxPreview(c, im.fxI.naturalWidth ? im.fxI : SAMPLE_IMG[0], c.dataset.pfx, 1.3) : transPreview(c, im.A, im.B, c.dataset.ptr, .5); }catch(e){} });
+}
+let gTile = null;
+LC.addEventListener('mouseover', e => {
+  const c = e.target.closest('.tile') && e.target.closest('.tile').querySelector('canvas.gpv'); if(!c || (gTile && gTile.c === c)) return;
+  if(gTile) cancelAnimationFrame(gTile.raf);
+  const t0 = performance.now(), im = gpvImgs();
+  const loop = () => { const t = (performance.now() - t0)/1000;
+    try{ c.dataset.pfx ? fxPreview(c, im.fxI.naturalWidth ? im.fxI : SAMPLE_IMG[0], c.dataset.pfx, 1 + t) : transPreview(c, im.A, im.B, c.dataset.ptr, Math.min(1, Math.max(0, (t % 1.8 - .3)/1.1))); }catch(err){}
+    gTile.raf = requestAnimationFrame(loop); };
+  gTile = {c, raf:requestAnimationFrame(loop)};
+});
+LC.addEventListener('mouseout', e => { const tl = e.target.closest('.tile'); if(!tl || tl.contains(e.relatedTarget) || !gTile) return; cancelAnimationFrame(gTile.raf); const c = gTile.c; gTile = null; const im = gpvImgs(); try{ c.dataset.pfx ? fxPreview(c, im.fxI, c.dataset.pfx, 1.3) : transPreview(c, im.A, im.B, c.dataset.ptr, .5); }catch(err){} });
 function paintV8(root, it){
+  paintGL(root);
   if(it) root.querySelectorAll('canvas.apv').forEach(c => { const sub = c.dataset.sub; drawAnimTile(c, it, sub, c.dataset.an, sub === 'combo' ? .3 : sub === 'in' ? .4 : .5); });
   paintV9(root);
   root.querySelectorAll('canvas[data-tfxc]').forEach(c => { const t = TFX_MAP[c.dataset.tfxc]; if(!t) return; const x = c.getContext('2d'); x.clearRect(0,0,c.width,c.height);
@@ -1820,6 +1858,7 @@ function v9Click(t, it){
   if(d.addadj){ addOverlay(newOverlay('adjust', {start:S.time, dur:Math.max(3, Math.min(10, S.total - S.time || 5)), opacity:100}), 'adjust'); S.ltab = 'adjust'; S.lsub.adjust = 'adjust'; renderLeft(); return true; }
   if(d.addfl){ const o = newOverlay('adjust', {start:0, dur:Math.max(1, S.mainEnd || S.total || 5), filter:d.addfl, filterAmt:(visTarget()||{}).filterAmt || 80}); addOverlay(o, 'adjust'); const c = visTarget(); renderLeft(); return true; }
   if(d.beat){ const a = selAud(); if(a) doBeat(d.beat, a); return true; }
+  if(d.sep){ runSep(d.sep); return true; }
   if(d.sil){ const c = selClip(); if(c) doSilence(d.sil, c); return true; }
   if(d.capgo){ const o = S.overlays.find(x => x.id === d.capgo); if(o){ S.sel = o.id; seek(o.start + .02); renderTimeline(); } return true; }
   if(d.capdel){ pushUndo(); S.overlays = S.overlays.filter(x => x.id !== d.capdel); afterEdit(); renderLeft(); return true; }
@@ -2025,3 +2064,19 @@ async function prepareOffline(btn){
   }catch(err){ say('⚠ ' + err.message); btn.disabled = false; }
 }
 if(/[?&]new=1/.test(location.search)) setTimeout(() => { newProject(); }, 900);
+
+/* ---- vocal / BGM remover UI ---- */
+let sepBusy = false;
+async function runSep(which){
+  if(which === 'stop'){ stopStems(); sepBusy = false; const st = $('#sepStat'); if(st) st.textContent = 'ನಿಲ್ಲಿಸಲಾಯಿತು'; ['#sepProg','#sepStopB'].forEach(q => { const e = $(q); if(e) e.style.display = 'none'; }); return; }
+  if(sepBusy) return; const it = selItem(); if(!it || !(it.type === 'audio' || !it.type)) return;
+  const m = media(it.mediaId); if(!m || m.type === 'image') return alert('Audio ಇರುವ clip / music ಆರಿಸಿ');
+  sepBusy = true; pause();
+  const show = (msg, p) => { const st = $('#sepStat'), pr = $('#sepProg'), bar = $('#sepBar'), sb = $('#sepStopB'); if(st) st.textContent = msg; if(pr){ pr.style.display = ''; bar.style.width = (p*100) + '%'; } if(sb) sb.style.display = which === 'quick' ? 'none' : ''; };
+  show(which === 'quick' ? '⚡ ತಯಾರಾಗುತ್ತಿದೆ…' : '⏳ ಆರಂಭ…', 0);
+  try{
+    const n = await separateStems(it, which, show);
+    sepBusy = false; renderInspector(); renderLeft();
+    const st = $('#sepStat'); if(st) st.textContent = `✅ ${n} ಹೊಸ audio track ಸೇರಿಸಲಾಗಿದೆ — ಮೂಲ audio mute ಆಗಿದೆ`;
+  }catch(err){ sepBusy = false; stopStems(); const st = $('#sepStat'); if(st) st.textContent = '❌ ' + err.message; else alert(err.message); const pr = $('#sepProg'); if(pr) pr.style.display = 'none'; const sb = $('#sepStopB'); if(sb) sb.style.display = 'none'; }
+}
