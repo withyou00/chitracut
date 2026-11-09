@@ -88,7 +88,7 @@ function chips(it,path,opts,cols=3){
   return `<div class="tiles" style="grid-template-columns:repeat(${cols},1fr)">${opts.map(([k,n])=>`<button class="vtile ${v===k?'on':''}" style="height:auto;padding:8px 4px" data-set="${path}" data-val="${k}">${n}</button>`).join('')}</div><div style="height:10px"></div>`;
 }
 function sec(id,title,body,o={}){
-  const kf = o.kf ? `<span class="kfm"><button class="ib sm" data-kf="prev" title="ಹಿಂದಿನ keyframe">‹</button><button class="ib sm kfbtn" data-kf="toggle" title="Keyframe (K)">${ic('kf')}</button><button class="ib sm" data-kf="next" title="ಮುಂದಿನ keyframe">›</button></span>` : '';
+  const kf = o.kf ? `<span class="kfm"><button class="ib sm" data-kf="prev" title="Previous keyframe">‹</button><button class="ib sm kfbtn" data-kf="toggle" title="Keyframe (K)">${ic('kf')}</button><button class="ib sm" data-kf="next" title="Next keyframe">›</button></span>` : '';
   return `<div class="sec ${S.closed[id]?'closed':''}"><div class="sech"><button class="sect" data-tog="${id}">${title} ${ic('chev')}</button><div class="secr">${o.right||''}${o.reset?`<button class="ib sm" data-act="${o.reset}" title="Reset">${ic('reset')}</button>`:''}${kf}</div></div><div class="secb">${body}</div></div>`;
 }
 const colorRow = (o,label,path,swatch) => `<div class="crow"><span>${label}</span><input type="color" data-p="${path}" value="${getP(o,path)}"></div>` +
@@ -112,10 +112,10 @@ const LSUB = {media:[['all','All'],['video','Videos'],['image','Photos'],['audio
   text:[['add','Add text'],['templates','Text templates'],['styles','Text styles'],['effects','Text effects']], stickers:[['emoji','Emoji'],['social','Social'],['badges','Badges & Arrows']], effects:[...FX_CATS.map(c=>[c[0],c[0]]),['All','All'],['body','🧍 Body effects']], transitions:[...TRANS_CATS.map(c=>[c[0],c[0]]),['All','All']],
   templates:TPL_CATS.map(c=>[c,c]), captions:[['auto','Auto captions'],['edit','Edit captions'],['srt','SRT file']], filters:[['filters','Filters']], adjust:[['lut','LUT'],['adjust','Adjust']]};
 const TEXT_ADD = [
-  ['default','Default text',{text:'ನಿಮ್ಮ ಪಠ್ಯ ಇಲ್ಲಿ'}],
+  ['default','Default text',{text:'Your text here'}],
   ['title','Title',{text:'TITLE',size:96,font:'Anton',shadow:40,y:42}],
   ['subtitle','Subtitle',{text:'Subtitle',size:42,bgOn:true,bgColor:'#000000',bgAlpha:60,shadow:0,y:72}],
-  ['kannada','ಕನ್ನಡ',{text:'ಕನ್ನಡ',size:84,font:'Baloo Tamma 2',color:'#ffe600',stroke:'#000000',strokeW:7,shadow:0}],
+  ['kannada','Kannada',{text:'ಕನ್ನಡ',size:84,font:'Baloo Tamma 2',color:'#ffe600',stroke:'#000000',strokeW:7,shadow:0}],
   ['neon','Neon',{text:'NEON',size:80,font:'Montserrat',color:'#ffffff',shadow:90,shadowColor:'#20d5ec'}],
   ['caption','Caption',{text:'Caption text',...CAPTION_STYLE}]
 ];
@@ -142,20 +142,20 @@ function mediaTile(m){
   return `<div class="mtile ${m.type}" draggable="${!m.missing}" data-mid="${m.id}" title="${esc(m.name)}">
     <div class="mth" style="${bg}">${m.thumb?'':`<div class="ph">${m.type==='audio'?'🎵':'⚠️'}</div>`}
       ${usedMedia(m.id)?'<span class="badge">Added</span>':''}<span class="dur">${m.type==='image'?'IMG':fmtT(m.duration)}</span>
-      <button class="mdel" data-delm="${m.id}" title="Project ನಿಂದ delete ಮಾಡಿ">✕</button>
-      ${m.missing?'':`<div class="acts">${m.type!=='audio'?`<button class="pip" data-pip="${m.id}" title="Overlay (PiP) ಆಗಿ ಸೇರಿಸಿ">PiP</button>`:''}<button data-addm="${m.id}" title="Timeline ಗೆ ಸೇರಿಸಿ">+</button></div>`}
+      <button class="mdel" data-delm="${m.id}" title="Delete from project">✕</button>
+      ${m.missing?'':`<div class="acts">${m.type!=='audio'?`<button class="pip" data-pip="${m.id}" title="Add as overlay (PiP)">PiP</button>`:''}<button data-addm="${m.id}" title="Add to timeline">+</button></div>`}
     </div><div class="mnm">${m.missing?'⚠️ ':''}${esc(m.name)}</div></div>`;
 }
 function captionsAuto(){
   const src = capSource(), m = src && media(src.mediaId);
   return `<div class="ltitle" style="margin-top:0">✨ AI auto captions</div>
-    <div class="crow"><span>Audio source</span><b style="max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m?esc(m.name):'— clip / audio select ಮಾಡಿ'}</b></div>
-    <div class="crow"><span>ಭಾಷೆ</span><select id="cLang">${CAP_LANGS.map(([k,n])=>`<option value="${k}" ${S.capLang===k?'selected':''}>${n}</option>`).join('')}</select></div>
-    <div class="crow"><span>Model</span><select id="cModel">${[['tiny','Tiny · 40 MB · ವೇಗ'],['base','Base · 75 MB'],['small','Small · 250 MB · ಕನ್ನಡಕ್ಕೆ ಉತ್ತಮ']].map(([k,n])=>`<option value="${k}" ${(S.capModel||'base')===k?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="crow"><span>Audio source</span><b style="max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m?esc(m.name):'— select a clip / audio'}</b></div>
+    <div class="crow"><span>Language</span><select id="cLang">${CAP_LANGS.map(([k,n])=>`<option value="${k}" ${S.capLang===k?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="crow"><span>Model</span><select id="cModel">${[['tiny','Tiny · 40 MB · fast'],['base','Base · 75 MB'],['small','Small · 250 MB · most accurate']].map(([k,n])=>`<option value="${k}" ${(S.capModel||'base')===k?'selected':''}>${n}</option>`).join('')}</select></div>
     <div id="cStatus" style="color:var(--mute);min-height:18px"></div><div class="prog"><div id="cBar"></div></div>
     <button id="cRun" class="primary" style="width:100%;padding:9px" ${src?'':'disabled'}>✨ Generate captions</button>
-    <div class="lnote">AI model ನಿಮ್ಮ browser ನಲ್ಲೇ ಓಡುತ್ತದೆ (ಉಚಿತ). ಮೊದಲ ಬಾರಿ model download ಆಗುತ್ತದೆ, ನಂತರ cache. ಕನ್ನಡ ನಿಖರತೆ ಮಧ್ಯಮ — captions ಅನ್ನು ನಂತರ edit ಮಾಡಬಹುದು.</div>
-    <div class="lnote">🎙 Voice-over record ಮಾಡುವಾಗ <b>Live captions</b> ON ಮಾಡಿದರೆ ಮಾತು ತಕ್ಷಣ captions ಆಗುತ್ತದೆ.</div>`;
+    <div class="lnote">The AI model runs inside your browser (free). It downloads once, then stays cached. Accuracy varies by language — you can edit captions afterwards.</div>
+    <div class="lnote">🎙 Turn on <b>Live captions</b> while recording a voice-over to get captions instantly.</div>`;
 }
 function leftContent(tab, sub){
   switch(tab){
@@ -164,78 +164,78 @@ function leftContent(tab, sub){
         const cat = S.gfxCat || 'Social', list = GFX.filter(g => g.cat === cat);
         return `<div class="chiprow">${GFX_CATS.map(c=>`<button data-gfxcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>
           <div class="tiles gfx">${list.map(g=>`<button class="tile" data-gfx="${g.id}" draggable="true"><div class="tth gth"><canvas data-gfxc="${g.id}" width="176" height="104"></canvas></div><span>${g.name}</span></button>`).join('')}</div>
-          <div class="lnote">✨ ಇವು ChitraCut ನಲ್ಲೇ ತಯಾರಾಗುವ animated stock graphics — <b>copyright ಇಲ್ಲ</b>, download ಬೇಕಿಲ್ಲ. Mouse ಇಟ್ಟರೆ preview · click = playhead ನಲ್ಲಿ ಸೇರಿಸಿ · timeline ಗೆ ಎಳೆಯಬಹುದು. Text / ಬಣ್ಣ ಬದಲಿಸಬಹುದು.</div>`;
+          <div class="lnote">✨ Animated stock graphics generated by ChitraCut — <b>copyright free</b>, no download. Hover to preview · click = add at playhead · drag to timeline. Text and colours are editable.</div>`;
       }
       const list = S.media.filter(m => sub === 'all' || m.type === sub);
       return `<div class="lhead"><button class="primary" data-l="import">${ic('import')} Import</button><button data-l="rec">${ic('mic')} Record</button></div>
-        ${S.media.length ? '' : `<div class="dropzone" data-l="import"><b>Import media</b>Video, photo, music files ಅನ್ನು ಇಲ್ಲಿ drag ಮಾಡಿ ಅಥವಾ click ಮಾಡಿ</div>`}
+        ${S.media.length ? '' : `<div class="dropzone" data-l="import"><b>Import media</b>Drag video, photo or music files here, or click</div>`}
         <div class="mgrid">${list.map(mediaTile).join('')}</div>
-        ${S.media.length ? `<div class="lnote">💡 Timeline ನ <b>main track</b> ಗೆ ಎಳೆದರೆ clip ಆಗುತ್ತದೆ · ಅದರ <b>ಮೇಲೆ</b> ಎಳೆದರೆ overlay (PiP) · ಕೆಳಗೆ ಎಳೆದರೆ audio.</div>` : ''}`;
+        ${S.media.length ? `<div class="lnote">💡 Drag onto the <b>main track</b> for a clip · <b>above</b> it for an overlay (PiP) · below it for audio.</div>` : ''}`;
     }
     case 'audio': {
       if(sub === 'sfx'){
         const cat = S.sfxCat || 'All', list = SFX.filter(x => cat === 'All' || x.cat === cat);
         return `<div class="chiprow">${SFX_CATS.map(c=>`<button data-sfxcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>
-          ${list.map(x=>`<div class="srow"><button class="sico" data-sfxp="${x.id}" title="ಕೇಳಿ">${ic('play')}</button><div class="sinfo"><b>${x.name}</b><span>ChitraCut · ${x.cat} · ${fmtT(Math.max(1,x.dur))}</span></div><button class="sadd" data-sfx="${x.id}" title="Playhead ನಲ್ಲಿ ಸೇರಿಸಿ">${ic('plus')}</button></div>`).join('')}
-          <div class="lnote">🔊 ಈ sound effects ChitraCut ನಲ್ಲೇ ತಯಾರಾಗುತ್ತವೆ — copyright ಇಲ್ಲ, internet ಬೇಕಿಲ್ಲ, ಸಂಪೂರ್ಣ ಉಚಿತ.</div>`;
+          ${list.map(x=>`<div class="srow"><button class="sico" data-sfxp="${x.id}" title="Listen">${ic('play')}</button><div class="sinfo"><b>${x.name}</b><span>ChitraCut · ${x.cat} · ${fmtT(Math.max(1,x.dur))}</span></div><button class="sadd" data-sfx="${x.id}" title="Add at playhead">${ic('plus')}</button></div>`).join('')}
+          <div class="lnote">🔊 These sound effects are generated by ChitraCut — copyright free, work offline, completely free.</div>`;
       }
       if(sub === 'yours'){
         const list = S.media.filter(m => m.type === 'audio');
         return `<div class="lhead"><button class="primary" data-l="audioimp">${ic('import')} Import music</button></div>
-          ${list.length ? list.map(m=>`<div class="srow"><button class="sico" data-ap="${m.id}" title="ಕೇಳಿ">${ic(apEl&&apEl.dataset.id===m.id&&!apEl.paused?'pause':'play')}</button><div class="sinfo"><b>${esc(m.name)}</b><span>${fmtT(m.duration)}</span></div><button class="sadd" data-addm="${m.id}" title="Playhead ನಲ್ಲಿ ಸೇರಿಸಿ">${ic('plus')}</button><button class="sadd" data-delm="${m.id}" title="Delete">${ic('trash')}</button></div>`).join('') : '<div class="lnote">ನಿಮ್ಮ music / audio files ಇಲ್ಲಿ ಕಾಣುತ್ತವೆ. MP3, WAV, M4A support ಆಗುತ್ತವೆ.</div>'}`;
+          ${list.length ? list.map(m=>`<div class="srow"><button class="sico" data-ap="${m.id}" title="Listen">${ic(apEl&&apEl.dataset.id===m.id&&!apEl.paused?'pause':'play')}</button><div class="sinfo"><b>${esc(m.name)}</b><span>${fmtT(m.duration)}</span></div><button class="sadd" data-addm="${m.id}" title="Add at playhead">${ic('plus')}</button><button class="sadd" data-delm="${m.id}" title="Delete">${ic('trash')}</button></div>`).join('') : '<div class="lnote">Your music / audio files appear here. MP3, WAV and M4A are supported.</div>'}`;
       }
       if(sub === 'tts') return ttsBody(null);
-      return `<div class="dropzone" data-l="rec"><b>🎙 Voice-over record</b>Playhead (${fmtTC(S.time)}) ಇರುವ ಜಾಗದಿಂದ ನಿಮ್ಮ ಧ್ವನಿ record ಆಗುತ್ತದೆ</div>
-        <div class="lnote">Record ಆಗುವಾಗ video play ಆಗುತ್ತದೆ. Headphone ಬಳಸಿದರೆ ಉತ್ತಮ. Live captions ON ಮಾಡಿದರೆ ಮಾತು ತಕ್ಷಣ ಕನ್ನಡ captions ಆಗುತ್ತದೆ (Chrome).</div>`;
+      return `<div class="dropzone" data-l="rec"><b>🎙 Voice-over record</b>Records your voice from the playhead (${fmtTC(S.time)})</div>
+        <div class="lnote">The video plays while you record — headphones are recommended. Turn on Live captions to turn speech into captions instantly (Chrome).</div>`;
     }
     case 'templates': return templatesGrid(sub);
     case 'text': {
-      if(sub === 'templates') return `<div class="tiles ttpl">${TEXT_TPL.map(t=>`<button class="tile" data-ttpl="${t.id}"><div class="tth tfxth"><canvas data-ttc="${t.id}" width="150" height="84"></canvas></div><span>${t.name}</span></button>`).join('')}</div><div class="lnote">Click = playhead ನಲ್ಲಿ ಸೇರಿಸಿ. ನಂತರ text ಬದಲಿಸಿ.</div>`;
-      if(sub === 'effects'){ const o = selOv(); return `<div class="ltitle" style="margin-top:0">${o && o.type==='text' ? 'Selected text ಗೆ effect ಹಾಕಿ' : 'Click = ಹೊಸ text ಸೇರಿಸಿ'}</div>` + tfxGrid(o && o.type === 'text' ? o.tfx : null); }
+      if(sub === 'templates') return `<div class="tiles ttpl">${TEXT_TPL.map(t=>`<button class="tile" data-ttpl="${t.id}"><div class="tth tfxth"><canvas data-ttc="${t.id}" width="150" height="84"></canvas></div><span>${t.name}</span></button>`).join('')}</div><div class="lnote">Click = add at playhead, then edit the text.</div>`;
+      if(sub === 'effects'){ const o = selOv(); return `<div class="ltitle" style="margin-top:0">${o && o.type==='text' ? 'Apply effect to selected text' : 'Click = add new text'}</div>` + tfxGrid(o && o.type === 'text' ? o.tfx : null); }
       if(sub === 'styles'){
         const o = selOv(), on = o && o.type === 'text';
-        return `<div class="ltitle" style="margin-top:0">${on ? 'Selected text ಗೆ style ಹಾಕಿ' : 'Click = ಹೊಸ text ಸೇರಿಸಿ'}</div>
+        return `<div class="ltitle" style="margin-top:0">${on ? 'Apply style to selected text' : 'Click = add new text'}</div>
           <div class="tiles tstyle">${TEXT_PRESETS.map((p,i)=>`<button class="tile" data-tpreset="${i}"><div class="tth" style="${presetCss(p)}">Aa</div></button>`).join('')}</div>`;
       }
       return `<div class="tiles tstyle">${TEXT_ADD.map(([k,n,p])=>`<button class="tile" data-addtext="${k}"><div class="tth" style="${presetCss({color:'#fff',...p})};font-size:${k==='default'?13:16}px">${k==='default'?'Default text':esc(p.text)}</div><span>${n}</span></button>`).join('')}</div>
-        <div class="lnote">Text select ಮಾಡಿದ ನಂತರ ಬಲಗಡೆ font, ಬಣ್ಣ, animation ಬದಲಿಸಿ. ಕನ್ನಡ fonts ಲಭ್ಯ.</div>`;
+        <div class="lnote">After selecting text, change font, colour and animation on the right. 70+ fonts in many languages.</div>`;
     }
     case 'stickers':
       if(sub === 'social' || sub === 'badges') return `<div class="tiles small">${STICKER_SETS[sub].map(k=>`<button class="tile emoji" data-stk="svg:${k}"><div class="tth"><img src="${SVG_URL[k]}" style="width:44px;height:44px"></div></button>`).join('')}</div>
-        <div class="lnote">ಇವು ChitraCut ನ ಸ್ವಂತ generic icons (Like, Bell, Verified ✓, Share…). YouTube / Facebook / Instagram ನ ನಿಜವಾದ logo ಗಳು trademark ಆಗಿರುವುದರಿಂದ ಸೇರಿಸಿಲ್ಲ.</div>`;
+        <div class="lnote">These are ChitraCut original generic icons (Like, Bell, Verified ✓, Share…). Real platform logos are trademarks, so they are not included.</div>`;
       return `<div class="tiles small">${EMOJIS.map(e=>`<button class="tile emoji" data-stk="${e}"><div class="tth">${e}</div></button>`).join('')}</div>`;
     case 'effects': {
-      const it = normItem(visTarget()), th = SCENES.portrait.src, head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'ಮೊದಲು clip select ಮಾಡಿ'}</div>`;
+      const it = normItem(visTarget()), th = SCENES.portrait.src, head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'Select a clip first'}</div>`;
       if(sub === 'body'){
         const cur = it ? it.bfx.type : '';
-        const st = !it || cur === 'none' ? '' : SEG ? '<div class="segstat ok">✓ AI body detection ready</div>' : segErr ? `<div class="segstat err">✗ ${esc(segErr)} — internet ಬೇಕು</div>` : '<div class="segstat">⏳ AI model load ಆಗುತ್ತಿದೆ… (ಮೊದಲ ಬಾರಿ ಮಾತ್ರ)</div>';
+        const st = !it || cur === 'none' ? '' : SEG ? '<div class="segstat ok">✓ AI body detection ready</div>' : segErr ? `<div class="segstat err">✗ ${esc(segErr)} — internet needed</div>` : '<div class="segstat">⏳ Loading AI model… (first time only)</div>';
         return head + `<div class="tiles">${BFX.map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-bfx="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv bfx-${k}" style="background-image:url(${th})"><i></i></div>`}</div><span>${n}</span></button>`).join('')}</div>
           ${it && cur !== 'none' ? `<div style="margin-top:14px">${st}${sl(it,'Intensity','bfx.amount',0,100)}${['bodyGlow','neonOutline','bgTint','ghost'].includes(cur)?colorRow(it,'Color','bfx.color',true):''}</div>` : ''}
-          <div class="lnote">🧍 Body effects AI ಮೂಲಕ ವ್ಯಕ್ತಿಯನ್ನು ಗುರುತಿಸಿ ಅವರ ಸುತ್ತ / ಹಿನ್ನೆಲೆಗೆ ಮಾತ್ರ effect ಹಾಕುತ್ತದೆ (Portrait blur, Color pop, Glow…). ವ್ಯಕ್ತಿ ಸ್ಪಷ್ಟವಾಗಿ ಕಾಣುವ video ಗೆ ಉತ್ತಮ.</div>`;
+          <div class="lnote">🧍 Body effects use AI to find the person and apply the effect around them or to the background only (Portrait blur, Color pop, Glow…). Works best when the person is clearly visible.</div>`;
       }
       const keys = sub === 'All' ? FX.map(f=>f[0]) : ['none', ...(FX_CATS.find(c=>c[0]===sub)||FX_CATS[0])[1]], cur = it ? it.fx.type : '';
       return head + `<div class="tiles gtiles">${keys.map(k=>FX.find(f=>f[0]===k)).filter(Boolean).map(([k,n],i)=>`<button class="tile ${cur===k?'on':''}" data-fx="${k}"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-pfx="${k}" data-i="${i}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div>
-        ${it && cur !== 'none' ? `<div style="margin-top:14px">${sl(it,'Intensity','fx.amount',0,100)}${sl(it,'Speed','fx.speed',0,100)}</div>${!it.type?'<div class="btns"><button data-all="fx">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}` : ''}
-        <div class="lnote">⚡ Tile ಮೇಲೆ mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview. Click ಮಾಡಿದರೆ Player ನಲ್ಲಿ ತಕ್ಷಣ ಕಾಣುತ್ತದೆ. ಹಲವು clips ಗೆ ಒಮ್ಮೆಲೆ ಬೇಕಿದ್ದರೆ Adjustment layer ಬಳಸಿ.</div>`;
+        ${it && cur !== 'none' ? `<div style="margin-top:14px">${sl(it,'Intensity','fx.amount',0,100)}${sl(it,'Speed','fx.speed',0,100)}</div>${!it.type?'<div class="btns"><button data-all="fx">Apply to all clips</button></div>':''}` : ''}
+        <div class="lnote">⚡ Hover a tile for a live preview. Click to see it in the player. Use an Adjustment layer to apply to many clips at once.</div>`;
     }
     case 'transitions': {
       const c = transTarget(), i = c ? S.clips.indexOf(c) : -1, cur = c ? c.trans.type : '';
       const keys = sub === 'All' ? TRANS.map(t=>t[0]) : ['none', ...(TRANS_CATS.find(z=>z[0]===sub)||TRANS_CATS[0])[1]];
-      return `<div class="ltitle" style="margin-top:0">${c ? `Clip ${i} → Clip ${i+1}` : 'Transition ಗೆ ಕನಿಷ್ಠ 2 clips ಬೇಕು'}</div>
+      return `<div class="ltitle" style="margin-top:0">${c ? `Clip ${i} → Clip ${i+1}` : 'A transition needs at least 2 clips'}</div>
         <div class="tiles gtiles">${keys.map(k=>TRANS.find(t=>t[0]===k)).filter(Boolean).map(([k,n],i)=>`<button class="tile ${cur===k?'on':''}" data-tr="${k}"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-ptr="${k}" data-i="${i}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div>
-        ${c ? '<div class="btns" style="margin-top:12px"><button data-all="trans">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : ''}
-        <div class="lnote">Tile ಮೇಲೆ mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview. Timeline ನಲ್ಲಿ ಎರಡು clips ನಡುವಿನ <b>⇄</b> ಒತ್ತಿದರೂ ಆರಿಸಬಹುದು.</div>`;
+        ${c ? '<div class="btns" style="margin-top:12px"><button data-all="trans">Apply to all clips</button></div>' : ''}
+        <div class="lnote">Hover a tile for a live preview. You can also click <b>⇄</b> between two clips on the timeline.</div>`;
     }
     case 'captions':
       if(sub === 'edit') return captionsEditor();
       if(sub === 'srt') return `<div class="ltitle" style="margin-top:0">SRT subtitle file</div>
         <div class="btns"><button id="cSrtIn">${ic('import')} Import .srt</button><button id="cSrtOut">${ic('export')} Export .srt</button></div>
-        <div class="btns"><button id="cDelAll">${ic('trash')} ಎಲ್ಲಾ captions delete</button></div>
-        <div class="lnote">YouTube ಗೆ subtitles ಬೇಕಿದ್ದರೆ Export .srt ಬಳಸಿ. Caption text ಅನ್ನು timeline ನಲ್ಲಿ select ಮಾಡಿ ಬದಲಿಸಬಹುದು.</div>`;
+        <div class="btns"><button id="cDelAll">${ic('trash')} Delete all captions</button></div>
+        <div class="lnote">Use Export .srt for YouTube subtitles. Select a caption on the timeline to edit it.</div>`;
       return captionsAuto();
     case 'filters': {
       const it = visTarget(), cat = S.pfCat || 'Featured', cur = it ? it.filter : '';
-      const head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'ಮೊದಲು clip select ಮಾಡಿ'}</div>
+      const head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'Select a clip first'}</div>
         <div class="chiprow">${PF_CATS.map(c=>`<button data-pfcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>`;
       let tiles;
       if(cat === 'Basic'){ const th = SCENES.portrait.src; tiles = Object.keys(FILTERS).map(k=>`<button class="tile ${cur===k?'on':''}" data-filt="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join(''); }
@@ -245,12 +245,12 @@ function leftContent(tab, sub){
           list.map(f=>`<button class="tile ${cur==='pf:'+f.id?'on':''}" data-filt="pf:${f.id}"><div class="tth"><img class="pfimg" src="${th[f.id]}"></div><span>${f.name}</span></button>`).join('');
       }
       return head + `<div class="tiles">${tiles}</div>
-        ${it && cur !== 'none' ? `<div style="margin-top:14px"><div class="ltitle" style="margin:0 0 6px">${esc(filterName(cur))}</div>${sl(it,'Strength','filterAmt',0,100)}</div><div class="btns">${it.type!=='adjust'?`<button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button><button data-addfl="${cur}">${ic('layers')} Filter layer ಆಗಿ ಸೇರಿಸಿ</button>`:''}</div>` : ''}
-        <div class="lnote">🎬 Cinematic colour grades — ನಿಜವಾದ 3D LUT ಆಗಿ GPU ನಲ್ಲಿ apply ಆಗುತ್ತವೆ. Preview ನಿಮ್ಮ clip ನ frame ಮೇಲೆಯೇ. ಬೆಳಕು/ಬಣ್ಣ ಇನ್ನಷ್ಟು ಸರಿಪಡಿಸಲು ಬಲಗಡೆ <b>Adjust</b>.</div>`;
+        ${it && cur !== 'none' ? `<div style="margin-top:14px"><div class="ltitle" style="margin:0 0 6px">${esc(filterName(cur))}</div>${sl(it,'Strength','filterAmt',0,100)}</div><div class="btns">${it.type!=='adjust'?`<button data-all="filter">Apply to all clips</button><button data-addfl="${cur}">${ic('layers')} Add as filter layer</button>`:''}</div>` : ''}
+        <div class="lnote">🎬 Cinematic colour grades — applied as real 3D LUTs on the GPU. Fine-tune light and colour in <b>Adjust</b> on the right.</div>`;
     }
     case 'adjust': {
       const it = visTarget(), addB = `<div class="lhead"><button class="primary" data-addadj="1">${ic('plus')} Adjustment layer</button></div>`;
-      if(!it) return addB + '<div class="lnote">ಮೊದಲು clip select ಮಾಡಿ, ಅಥವಾ ಹಲವು clips ಗೆ ಒಮ್ಮೆಲೆ ಹಾಕಲು Adjustment layer ಸೇರಿಸಿ.</div>';
+      if(!it) return addB + '<div class="lnote">Select a clip first, or add an Adjustment layer to apply to many clips at once.</div>';
       if(sub === 'adjust') return addB + adjustBody(it);
       return addB + lutBody(it);
     }
@@ -260,7 +260,7 @@ function leftContent(tab, sub){
 function lutBody(it){
   return `<div class="tiles">${[['','None'],...S.luts.map(l=>[l.id,l.name])].map(([k,n],i)=>`<button class="tile ${it.lut===k?'on':''}" data-set="lut" data-val="${k}"><div class="tth" style="${k?`background:linear-gradient(135deg,hsl(${i*47},55%,45%),hsl(${i*47+60},60%,25%))`:''}">${k?'':ic('ban')}</div><span>${esc(n)}</span></button>`).join('')}</div>
     <div style="height:12px"></div>${it.lut?sl(it,'Intensity','lutAmt',0,100):''}
-    <div class="btns"><button data-act="importLut">${ic('import')} Import .cube LUT</button>${!it.type?'<button data-all="lut">ಎಲ್ಲಾ clips ಗೆ</button>':''}</div>`;
+    <div class="btns"><button data-act="importLut">${ic('import')} Import .cube LUT</button>${!it.type?'<button data-all="lut">Apply to all clips</button>':''}</div>`;
 }
 function adjustBody(it, right){
   const f = it.filter && it.filter !== 'none' ? `<div class="crow"><span>Filter</span><b style="color:var(--text)">${esc(filterName(it.filter))} · ${it.filterAmt}%</b></div>` : '';
@@ -271,7 +271,7 @@ function adjustBody(it, right){
       sl(it,'Tint','adj.tint',-100,100)+sl(it,'Hue','adj.hue',-100,100)) +
     sec('adjE','Effects', sl(it,'Fade','adj.fade',0,100)+sl(it,'Vignette','adj.vignette',-100,100)+sl(it,'Grain','adj.grain',0,100)+sl(it,'Sharpen','adj.sharpen',0,100)) +
     (right ? sec('adjF','Filter & LUT', f + lutBody(it)) : '') +
-    (!it.type ? '<div class="btns"><button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : '');
+    (!it.type ? '<div class="btns"><button data-all="filter">Apply to all clips</button></div>' : '');
 }
 function addTextPreset(k){
   const p = TEXT_ADD.find(x => x[0] === k); if(!p) return;
@@ -291,7 +291,7 @@ LC.addEventListener('click', async e => {
   if(t.id === 'cRun'){ S.capLang = $('#cLang').value; S.capModel = $('#cModel').value; runCaptions(); return; }
   if(t.id === 'cSrtIn') return $('#srtIn').click();
   if(t.id === 'cSrtOut') return exportSRT();
-  if(t.id === 'cDelAll'){ const n = S.overlays.filter(o=>o.caption).length; if(n && confirm(n+' captions delete ಮಾಡಲೇ?')){ pushUndo(); S.overlays = S.overlays.filter(o=>!o.caption); afterEdit(); } return; }
+  if(t.id === 'cDelAll'){ const n = S.overlays.filter(o=>o.caption).length; if(n && confirm(n+' captions — delete?')){ pushUndo(); S.overlays = S.overlays.filter(o=>!o.caption); afterEdit(); } return; }
   if(d.delm){ deleteMedia(d.delm); return; }
   if(d.pip){ addPip(media(d.pip)); return; }
   const mid = d.addm || (t.classList.contains('mtile') ? d.mid : null);
@@ -313,14 +313,14 @@ LC.addEventListener('click', async e => {
   if(d.tpreset != null){
     const o = selOv(), p = deep(TEXT_PRESETS[+d.tpreset]);
     if(o && o.type === 'text'){ pushUndo(); Object.assign(o, p); renderInspector(); }
-    else addOverlay(newOverlay('text', {text:'ನಿಮ್ಮ ಪಠ್ಯ ಇಲ್ಲಿ', ...p}), 'text');
+    else addOverlay(newOverlay('text', {text:'Your text here', ...p}), 'text');
     return;
   }
   if(d.gfxcat){ S.gfxCat = d.gfxcat; renderLeft(); return; }
   if(d.gfx){ addGfx(d.gfx, S.time); return; }
   if(d.stk){ addOverlay(newOverlay('sticker', {text:d.stk, anim:{in:'pop',out:'fade',loop:'none',inDur:.5,outDur:.4}}), 'sticker'); return; }
   if(d.fx){
-    const it = visTarget(); if(!it) return alert('ಮೊದಲು clip select ಮಾಡಿ');
+    const it = visTarget(); if(!it) return alert('Select a clip first');
     pushUndo(); it.fx.type = d.fx; S.sel = it.id;
     renderTimeline(); renderInspector();
     if(d.fx !== 'none'){ const st = itemStart(it); previewPlay(clamp(S.time, st, st + Math.max(0, itemDur(it) - 2)), 2); }
@@ -329,20 +329,20 @@ LC.addEventListener('click', async e => {
   if(d.fxcat){ S.fxCat = d.fxcat; renderLeft(); return; }
   if(d.pfcat){ S.pfCat = d.pfcat; renderLeft(); return; }
   if(d.bfx){
-    const it = normItem(visTarget()); if(!it) return alert('ಮೊದಲು clip select ಮಾಡಿ');
+    const it = normItem(visTarget()); if(!it) return alert('Select a clip first');
     pushUndo(); it.bfx.type = d.bfx; S.sel = it.id; if(d.bfx !== 'none') loadSeg().catch(()=>{});
     renderTimeline(); renderInspector(); renderLeft();
     if(d.bfx !== 'none'){ const st = itemStart(it); previewPlay(clamp(S.time, st, st + Math.max(0, itemDur(it) - 2)), 2); }
     return;
   }
   if(d.tr){
-    const c = transTarget(); if(!c) return alert('Transition ಗೆ ಕನಿಷ್ಠ 2 clips ಬೇಕು');
+    const c = transTarget(); if(!c) return alert('A transition needs at least 2 clips');
     pushUndo(); c.trans.type = d.tr; S.sel = c.id; S.rt[kindOf(c)] = 'trans'; afterEdit();
     if(d.tr !== 'none'){ const dd = derived[c.id]; previewPlay(Math.max(0, dd.start - .8), dd.td + 1.6); }
     return;
   }
   if(d.filt){
-    const it = visTarget(); if(!it) return alert('ಮೊದಲು clip select ಮಾಡಿ');
+    const it = visTarget(); if(!it) return alert('Select a clip first');
     pushUndo(); it.filter = d.filt; S.sel = it.id; renderTimeline(); renderInspector(); renderLeft(); return;
   }
   const it = visTarget();
@@ -390,7 +390,7 @@ function renderInspector(){
   const it = selItem(), kind = kindOf(it);
   if(!it){
     $('#rtabs').innerHTML = ''; $('#rsub').innerHTML = '';
-    IB.innerHTML = `<div class="empty">${ic('cursor')}Timeline ನಲ್ಲಿ clip, text ಅಥವಾ audio select ಮಾಡಿ.<br>ಅದರ settings ಇಲ್ಲಿ ಕಾಣುತ್ತವೆ.</div>`;
+    IB.innerHTML = `<div class="empty">${ic('cursor')}Select a clip, text or audio on the timeline.<br>Its settings appear here.</div>`;
     refreshLeftLive(); renderMTools(); return;
   }
   let tabs = RT[kind];
@@ -404,17 +404,17 @@ function renderInspector(){
   } else $('#rsub').innerHTML = '';
   normItem(it); IB.innerHTML = inspBody(it, kind, tab, sub); fillRanges(IB); updKfBtn(); refreshLeftLive(); paintV8(IB, it); renderMTools();
 }
-const KF_NOTE = '<div class="note">◆ <b>Keyframe:</b> playhead ಇಡಿ → ◆ ಒತ್ತಿ → playhead ಮುಂದೆ ಸರಿಸಿ → ಮೌಲ್ಯ ಬದಲಿಸಿ. ಎರಡರ ನಡುವೆ ತಾನಾಗಿ animation ಆಗುತ್ತದೆ.</div>';
+const KF_NOTE = '<div class="note">◆ <b>Keyframe:</b> place the playhead → press ◆ → move the playhead → change a value. It animates automatically in between.</div>';
 function transformSec(it){
   const ov = !!it.type, med = isMediaOv(it);
   let b = ov ? sl(it,'Size','size',5,med?300:400)+sl(it,'Position X','x',-20,120,.5)+sl(it,'Position Y','y',-20,120,.5)
              : sl(it,'Scale','tf.scale',10,400)+sl(it,'Position X','tf.x',-1440,1440)+sl(it,'Position Y','tf.y',-1440,1440);
   b += sl(it,'Rotate',ov?'rot':'tf.rot',-180,180);
   const B = (a,i,t) => `<button data-act="${a}" title="${t}">${ic(i)}</button>`;
-  b += `<div class="alignbar">${ov?B('center','center','Center'):B('fit','fit','Fit')}${(!ov||med)?B(ov?'fillv':'fill','fill','Fill / full screen')+B('flip','flip','Mirror'):''}${B('rot90','rotate','Rotate 90°')}${ov?B('up','up','Layer ಮೇಲೆ')+B('down','down','Layer ಕೆಳಗೆ'):''}</div>`;
+  b += `<div class="alignbar">${ov?B('center','center','Center'):B('fit','fit','Fit')}${(!ov||med)?B(ov?'fillv':'fill','fill','Fill / full screen')+B('flip','flip','Mirror'):''}${B('rot90','rotate','Rotate 90°')}${ov?B('up','up','Bring forward')+B('down','down','Send backward'):''}</div>`;
   const k = atKf(it);
   if(k){ const cur = k.ease || 'smooth';
-    b += `<div class="ltitle" style="margin:10px 0 6px">Keyframe easing <small style="font-weight:400">(ಈ ◆ ಇಂದ ಮುಂದಿನ ◆ ವರೆಗೆ)</small></div><div class="easeg">${EASE_LIST.map(([e,n])=>{ let d=''; for(let i=0;i<=24;i++){ const f=i/24, v=EASE[e](f); d+=(i?'L':'M')+(4+f*40).toFixed(1)+','+(30-v*24).toFixed(1); }
+    b += `<div class="ltitle" style="margin:10px 0 6px">Keyframe easing <small style="font-weight:400">(from this ◆ to the next ◆)</small></div><div class="easeg">${EASE_LIST.map(([e,n])=>{ let d=''; for(let i=0;i<=24;i++){ const f=i/24, v=EASE[e](f); d+=(i?'L':'M')+(4+f*40).toFixed(1)+','+(30-v*24).toFixed(1); }
       return `<button class="${cur===e?'on':''}" data-ease="${e}" title="${n}"><svg viewBox="0 0 48 34"><path d="${d}"/></svg><span>${n}</span></button>`; }).join('')}</div>`; }
   return sec('tf','Transform',b,{reset:'resetTf',kf:true});
 }
@@ -424,18 +424,18 @@ function chromaBody(it){
     ${k.on ? `<div class="crow"><span>Key color</span><input type="color" data-p="ck.color" value="${k.color}"></div>
     <div class="btns"><button data-act="ckPick" class="${S.pick?'primary':''}">🎯 Pick color</button><button data-act="ckAuto">Auto</button><button data-act="ckGreen">Green</button><button data-act="ckBlue">Blue</button></div>
     ${sl(it,'Intensity','ck.sim',0,100)}${sl(it,'Edge smooth','ck.smooth',0,100)}${sl(it,'Spill remove','ck.spill',0,100)}` : ''}
-    <div class="note">🟩 Green / Blue screen ಬಣ್ಣ ತೆಗೆಯಲು. ಸರಿಯಾಗದಿದ್ದರೆ 🎯 ಒತ್ತಿ Player ನಲ್ಲಿ ಹಸಿರಿನ ಮೇಲೆ click ಮಾಡಿ.</div>`;
+    <div class="note">🟩 Removes green / blue screen. If it is not clean, press 🎯 and click the green area in the player.</div>`;
 }
 function rmbgBody(it){
-  const st = !it.rmbg ? '' : SEG ? '<div class="segstat ok">✓ AI model ready</div>' : segErr ? `<div class="segstat err">✗ ${esc(segErr)} — internet ಬೇಕು</div>` : '<div class="segstat">⏳ AI model load ಆಗುತ್ತಿದೆ… (ಮೊದಲ ಬಾರಿ ಮಾತ್ರ)</div>';
-  return sec('rm','Auto removal', `<div class="crow"><span>ವ್ಯಕ್ತಿ ಬಿಟ್ಟು ಹಿನ್ನೆಲೆ ತೆಗೆಯಿರಿ</span><input type="checkbox" data-p="rmbg" ${it.rmbg?'checked':''}></div>${st}
-      ${it.rmbg?`<div class="crow"><span>ಉಲ್ಟಾ ಆದರೆ (Invert)</span><input type="checkbox" data-p="rmbgInv" ${it.rmbgInv?'checked':''}></div>`:''}
-      <div class="note">🤖 AI ನಿಮ್ಮ browser ನಲ್ಲೇ ವ್ಯಕ್ತಿಯನ್ನು ಗುರುತಿಸುತ್ತದೆ (server ಇಲ್ಲ). ${it.type?'ಕೆಳಗಿನ main video ಹಿನ್ನೆಲೆಯಾಗಿ ಕಾಣುತ್ತದೆ.':'ಹಿನ್ನೆಲೆಯಲ್ಲಿ Player ನ Background (Black / White / Blur) ಕಾಣುತ್ತದೆ — <b>Blur</b> ಆರಿಸಿದರೆ portrait effect. ಬೇರೆ ಹಿನ್ನೆಲೆ ಬೇಕಿದ್ದರೆ ಈ clip ಅನ್ನು overlay ಗೆ ಎಳೆಯಿರಿ.'}</div>`)
+  const st = !it.rmbg ? '' : SEG ? '<div class="segstat ok">✓ AI model ready</div>' : segErr ? `<div class="segstat err">✗ ${esc(segErr)} — internet needed</div>` : '<div class="segstat">⏳ Loading AI model… (first time only)</div>';
+  return sec('rm','Auto removal', `<div class="crow"><span>Remove background (keep person)</span><input type="checkbox" data-p="rmbg" ${it.rmbg?'checked':''}></div>${st}
+      ${it.rmbg?`<div class="crow"><span>Invert</span><input type="checkbox" data-p="rmbgInv" ${it.rmbgInv?'checked':''}></div>`:''}
+      <div class="note">🤖 AI detects the person right in your browser (no server). ${it.type?'The main video below shows through as the background.':'The player Background (Black / White / Blur) shows behind — choose <b>Blur</b> for a portrait effect. For another background, drag this clip to an overlay track.'}</div>`)
     + sec('ck','Chroma key', chromaBody(it));
 }
 function maskBody(it){
   const m = it.mask, t = m.type;
-  let h = `<div class="ltitle" style="margin:10px 0 8px">${t==='none' ? '＋ Add mask — ಆಕಾರ ಆರಿಸಿ' : 'Mask shape'}</div>
+  let h = `<div class="ltitle" style="margin:10px 0 8px">${t==='none' ? '＋ Add mask — choose a shape' : 'Mask shape'}</div>
     <div class="tiles" style="grid-template-columns:repeat(4,1fr)">${MASKS.map(([k,n])=>`<button class="vtile ${t===k?'on':''}" style="height:52px" data-set="mask.type" data-val="${k}">${k==='none'?'✕ Remove':n}</button>`).join('')}</div><div style="height:12px"></div>`;
   if(t !== 'none'){
     let b = sl(it,'Position X','mask.x',-60,60,.5)+sl(it,'Position Y','mask.y',-60,60,.5);
@@ -445,15 +445,15 @@ function maskBody(it){
     b += sl(it,'Rotate','mask.rot',-180,180)+sl(it,'Feather','mask.feather',0,100);
     if(t === 'rect') b += sl(it,'Round corners','mask.round',0,100);
     b += `<div class="crow"><span>Invert</span><input type="checkbox" data-p="mask.invert" ${m.invert?'checked':''}></div>`;
-    h += `<div class="note">🖐 ಈ tab ತೆರೆದಿರುವಾಗ Player ನಲ್ಲಿ drag ಮಾಡಿದರೆ <b>mask ಮಾತ್ರ</b> ಸರಿಯುತ್ತದೆ (video ಅಲ್ಲ). Mouse wheel / ಎರಡು ಬೆರಳು = mask size.</div>` + sec('mk','Mask settings', b, {reset:'resetMask'});
-  } else h += '<div class="note">Mask ಆರಿಸಿದರೆ ಆ ಆಕಾರದ ಒಳಗಿನ ಭಾಗ ಮಾತ್ರ ಕಾಣುತ್ತದೆ. ನಂತರ Player ನಲ್ಲಿ mask ಅನ್ನು ಎಳೆದು ಸರಿಸಬಹುದು.</div>';
+    h += `<div class="note">🖐 While this tab is open, dragging in the player moves <b>only the mask</b> (not the video). Mouse wheel / two fingers = mask size.</div>` + sec('mk','Mask settings', b, {reset:'resetMask'});
+  } else h += '<div class="note">A mask shows only the area inside the shape. Drag the mask in the player to move it.</div>';
   return h;
 }
 function fxBody(it){
   const th = SCENES.beach.src, f = it.fx;
   return `<div class="tiles" style="margin-top:8px">${FX.map(([k,n])=>`<button class="tile ${f.type===k?'on':''}" data-set="fx.type" data-val="${k}" data-prev="fx"><div class="tth">${k==='none'?ic('ban'):`<div class="pv fx-${k}" style="background-image:url(${th})"></div>`}</div><span>${n}</span></button>`).join('')}</div>
     ${f.type!=='none' ? `<div style="height:12px"></div>${sl(it,'Intensity','fx.amount',0,100)}${sl(it,'Speed','fx.speed',0,100)}` : ''}
-    ${!it.type ? '<div class="btns"><button data-all="fx">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : ''}`;
+    ${!it.type ? '<div class="btns"><button data-all="fx">Apply to all clips</button></div>' : ''}`;
 }
 const VOICE_TILES = [['orig','Original'],['michog','Mic Hog'],['studio','Studio Voice'],['podcast','Podcast'],['echo','Echo'],['bighouse','Big House'],['cave','Cave'],['megaphone','Megaphone'],['telephone','Telephone'],['radio','Radio'],['robot','Robot'],['lofi','Lo-Fi'],['deep','Deep'],['chipmunk','Chipmunk'],['monster','Monster'],['underwater','Underwater']];
 function curVoice(it){ const a = it.audio; if(a.voice !== 'none') return a.voice; if(a.reverb > 0 && !a.echo) return 'bighouse'; if(a.echo > 0 && !a.reverb) return 'echo'; return (a.echo||a.reverb) ? '' : 'orig'; }
@@ -466,16 +466,16 @@ function audioFxBody(it){
   return '<div style="height:8px"></div>' +
     sec('aeq','Graphic EQ (10-band)', eq + sl(it,'Bass','audio.bass',-15,15)+sl(it,'Treble','audio.treble',-15,15)) +
     sec('adyn','Dynamics', ck('audio.comp','Compressor') + (a.comp ? sl(it,'Threshold (dB)','audio.compThr',-60,0)+sl(it,'Ratio','audio.compRatio',1,20,.5) : '') +
-      ck('audio.gate','Noise gate (ಮಾತಿಲ್ಲದಾಗ ಶಬ್ದ ನಿಲ್ಲಿಸುತ್ತದೆ)') + (a.gate ? sl(it,'Gate threshold (dB)','audio.gateThr',-80,-10) : '') +
-      ck('audio.limiter','Limiter (clipping ತಡೆ)') + sl(it,'Amplify (dB)','audio.amp',-20,20,.5)) +
-    sec('apit','Pitch', sl(it,'Pitch (semitones)','audio.pitch',-12,12,1) + '<div class="note">ವೇಗ ಬದಲಾಗದೆ ಧ್ವನಿಯ ಸ್ಥಾಯಿ ಮಾತ್ರ ಬದಲಾಗುತ್ತದೆ.</div>') +
+      ck('audio.gate','Noise gate (silences noise between words)') + (a.gate ? sl(it,'Gate threshold (dB)','audio.gateThr',-80,-10) : '') +
+      ck('audio.limiter','Limiter (prevents clipping)') + sl(it,'Amplify (dB)','audio.amp',-20,20,.5)) +
+    sec('apit','Pitch', sl(it,'Pitch (semitones)','audio.pitch',-12,12,1) + '<div class="note">Changes pitch without changing speed.</div>') +
     sec('aecho','Echo & Reverb', sl(it,'Echo mix','audio.echo',0,100)+sl(it,'Echo delay (s)','audio.echoTime',.05,1.5,.01)+sl(it,'Echo feedback','audio.echoFb',0,85)+
       sl(it,'Reverb mix','audio.reverb',0,100) + `<div class="crow"><span>Room</span><select data-p="audio.reverbSize">${REVERBS.map(([k,n])=>`<option value="${k}" ${a.reverbSize===k?'selected':''}>${n}</option>`).join('')}</select></div>`) +
     sec('amod','Modulation & Distortion', sl(it,'Phaser','audio.phaser',0,100)+sl(it,'Wah-wah','audio.wah',0,100)+sl(it,'Tremolo','audio.trem',0,100)+sl(it,'Distortion','audio.dist',0,100)) +
     sec('afil','Filters', sl(it,'High-pass (Hz, 0=off)','audio.hp',0,1000,10)+sl(it,'Low-pass (Hz, 0=off)','audio.lp',0,20000,100)) +
     `<div class="btns"><button data-act="aReverse">${ic('undo')} Reverse audio</button><button data-act="aReset">${ic('reset')} Reset effects</button></div>
-    <div class="note">🎚 Audacity ತರಹದ effects — ಎಲ್ಲವೂ real-time; play ಮಾಡುತ್ತಾ slider ಸರಿಸಿ ಕೇಳಿ. Export ನಲ್ಲೂ ಇವೇ ಬರುತ್ತವೆ.</div>` +
-    (!it.type ? '<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : '');
+    <div class="note">🎚 Studio-style effects — all real-time; move sliders while playing to hear them. Included in export.</div>` +
+    (!it.type ? '<div class="btns"><button data-all="audio">Apply to all clips</button></div>' : '');
 }
 function audioBody(it, kind, sub){
   if(sub === 'fx') return audioFxBody(it);
@@ -484,8 +484,8 @@ function audioBody(it, kind, sub){
     const cv_ = curVoice(it);
     return `<div style="height:8px"></div><div class="vtiles">${VOICE_TILES.map(([k,n])=>`<button class="vtile ${cv_===k?'on':''}" data-voice="${k}">${n}</button>`).join('')}</div>
       ${sec('vfx','Fine tune', sl(it,'Echo','audio.echo',0,100)+sl(it,'Reverb','audio.reverb',0,100))}
-      <div class="note">🎧 Voice ಮೇಲೆ click ಮಾಡಿದರೆ 3 ಸೆಕೆಂಡ್ preview ಕೇಳಿಸುತ್ತದೆ.</div>
-      ${!it.type?'<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}`;
+      <div class="note">🎧 Click a voice to hear a 3-second preview.</div>
+      ${!it.type?'<div class="btns"><button data-all="audio">Apply to all clips</button></div>':''}`;
   }
   let h = '';
   if(kind === 'audio'){ const m = media(it.mediaId) || {}; h += `<div class="note">${{voice:'🎙 Voice-over',extract:'🔊 Extracted audio',sfx:'🔔 Sound effect'}[it.kind]||'🎵 Music'} · <b>${esc(m.name||'')}</b></div>`; }
@@ -497,35 +497,35 @@ function audioBody(it, kind, sub){
     const a = it.audio, chk = (p,t,d,on) => `<div class="chk"><label><input type="checkbox" data-p="${p}" ${on?'checked':''}><b>${t}</b></label><div class="cdesc">${d}</div></div>`;
     const dnOn = kind === 'audio' && !!it.origMediaId;
     h += sec('vt','Voice tools',
-      chk('audio.norm','Normalize loudness', `Volume ಅನ್ನು ಸರಿಯಾದ ಮಟ್ಟಕ್ಕೆ ತರುತ್ತದೆ${a.norm&&it.normGain?` · ×${it.normGain.toFixed(2)}`:''}`, a.norm) +
-      chk('audio.enhance','Enhance voice','ಧ್ವನಿ ಸ್ಪಷ್ಟ ಮತ್ತು ಜೋರು (EQ + compressor)', a.enhance) +
+      chk('audio.norm','Normalize loudness', `Brings volume to a standard level${a.norm&&it.normGain?` · ×${it.normGain.toFixed(2)}`:''}`, a.norm) +
+      chk('audio.enhance','Enhance voice','Clearer, louder voice (EQ + compressor)', a.enhance) +
       `<div class="chk"><label><input type="checkbox" data-dn="1" ${dnOn?'checked':''}><b>Reduce noise</b></label><select data-dnlvl style="margin-left:auto;padding:2px 4px">${['Low','Medium','High'].map((n,i)=>`<option value="${i}" ${(S.dnLvl??1)===i?'selected':''}>${n}</option>`).join('')}</select>
-        <div class="cdesc">Fan, hiss, traffic ಮುಂತಾದ ಹಿನ್ನೆಲೆ ಶಬ್ದ ತೆಗೆಯುತ್ತದೆ${kind!=='audio'?' — ಸ್ವಚ್ಛ audio ಹೊಸ audio track ಆಗಿ ಬರುತ್ತದೆ':''}</div><div class="prog" id="dnProg" style="display:none;margin:6px 0 0"><div></div></div></div>` +
-      chk('audio.isolate','Isolate voice','ಮಾತಿನ frequency ಮಾತ್ರ ಉಳಿಸುತ್ತದೆ (basic)', a.isolate));
+        <div class="cdesc">Removes background noise like fans, hiss and traffic${kind!=='audio'?' — clean audio is added as a new track':''}</div><div class="prog" id="dnProg" style="display:none;margin:6px 0 0"><div></div></div></div>` +
+      chk('audio.isolate','Isolate voice','Keeps only speech frequencies (basic)', a.isolate));
     h += sec('eq','Equalizer', sl(it,'Bass boost','audio.bass',-15,15)+sl(it,'Treble','audio.treble',-15,15));
-  } else h += '<div class="note">PiP video ಗೆ Voice tools ಬೇಕಿದ್ದರೆ ಅದನ್ನು main track ಗೆ ಎಳೆಯಿರಿ ಅಥವಾ Extract audio ಮಾಡಿ.</div>';
+  } else h += '<div class="note">For voice tools on a PiP video, drag it to the main track or use Extract audio.</div>';
   if(kind === 'audio' || kind === 'clip') h += sec('stem','🎤 Vocal remover / BGM remover', `
-      <div class="sepg"><button data-sep="inst">🎵<b>Vocal remover</b><span>ಹಾಡಿನ ಧ್ವನಿ ತೆಗೆದು music ಮಾತ್ರ</span></button>
-      <button data-sep="vocals">🎤<b>BGM remover</b><span>Music ತೆಗೆದು ಧ್ವನಿ ಮಾತ್ರ</span></button>
-      <button data-sep="both">🎚<b>ಎರಡೂ (2 tracks)</b><span>Vocals + Music ಬೇರೆ ಬೇರೆ</span></button>
-      <button data-sep="quick">⚡<b>Quick karaoke</b><span>ತಕ್ಷಣ, AI ಇಲ್ಲದೆ (stereo ಹಾಡು)</span></button></div>
+      <div class="sepg"><button data-sep="inst">🎵<b>Vocal remover</b><span>Remove the singing, keep the music</span></button>
+      <button data-sep="vocals">🎤<b>BGM remover</b><span>Remove the music, keep the voice</span></button>
+      <button data-sep="both">🎚<b>Both (2 tracks)</b><span>Vocals + music separately</span></button>
+      <button data-sep="quick">⚡<b>Quick karaoke</b><span>Instant, no AI (stereo songs)</span></button></div>
       <div id="sepStat" style="color:var(--mute);min-height:18px;margin-top:8px"></div><div class="prog" id="sepProg" style="display:none"><div id="sepBar"></div></div>
       <div class="btns" id="sepStopB" style="display:none"><button data-sep="stop">✕ Stop</button></div>
-      <div class="note">AI (UVR MDX-Net) ನಿಮ್ಮ browser ನಲ್ಲೇ ಓಡುತ್ತದೆ — ಹಾಡು ಎಲ್ಲಿಗೂ upload ಆಗುವುದಿಲ್ಲ. ಮೊದಲ ಬಾರಿ ~67 MB model download, ನಂತರ offline. GPU ಇರುವ PC ಯಲ್ಲಿ ವೇಗ; phone ನಲ್ಲಿ 3 ನಿಮಿಷದ ಹಾಡಿಗೆ 10+ ನಿಮಿಷ ಆಗಬಹುದು. ಮೂಲ audio mute ಆಗುತ್ತದೆ (right-click › Restore).</div>`);
+      <div class="note">AI (UVR MDX-Net) runs in your browser — the song is never uploaded. ~67 MB model downloads once, then works offline. Fast on PCs with a GPU; on phones a 3-minute song can take 10+ minutes. The original audio is muted (right-click › Restore).</div>`);
   if(kind === 'audio') h += sec('beat','🥁 Beat sync', `<div class="crow"><span>Beats</span><b style="color:var(--text)">${it.beats ? `${beatTimes(it).length} · ${it.bpm} BPM` : '—'}</b></div>
       <div class="btns"><button data-beat="detect">🥁 Detect beats</button></div>
-      ${it.beats ? `<div class="crow"><span>ಪ್ರತಿ ಎಷ್ಟು beat ಗೆ cut</span><select id="beatEvery">${[1,2,4,8].map(n=>`<option value="${n}" ${(S.beatEvery||2)===n?'selected':''}>${n}</option>`).join('')}</select></div>
-      <div class="btns"><button class="primary" data-beat="cut">✂ Clips ಅನ್ನು beat ಗೆ cut ಮಾಡಿ</button></div>` : ''}
-      <div class="note">ಹಾಡಿನ beat ಗುರುತಿಸಿ (timeline ನಲ್ಲಿ ಹಳದಿ ಗೆರೆಗಳು) main track ನ photos / clips ಅನ್ನು ಅದಕ್ಕೆ ತಕ್ಕಂತೆ ಕತ್ತರಿಸುತ್ತದೆ.</div>`);
+      ${it.beats ? `<div class="crow"><span>Cut every N beats</span><select id="beatEvery">${[1,2,4,8].map(n=>`<option value="${n}" ${(S.beatEvery||2)===n?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="btns"><button class="primary" data-beat="cut">✂ Cut clips to the beat</button></div>` : ''}
+      <div class="note">Detects the beats of the song (yellow lines on the timeline) and cuts the main-track photos / clips to match.</div>`);
   if(kind === 'clip') h += sec('sil','✂ Auto cut silence', `<div class="prow"><div class="plab">Threshold dB</div><input type="range" id="silThr" min="-70" max="-15" step="1" value="${S.silThr??-40}"><input class="num" type="number" id="silThrN" min="-70" max="-15" value="${S.silThr??-40}"></div>
       <div class="crow"><span>Auto threshold</span><input type="checkbox" id="silAuto" ${S.silAuto!==false?'checked':''}></div>
       <div class="prow"><div class="plab">Min silence (s)</div><input type="range" id="silMin" min="0.2" max="3" step="0.1" value="${S.silMin??.6}"><input class="num" type="number" id="silMinN" min="0.2" max="3" step="0.1" value="${S.silMin??.6}"></div>
       <div id="silStat" style="color:var(--mute);min-height:18px"></div>
-      <div class="btns"><button data-sil="analyze">🔍 Analyze</button><button class="primary" data-sil="apply">✂ Silence ತೆಗೆಯಿರಿ</button></div>
-      <div class="note">ಮಾತಿನ video ದಲ್ಲಿ ಮೌನದ ಭಾಗಗಳನ್ನು ತಾನಾಗಿ ತೆಗೆದು clip ಅನ್ನು ತುಂಡುಗಳಾಗಿ ಮಾಡುತ್ತದೆ. ತಪ್ಪಾದರೆ Ctrl+Z.</div>`);
+      <div class="btns"><button data-sil="analyze">🔍 Analyze</button><button class="primary" data-sil="apply">✂ Remove silence</button></div>
+      <div class="note">Automatically removes silent parts of a talking video and splits the clip. Undo with Ctrl+Z.</div>`);
   const B = (a,i,t) => `<button data-act="${a}">${ic(i)} ${t}</button>`;
-  h += `<div class="btns">${kind==='clip'?(it.extracted?B('restoreAudio','undo','Restore audio'):B('extract','wave','Extract audio')):''}${kind==='audio'&&it.linkClip?B('restoreLinked','undo','Video ಗೆ ಮರಳಿಸಿ'):''}${B('cap','captions','Auto captions')}${kind==='audio'?B('dup','copy','Duplicate')+B('del','trash','Delete'):''}</div>`;
-  if(kind === 'clip') h += '<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>';
+  h += `<div class="btns">${kind==='clip'?(it.extracted?B('restoreAudio','undo','Restore audio'):B('extract','wave','Extract audio')):''}${kind==='audio'&&it.linkClip?B('restoreLinked','undo','Return to video'):''}${B('cap','captions','Auto captions')}${kind==='audio'?B('dup','copy','Duplicate')+B('del','trash','Delete'):''}</div>`;
+  if(kind === 'clip') h += '<div class="btns"><button data-all="audio">Apply to all clips</button></div>';
   return h;
 }
 function animList(it, sub){
@@ -552,8 +552,8 @@ function animBody(it, kind, sub){
   h += `<div class="tiles atiles" id="animGrid">${animGrid(it, sub)}</div><div style="height:12px"></div>`;
   if(sub === 'in' && cur !== 'none') h += sl(it,'Duration','anim.inDur',.1,3,.1);
   if(sub === 'out' && cur !== 'none') h += sl(it,'Duration','anim.outDur',.1,3,.1);
-  h += `<div class="note">▶ Tile ಮೇಲೆ mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview; click ಮಾಡಿದರೆ Player ನಲ್ಲಿ ನೋಡಬಹುದು. ${ANIM_LIB.length + 25}+ animations.</div>`;
-  h += clipLike ? '<div class="btns"><button data-all="anim">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : '<div class="btns"><button data-all="ovanim">ಇದೇ ತರಹದ ಎಲ್ಲಕ್ಕೂ ಹಾಕಿ</button></div>';
+  h += `<div class="note">▶ Hover a tile for a live preview; click to see it in the player. ${ANIM_LIB.length + 25}+ animations.</div>`;
+  h += clipLike ? '<div class="btns"><button data-all="anim">Apply to all clips</button></div>' : '<div class="btns"><button data-all="ovanim">Apply to all similar items</button></div>';
   return h;
 }
 const CW = 300, CH = 150, cY = v => CH/2 - Math.log10(clamp(v,.1,10))*CH/2*.86, cV = y => Math.pow(10, (CH/2 - y)/(CH/2*.86));
@@ -614,7 +614,7 @@ function addCurvePoint(c, x, v){
   pts.push([x, v ?? curveAt(c,x)]); pts.sort((a,b)=>a[0]-b[0]); curveSel = pts.findIndex(p => p[0] === x); c.curveName = 'custom'; renderInspector(); refreshCurve(c);
 }
 function speedBody(it, kind, sub){
-  if(kind === 'clipimg') return sec('du','Duration', sl(it,'Duration','__imgdur',.3,30,.1)+'<div class="note">Photo ಎಷ್ಟು ಸೆಕೆಂಡ್ ಕಾಣಬೇಕು</div>');
+  if(kind === 'clipimg') return sec('du','Duration', sl(it,'Duration','__imgdur',.3,30,.1)+'<div class="note">How many seconds the photo is shown</div>');
   if(kind === 'ovvideo') return sec('sp','Speed', sl(it,'Speed','speed',.25,4,.05)+sl(it,'Duration','dur',.3,Math.max(.3,(media(it.mediaId).duration-it.in)/it.speed),.1));
   if(sub === 'curve'){
     let h = `<div class="tiles" style="grid-template-columns:repeat(4,1fr);margin-top:8px">${CURVE_OPTS.map(([k,n])=>`<button class="vtile ${it.curveName===k?'on':''}" style="height:48px" data-act="curve" data-val="${k}">${n}</button>`).join('')}</div><div style="height:12px"></div>`;
@@ -626,29 +626,29 @@ function speedBody(it, kind, sub){
         <div class="crow"><span>Selected point</span><b id="curveVal" style="color:var(--text)">${sp?sp[1].toFixed(2)+'x':'—'}</b></div>
         <div class="crow"><span>Duration</span><b id="durInfo" style="color:var(--text)">${fmtTC(it.out-it.in)} → ${fmtTC(derived[it.id].dur)}</b></div>`;
     }
-    return h + '<div class="note">◉ <b>ನೀಲಿ ಗೆರೆಯನ್ನೇ</b> ಹಿಡಿದು ಮೇಲೆ (ವೇಗ) / ಕೆಳಗೆ (slow) ಎಳೆಯಿರಿ — ಅಲ್ಲಿ ಹೊಸ point ಬರುತ್ತದೆ. Point ಗಳನ್ನು ಎಳೆಯಬಹುದು · ಖಾಲಿ ಜಾಗ click = playhead ಸರಿಸಿ · <b>+ Add point</b> ಸಹ ಇದೆ.</div>';
+    return h + '<div class="note">◉ Grab the <b>blue line</b> and drag up (faster) / down (slower) — a new point is added there. Points can be dragged · click empty space = move playhead · <b>+ Add point</b> also works.</div>';
   }
   return sec('sp','Speed', sl(it,'Speed','speed',.1,10,.1)+`<div class="crow"><span>Duration</span><b id="durInfo" style="color:var(--text)">${fmtTC(it.out-it.in)} → ${fmtTC(derived[it.id].dur)}</b></div>`);
 }
 function transBody(it){
   return `<div class="tiles gtiles" style="margin-top:10px">${TRANS.map(([k,n],i)=>`<button class="tile ${it.trans.type===k?'on':''}" data-set="trans.type" data-val="${k}" data-prev="trans"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-ptr="${k}" data-i="${i}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div><div style="height:12px"></div>
     ${it.trans.type!=='none'?sl(it,'Duration','trans.dur',.1,2,.1):''}
-    <div class="btns"><button data-all="trans">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>`;
+    <div class="btns"><button data-all="trans">Apply to all clips</button></div>`;
 }
 function filterBody(it){
   const th = SCENES.portrait.src;
   return `<div class="tiles" style="margin-top:10px">${Object.keys(FILTERS).map(k=>`<button class="tile ${it.filter===k?'on':''}" data-set="filter" data-val="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join('')}</div><div style="height:12px"></div>
-    ${it.filter!=='none'?sl(it,'Strength','filterAmt',0,100):''}${!it.type?'<div class="btns"><button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}`;
+    ${it.filter!=='none'?sl(it,'Strength','filterAmt',0,100):''}${!it.type?'<div class="btns"><button data-all="filter">Apply to all clips</button></div>':''}`;
 }
 function trackBody(it){
   const on = S.trackEdit === it.id;
   let h = `<div class="tiles" style="grid-template-columns:repeat(3,1fr);margin-top:10px">
     <button class="tile ${!on?'on':''}" data-trk="none"><div class="tth">${ic('ban')}</div><span>None</span></button>
     <button class="tile ${on?'on':''}" data-trk="motion"><div class="tth">${ic('target')}</div><span>Motion tracking</span></button></div><div style="height:10px"></div>`;
-  if(on) h += `<div class="note">① Player ನಲ್ಲಿರುವ <b style="color:var(--acc)">ನೀಲಿ ಚೌಕ</b>ವನ್ನು ಹಿಂಬಾಲಿಸಬೇಕಾದ ವಸ್ತುವಿನ (ಮುಖ, ಚೆಂಡು…) ಮೇಲೆ ಇಡಿ — ಕೆಳಗಿನ ಮೂಲೆ ಎಳೆದು size ಬದಲಿಸಿ.<br>② <b>Start tracking</b> ಒತ್ತಿ. ಈ item ಆ ವಸ್ತುವನ್ನು ಹಿಂಬಾಲಿಸುತ್ತದೆ.</div>
+  if(on) h += `<div class="note">① Place the <b style="color:var(--acc)">blue box</b> in the player over the object to follow (face, ball…) — drag its corner to resize.<br>② Press <b>Start tracking</b>. This item will follow that object.</div>
     <div class="prog"><div id="trkBar" style="width:${trackRun?Math.round(trackRun.p*100):0}%"></div></div><div id="trkStat" style="color:var(--mute);min-height:18px">${trackRun?'Tracking…':''}</div>
     <div class="btns">${trackRun?'<button data-trk="cancel">Cancel</button>':`<button class="primary" data-trk="start">${ic('target')} Start tracking</button>`}</div>`;
-  if(it.tracked) h += `<div class="note">✓ Tracking ಆಗಿದೆ (${(it.kf||[]).length} keyframes). ಮತ್ತೆ ಮಾಡಬಹುದು ಅಥವಾ <button data-trk="clear" style="padding:2px 8px">Clear</button></div>`;
+  if(it.tracked) h += `<div class="note">✓ Tracked (${(it.kf||[]).length} keyframes). Run again or <button data-trk="clear" style="padding:2px 8px">Clear</button></div>`;
   return h;
 }
 function opacitySec(it){ return sec('op', it.type ? 'Opacity & Blend' : 'Opacity', sl(it,'Opacity','opacity',0,100)+(it.type?blendRow(it):'')); }
@@ -658,8 +658,8 @@ function inspBody(it, kind, tab, sub){
       if(sub === 'rmbg') return rmbgBody(it);
       if(sub === 'mask') return maskBody(it);
       if(sub === 'retouch') return sec('rt','Skin', sl(it,'Smooth','rt.smooth',0,100)+sl(it,'Whitening','rt.bright',0,100)+sl(it,'Clear','rt.clear',0,100)+
-        '<div class="note">💆 ಚರ್ಮದ ಬಣ್ಣವನ್ನು ಗುರುತಿಸಿ ಮೃದು / ಬೆಳ್ಳಗೆ ಮಾಡುತ್ತದೆ. 30–60 ಸಾಕು — ಹೆಚ್ಚಾದರೆ ಕೃತಕವಾಗಿ ಕಾಣುತ್ತದೆ.</div>', {reset:'resetRt'})
-        + (!it.type ? '<div class="btns"><button data-all="rt">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : '');
+        '<div class="note">💆 Detects skin tones and smooths / brightens them. 30–60 is enough — more looks artificial.</div>', {reset:'resetRt'})
+        + (!it.type ? '<div class="btns"><button data-all="rt">Apply to all clips</button></div>' : '');
       if(sub === 'effect') return fxBody(it);
       return transformSec(it) + opacitySec(it) +
         (it.type ? sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+(kind==='ovimage'?sl(it,'Duration','dur',.3,60,.1):'')) +
@@ -674,29 +674,29 @@ function inspBody(it, kind, tab, sub){
       if(g.text != null) b += `<div class="crow"><span>Text</span></div><input type="text" data-p="text" value="${esc(it.text||'')}" style="width:100%;margin:-6px 0 10px">`;
       if(g.text2 != null) b += `<div class="crow"><span>Text 2</span></div><input type="text" data-p="text2" value="${esc(it.text2||'')}" style="width:100%;margin:-6px 0 10px">`;
       b += colorRow(it,'Color','color',true) + sl(it,'Animation speed','gspeed',.25,3,.05);
-      return sec('gx', g.name || 'Graphic', b) + (g.full ? '<div class="note">ಇದು full-screen graphic. Opacity / Blend ಬದಲಿಸಿ main video ಜೊತೆ ಸೇರಿಸಬಹುದು.</div>' : transformSec(it)) + opacitySec(it) +
+      return sec('gx', g.name || 'Graphic', b) + (g.full ? '<div class="note">This is a full-screen graphic. Change Opacity / Blend to mix it with the main video.</div>' : transformSec(it)) + opacitySec(it) +
         sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+sl(it,'Duration','dur',.3,60,.1)) +
         `<div class="btns"><button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`; }
     case 'track': return trackBody(it);
     case 'adjust': return adjustBody(normItem(it), true);
     case 'tts': return ttsBody(it);
     case 'layer': return '<div style="height:8px"></div>' + sec('op','Layer', sl(it,'Intensity','opacity',0,100)) + sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+sl(it,'Duration','dur',.3,600,.1)) +
-      `<div class="note">🎚 Adjustment layer ಇದರ <b>ಕೆಳಗಿನ ಎಲ್ಲಾ</b> tracks (main video, overlays, text) ಮೇಲೆ filter / adjust / effect ಹಾಕುತ್ತದೆ. Timeline ನಲ್ಲಿ ಉದ್ದ ಮಾಡಿ ಹಲವು clips ಗೆ ಒಮ್ಮೆಲೆ ಬಳಸಿ. Filter / Effect ಗೆ ಎಡಗಡೆ Filters / Effects ಬಳಸಿ.</div>
+      `<div class="note">🎚 An adjustment layer applies filter / adjust / effect to <b>all tracks below</b> it (main video, overlays, text). Stretch it on the timeline to cover many clips. Use Filters / Effects on the left.</div>
       <div class="btns"><button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`;
     case 'text':
       if(sub === 'bubble') return bubbleBody(it);
-      if(sub === 'effects') return '<div style="height:8px"></div>' + tfxGrid(it.tfx) + (it.tfx ? '<div class="note">Effect ಹಾಕಿದಾಗ ಬಣ್ಣ/outline/shadow effect ನಿಂದಲೇ ಬರುತ್ತವೆ. ಸಾಮಾನ್ಯ style ಗೆ ✕ None ಒತ್ತಿ.</div>' : '');
+      if(sub === 'effects') return '<div style="height:8px"></div>' + tfxGrid(it.tfx) + (it.tfx ? '<div class="note">With an effect, colour/outline/shadow come from the effect. Press ✕ None for normal styling.</div>' : '');
       if(sub === 'style') return `<div style="height:10px"></div><div class="tiles tstyle">${TEXT_PRESETS.map((p,i)=>`<button class="tile" data-preset="${i}"><div class="tth" style="${presetCss(p)}">Aa</div></button>`).join('')}</div><div style="height:6px"></div>` +
         sec('ol','Outline', colorRow(it,'Color','stroke')+sl(it,'Width','strokeW',0,20)) +
         sec('bx','Background', `<div class="crow"><span>Background box</span><input type="checkbox" data-p="bgOn" ${it.bgOn?'checked':''}></div>`+colorRow(it,'Color','bgColor')+sl(it,'Opacity','bgAlpha',0,100)) +
         sec('sh','Shadow / Glow', colorRow(it,'Color','shadowColor')+sl(it,'Amount','shadow',0,100)) +
-        (it.caption ? '<div class="btns"><button data-act="capall">💬 ಈ style ಎಲ್ಲಾ captions ಗೆ</button></div>' : '');
-      return sec('tc','Text', `<textarea data-p="text" rows="3" placeholder="ಇಲ್ಲಿ ಬರೆಯಿರಿ…">${esc(it.text)}</textarea>` + sl(it,'Curve','curve',-100,100)) +
-        sec('fn','Font', `<div class="fonts">${FONTS.map(([f,n])=>`<button class="${it.font===f?'on':''}" data-set="font" data-val="${f}" style="font-family:'${f}'">${n}</button>`).join('')}</div>
+        (it.caption ? '<div class="btns"><button data-act="capall">💬 Apply style to all captions</button></div>' : '');
+      return sec('tc','Text', `<textarea data-p="text" rows="3" placeholder="Type here…">${esc(it.text)}</textarea>` + sl(it,'Curve','curve',-100,100)) +
+        sec('fn','Font', fontPicker(it.font) + `
           <div class="tbtns"><button class="${it.bold?'on':''}" data-toggle="bold"><b>B</b></button><button class="${it.italic?'on':''}" data-toggle="italic"><i>I</i></button>${[['left','⯇≡'],['center','≡'],['right','≡⯈']].map(([k,n])=>`<button class="${it.align===k?'on':''}" data-set="align" data-val="${k}">${n}</button>`).join('')}</div>
           ${colorRow(it,'Color','color',true)}`) +
         transformSec(it) + opacitySec(it) + sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+sl(it,'Duration','dur',.3,60,.1)) +
-        `<div class="btns">${it.caption?'<button data-act="capall">💬 ಈ style ಎಲ್ಲಾ captions ಗೆ</button>':''}<button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`;
+        `<div class="btns">${it.caption?'<button data-act="capall">💬 Apply style to all captions</button>':''}<button data-act="dup">${ic('copy')} Duplicate</button><button data-act="del">${ic('trash')} Delete</button></div>`;
     case 'sticker':
       return `<div style="height:10px"></div><div class="tiles small">${[...STICKER_SETS.social,...STICKER_SETS.badges].map(k=>`<button class="tile emoji ${it.text==='svg:'+k?'on':''}" data-set="text" data-val="svg:${k}"><div class="tth"><img src="${SVG_URL[k]}" style="width:36px;height:36px"></div></button>`).join('')}${EMOJIS.map(e=>`<button class="tile emoji ${it.text===e?'on':''}" data-set="text" data-val="${e}"><div class="tth">${e}</div></button>`).join('')}</div><div style="height:6px"></div>` +
         transformSec(it) + opacitySec(it) + sec('tm','Timing', sl(it,'Start','start',0,Math.max(10,S.total),.05)+sl(it,'Duration','dur',.3,60,.1)) +
@@ -877,7 +877,7 @@ async function doDenoise(it, on){
       a.origMediaId = it.mediaId; a.origIn = it.in; it.volume = 0; S.audios.push(a); S.sel = a.id;
     }
     afterEdit(); renderLeft();
-  }catch(err){ alert('Noise reduction ಆಗಲಿಲ್ಲ: ' + err.message); renderInspector(); }
+  }catch(err){ alert('Noise reduction failed: ' + err.message); renderInspector(); }
 }
 IB.addEventListener('change', e => { editing = false; if(e.target.type === 'range') e.target.blur(); renderTimeline(); });
 IB.addEventListener('click', e => {
@@ -893,7 +893,7 @@ function defaultTrackBox(o){
 async function trackAction(a, o){
   if(!o) return;
   if(a === 'none'){ S.trackEdit = null; renderInspector(); return; }
-  if(a === 'motion'){ if(!S.clips.length) return alert('Main track ನಲ್ಲಿ video ಬೇಕು'); seek(o.start + .01); S.trackEdit = o.id; S.trackBox = defaultTrackBox(o); renderInspector(); return; }
+  if(a === 'motion'){ if(!S.clips.length) return alert('Add a video to the main track first'); seek(o.start + .01); S.trackEdit = o.id; S.trackBox = defaultTrackBox(o); renderInspector(); return; }
   if(a === 'clear'){ pushUndo(); o.kf = []; o.tracked = false; renderInspector(); renderTimeline(); return; }
   if(a === 'cancel'){ if(trackRun) trackRun.flag = true; return; }
   if(a === 'start'){
@@ -901,7 +901,7 @@ async function trackAction(a, o){
     try{
       const pts = await runTracking(o, S.trackBox, p => { trackRun.p = p; const b = $('#trkBar'); if(b) b.style.width = (p*100)+'%'; const st = $('#trkStat'); if(st) st.textContent = `Tracking… ${Math.round(p*100)}%`; }, trackRun);
       if(!trackRun.flag){ applyTracking(o, pts, S.trackBox); S.trackEdit = null; }
-    }catch(err){ alert('Tracking ಆಗಲಿಲ್ಲ: ' + err.message); }
+    }catch(err){ alert('Tracking failed: ' + err.message); }
     trackRun = null; renderInspector(); renderTimeline(); seek(o.start + .01);
   }
 }
@@ -914,7 +914,7 @@ async function reverseItem(it, btn){
     else { const st = itemStart(it), a = newAudioItem(nm, {kind:'extract', start:st, in:0, dur:nm.duration/(it.speed||1), speed:it.speed||1, volume:it.volume||100, audio:deep(it.audio), linkClip:it.id});
       it.prevVolume = it.volume || 100; it.extracted = a.id; it.volume = 0; S.audios.push(a); S.sel = a.id; }
     afterEdit(); renderLeft();
-  }catch(err){ alert('Reverse ಆಗಲಿಲ್ಲ: ' + err.message); renderInspector(); }
+  }catch(err){ alert('Reverse failed: ' + err.message); renderInspector(); }
 }
 
 /* =====================================================================
@@ -985,7 +985,7 @@ function trackHead(kind, t, items){
   else if(items.length && items.every(o => o.type === 'sticker' || o.type === 'gfx')){ icon = 'sticker'; name = 'Sticker'; }
   const B = (k,on,i,t2) => `<button class="ib ${on?'off':''}" data-tk="${kind}:${t}:${k}" title="${t2}">${ic(i)}</button>`;
   const hasA = kind === 'au' || items.some(o => o.type === 'video');
-  return `<div class="thead">${ic(icon)}<span class="tl">${name} ${t+1}</span>${kind==='ov'?B('hide',ts.hide,ts.hide?'eyeoff':'eye','ತೋರಿಸು / ಮರೆಮಾಡು'):''}${hasA?B('mute',ts.mute,ts.mute?'volx':'vol','Mute'):''}${B('lock',ts.lock,ts.lock?'lock':'unlock','Lock')}</div>`;
+  return `<div class="thead">${ic(icon)}<span class="tl">${name} ${t+1}</span>${kind==='ov'?B('hide',ts.hide,ts.hide?'eyeoff':'eye','Show / hide'):''}${hasA?B('mute',ts.mute,ts.mute?'volx':'vol','Mute'):''}${B('lock',ts.lock,ts.lock?'lock':'unlock','Lock')}</div>`;
 }
 function renderTimeline(){
   const pps = S.pps;
@@ -997,13 +997,13 @@ function renderTimeline(){
   for(let t=minor; t*pps<w; t+=minor) if(Math.abs(t/step - Math.round(t/step)) > 1e-6) r += `<div class="tick m" style="left:${t*pps}px"></div>`;
   const nOv = S.overlays.length ? Math.max(...S.overlays.map(o => o.track|0)) + 1 : 0, nAu = S.audios.length ? Math.max(...S.audios.map(a => a.track|0)) + 1 : 0;
   let h = `<div class="trow ruler"><div class="thead"></div><div class="tbody" id="rulerBody">${r}</div></div>`;
-  h += `<div class="trow drop ovz" data-zone="overlay"><div class="thead"></div><div class="tbody">⬆ ಹೊಸ track: video / photo / text ಇಲ್ಲಿ ಹಾಕಿ</div></div>`;
+  h += `<div class="trow drop ovz" data-zone="overlay"><div class="thead"></div><div class="tbody">⬆ New track: drop video / photo / text here</div></div>`;
   for(let t = nOv-1; t >= 0; t--){
     const items = S.overlays.filter(o => o.track === t), ts = (S.trk && S.trk.ov[t]) || {};
     h += `<div class="trow ovrow ${ts.hide?'thide':''} ${ts.lock?'tlock':''}" data-zone="overlay" data-track="${t}">${trackHead('ov',t,items)}<div class="tbody">${items.map(ovItemHTML).join('')}</div></div>`;
   }
-  h += `<div class="trow main" data-zone="main"><div class="thead"><button class="ib ${S.mainHide?'off':''}" data-th="hide" title="Main track ತೋರಿಸು / ಮರೆಮಾಡು">${ic(S.mainHide?'eyeoff':'eye')}</button><button class="ib ${S.mainMute?'off':''}" data-th="mute" title="Main track mute">${ic(S.mainMute?'volx':'vol')}</button><span class="tl">Main</span></div>
-    <div class="tbody" id="track">${S.clips.length ? S.clips.map(clipHTML).join('') : '<div style="padding:24px 14px;color:var(--mute)">🎬 Video / photo ಅನ್ನು ಇಲ್ಲಿಗೆ ಎಳೆದು ಹಾಕಿ</div>'}</div></div>`;
+  h += `<div class="trow main" data-zone="main"><div class="thead"><button class="ib ${S.mainHide?'off':''}" data-th="hide" title="Show / hide main track">${ic(S.mainHide?'eyeoff':'eye')}</button><button class="ib ${S.mainMute?'off':''}" data-th="mute" title="Main track mute">${ic(S.mainMute?'volx':'vol')}</button><span class="tl">Main</span></div>
+    <div class="tbody" id="track">${S.clips.length ? S.clips.map(clipHTML).join('') : '<div style="padding:24px 14px;color:var(--mute)">🎬 Drag a video / photo here</div>'}</div></div>`;
   for(let t = 0; t < nAu; t++){
     const items = S.audios.filter(a => a.track === t), ts = (S.trk && S.trk.au[t]) || {};
     h += `<div class="trow aurow ${ts.mute?'thide':''} ${ts.lock?'tlock':''}" data-zone="audio" data-track="${t}">${trackHead('au',t,items)}<div class="tbody">${items.map(a => {
@@ -1013,7 +1013,7 @@ function renderTimeline(){
       return `<div class="it audio ${a.kind} ${S.sel===a.id?'sel':''} ${selMulti.has(a.id)?'msel':''}" data-oid="${a.id}" style="left:${a.start*pps}px;width:${Math.max(14,a.dur*pps-2)}px;${waveStyle(m,a.in,a.speed)}">${bts}<span class="lbl">${icon} ${esc(m?m.name:'')}${fx}${a.volume===0?' 🔇':''}</span><div class="h l" data-h="l"></div><div class="h r" data-h="r"></div></div>`;
     }).join('')}</div></div>`;
   }
-  h += `<div class="trow drop auz" data-zone="audio"><div class="thead"></div><div class="tbody">🎵 Audio: music / sound ಇಲ್ಲಿ ಹಾಕಿ</div></div>`;
+  h += `<div class="trow drop auz" data-zone="audio"><div class="thead"></div><div class="tbody">🎵 Audio: drop music / sound here</div></div>`;
   $('#tlRows').innerHTML = h + '<div id="snapL"></div><div id="marq"></div>';
   updatePH();
 }
@@ -1233,19 +1233,19 @@ async function showHome(){
   let list = [], store = '';
   if(DB){ try{ list = (await idbAll('projects')).sort((a,b)=>b.updated-a.updated); }catch(e){} }
   try{ const est = await navigator.storage.estimate(); store = `💾 ${(est.usage/1048576).toFixed(0)} MB used · ${(est.quota/1073741824).toFixed(1)} GB available on this device`; }catch(e){}
-  const Q = [['captions','captions','Auto captions','ಮಾತನ್ನು ತಾನಾಗಿ text ಮಾಡಿ'],['rmbg','wand','Remove background','AI ಮೂಲಕ ಹಿನ್ನೆಲೆ ತೆಗೆಯಿರಿ'],['voice','mic','Voice-over','ನಿಮ್ಮ ಧ್ವನಿ record ಮಾಡಿ'],['sfx','wave','Sound effects','Free sound effects']];
+  const Q = [['captions','captions','Auto captions','Turn speech into text'],['rmbg','wand','Remove background','Remove backgrounds with AI'],['voice','mic','Voice-over','Record your voice'],['sfx','wave','Sound effects','Free sound effects']];
   $('#homeBox').innerHTML = `<aside class="hside"><div class="hlogo"><span class="logo"><i>${ic('play')}</i></span>ChitraCut</div>
       <button class="hnav on">${ic('home')} Home</button><button class="hnav" data-hscroll="1">${ic('folder')} Projects</button>
-      ${S.project ? `<button class="hnav" id="hBack">${ic('edit')} Editor ಗೆ ಹಿಂದಿರುಗಿ</button>` : ''}
-      <div class="hsp"></div><div class="hpro">ChitraCut<small>Free professional video editor · ಕನ್ನಡದಲ್ಲಿ</small></div></aside>
+      ${S.project ? `<button class="hnav" id="hBack">${ic('edit')} Back to editor</button>` : ''}
+      <div class="hsp"></div><div class="hpro">ChitraCut<small>Free professional video editor</small></div></aside>
     <main class="hmain">
       <button class="hbanner" data-new="1"><span class="hplus">${ic('plus')}</span>Create project</button>
       <div class="hquick">${Q.map(([k,i,t,d])=>`<button class="hq" data-quick="${k}"><span class="qi">${ic(i)}</span><b>${t}</b><span>${d}</span></button>`).join('')}</div>
       <h3 id="hProj">Projects ${list.length?`<span style="color:var(--mute);font-weight:400">(${list.length})</span>`:''}</h3>
-      ${!DB ? '<div class="note">⚠ ಈ browser ನಲ್ಲಿ project save ಆಗುವುದಿಲ್ಲ (private mode?). Edit ಮಾಡಿ export ಮಾಡಬಹುದು.</div>' : ''}
+      ${!DB ? '<div class="note">⚠ Projects cannot be saved in this browser (private mode?). You can still edit and export.</div>' : ''}
       ${list.length ? `<div class="plist">${list.map(p=>`<div class="pcard" data-open="${p.id}"><div class="pt" style="${p.thumb?`background-image:url(${p.thumb})`:''}">${p.thumb?'':ic('film')}</div><div class="pn">${esc(p.name)}</div>
           <div class="pd"><span>${new Date(p.updated).toLocaleDateString()} ${new Date(p.updated).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span><span class="pb"><button class="ib sm" data-ren="${p.id}" title="Rename">${ic('edit')}</button><button class="ib sm" data-delp="${p.id}" title="Delete">${ic('trash')}</button></span></div></div>`).join('')}</div>`
-        : '<div class="hempty">ಇನ್ನೂ project ಇಲ್ಲ — ಮೇಲಿನ <b>Create project</b> ಒತ್ತಿ ಶುರು ಮಾಡಿ</div>'}
+        : '<div class="hempty">No projects yet — press <b>Create project</b> above to start</div>'}
       <div class="hoff">${offlineCard()}</div>
       <div class="hstore">${store}</div></main>`;
   $('#home').style.display = 'flex';
@@ -1263,7 +1263,7 @@ $('#home').addEventListener('click', async e => {
     return;
   }
   if(dp){
-    if(!confirm('ಈ project ಶಾಶ್ವತವಾಗಿ delete ಮಾಡಲೇ?')) return;
+    if(!confirm('Delete this project permanently?')) return;
     const id = dp.dataset.delp; await idbDel('projects', id); await idbDelBlobs(id);
     if(S.project && S.project.id === id){ resetState(); S.project = null; afterEdit(); renderLeft(); }
     showHome(); return;
@@ -1292,7 +1292,7 @@ const EXP_BR = [['low','Lower',.6],['rec','Recommended',1],['high','Higher',2]];
 function expDims(q){ let a,b; if(S.ratio==='orig'){ const m=S.media.find(x=>x.w); a=m?m.w:9; b=m?m.h:16; } else [a,b]=S.ratio.split(':').map(Number); let W,H; if(a>=b){ H=q; W=Math.round(q*a/b); } else { W=q; H=Math.round(q*b/a); } return [W-W%2, H-H%2]; }
 function expBitrate(E){ const [W,H] = expDims(E.q), base = W*H*E.fps*.15; return E.br === 'custom' ? E.cbr*1e6 : Math.round(base*(EXP_BR.find(b=>b[0]===E.br)||EXP_BR[1])[2]); }
 function openExport(){
-  if(!S.total) return alert('ಮೊದಲು media ಸೇರಿಸಿ');
+  if(!S.total) return alert('Add media first');
   pause();
   const E = S.exp = Object.assign({name:S.project?S.project.name:'ChitraCut', q:1080, br:'rec', cbr:10, fps:30, codec:'h264', fmt:'mp4', video:true, audio:true, gif:false, gifRes:320}, S.exp||{});
   const prev = (() => { const c=document.createElement('canvas'), k=260/Math.max(out.width,out.height); c.width=out.width*k; c.height=out.height*k; c.getContext('2d').drawImage(out,0,0,c.width,c.height); return c.toDataURL('image/jpeg',.8); })();
@@ -1303,7 +1303,7 @@ function openExport(){
     <div class="xsec"><label class="xchk"><input type="checkbox" id="xVideo" ${E.video?'checked':''}> <b>Video</b></label>
       <div class="xbody" id="xVBody"></div></div>
     <div class="xsec"><label class="xchk"><input type="checkbox" id="xAudio" ${E.audio?'checked':''}> <b>Audio</b></label>
-      <div class="xbody"><div class="xrow"><span>Format</span><b class="xval">${MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')?'AAC / M4A':'Opus / WebM'} · 192 kbps</b></div><div class="xhint">Video ಆಯ್ಕೆ ಇಲ್ಲದೆ Audio ಮಾತ್ರ ಆರಿಸಿದರೆ audio file ಮಾತ್ರ ಬರುತ್ತದೆ.</div></div></div>
+      <div class="xbody"><div class="xrow"><span>Format</span><b class="xval">${MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')?'AAC / M4A':'Opus / WebM'} · 192 kbps</b></div><div class="xhint">Choose only Audio (without Video) to export an audio file.</div></div></div>
     <div class="xsec"><label class="xchk"><input type="checkbox" id="xGif" ${E.gif?'checked':''}> <b>Export GIF</b></label>
       <div class="xbody"><div class="xrow"><span>Resolution</span><select id="xGifRes">${[[240,'240p'],[320,'320p'],[480,'480p']].map(([v,n])=>`<option value="${v}" ${E.gifRes===v?'selected':''}>${n}</option>`).join('')}</select></div></div></div>
     <div class="xfoot"><span id="xSize"></span><div class="btns" style="margin:0"><button id="xCancel">Cancel</button><button class="primary" id="xGo">${ic('export')} Export</button></div></div>
@@ -1322,10 +1322,10 @@ function renderExpVideo(){
     <div class="xrow"><span>Codec</span>${sel('xCodec',VCODECS.filter(c=>cods.includes(c[0])).map(c=>[c[0],c[1]]),E.codec)}</div>
     <div class="xrow"><span>Format</span>${sel('xFmt',fmts.map(f=>[f,f]),E.fmt)}</div>
     <div class="xrow"><span>Frame rate</span>${sel('xFps',[24,25,30,50,60].map(f=>[f,f+'fps']),E.fps)}</div>
-    <div class="xhint">${W}×${H} · ${(expBitrate(E)/1e6).toFixed(1)} Mbps${E.q>=1440?' · ⚠ 2K/4K ಗೆ ಶಕ್ತಿಶಾಲಿ PC ಬೇಕು; ನಿಧಾನವಾದರೆ frames ಕಡಿಮೆಯಾಗಬಹುದು':''}</div>`;
+    <div class="xhint">${W}×${H} · ${(expBitrate(E)/1e6).toFixed(1)} Mbps${E.q>=1440?' · ⚠ 2K/4K needs a powerful PC; slow devices may drop frames':''}</div>`;
   const vb = $('#xVBody'); vb.style.opacity = E.video ? 1 : .4; vb.style.pointerEvents = E.video ? '' : 'none';
   const sz = ((E.video ? expBitrate(E) : 0) + (E.audio ? 192000 : 0))*S.total/8/1048576;
-  $('#xSize').innerHTML = `Size: ~${sz < 1 ? sz.toFixed(2) : sz.toFixed(0)} MB${E.gif?' + GIF':''} · ${fmtT(S.total)} <small>(real-time ನಲ್ಲಿ export ಆಗುತ್ತದೆ)</small>`;
+  $('#xSize').innerHTML = `Size: ~${sz < 1 ? sz.toFixed(2) : sz.toFixed(0)} MB${E.gif?' + GIF':''} · ${fmtT(S.total)} <small>(exports in real time)</small>`;
 }
 $('#modal').addEventListener('change', e => {
   const E = S.exp, id = e.target.id; if(!E || !id || !id.startsWith('x')) return;
@@ -1335,13 +1335,13 @@ $('#modal').addEventListener('change', e => {
 });
 function renderSaveTo(hint){
   const box = $('#xSave'); if(!box) return;
-  const label = saveDir ? '📁 ' + esc(saveDir.name) : FS_SAVE ? 'Export ಒತ್ತಿದಾಗ ಕೇಳುತ್ತದೆ (Save as…)' : '⬇ Downloads';
-  box.innerHTML = `<span class="xpath" title="${saveDir ? 'Folder: ' + esc(saveDir.name) : ''}">${label}</span>${saveDir ? '<button class="ib sm" id="xClrDir" type="button" title="Folder ತೆಗೆ (ಪ್ರತಿ ಬಾರಿ ಕೇಳು)">✕</button>' : ''}${FS_DIR ? `<button class="ib" id="xPickDir" type="button" title="Folder ಆರಿಸಿ">${ic('folder')}</button>` : ''}`;
-  const h = $('#xSaveHint'); if(h) h.innerHTML = hint || (!FS_DIR && !FS_SAVE ? '<div class="xhint">ಈ browser ನಲ್ಲಿ (phone / Firefox) file <b>Downloads</b> ಗೆ ಹೋಗುತ್ತದೆ.</div>' : '');
+  const label = saveDir ? '📁 ' + esc(saveDir.name) : FS_SAVE ? 'Asks when you export (Save as…)' : '⬇ Downloads';
+  box.innerHTML = `<span class="xpath" title="${saveDir ? 'Folder: ' + esc(saveDir.name) : ''}">${label}</span>${saveDir ? '<button class="ib sm" id="xClrDir" type="button" title="Clear folder (ask every time)">✕</button>' : ''}${FS_DIR ? `<button class="ib" id="xPickDir" type="button" title="Choose folder">${ic('folder')}</button>` : ''}`;
+  const h = $('#xSaveHint'); if(h) h.innerHTML = hint || (!FS_DIR && !FS_SAVE ? '<div class="xhint">In this browser (phone / Firefox) files go to <b>Downloads</b>.</div>' : '');
 }
 async function pickSaveDir(){
   try{ const h = await showDirectoryPicker({id:'chitracut-export', mode:'readwrite', startIn:'videos'}); saveDir = h; await setSetting('saveDir', h); renderSaveTo(); }
-  catch(err){ renderSaveTo(err && err.name === 'AbortError' ? '<div class="xhint">💡 <b>Desktop, Documents, Downloads</b> ಅಂತಹ ಮುಖ್ಯ folder ಗಳನ್ನು browser ನೇರವಾಗಿ ಆರಿಸಲು ಬಿಡುವುದಿಲ್ಲ (ಅವುಗಳಲ್ಲಿ system files ಇರುತ್ತವೆ). ಅದರೊಳಗೆ ಒಂದು ಹೊಸ folder ಮಾಡಿ (ಉದಾ: <b>Desktop › ChitraCut</b>) ಅದನ್ನು ಆರಿಸಿ. ಅಥವಾ folder ಆರಿಸದೆ Export ಒತ್ತಿದರೆ Save as ವಿಂಡೋದಲ್ಲಿ ನೇರವಾಗಿ Desktop ಗೆ save ಮಾಡಬಹುದು.</div>' : ''); }
+  catch(err){ renderSaveTo(err && err.name === 'AbortError' ? '<div class="xhint">💡 Browsers do not allow picking main folders like <b>Desktop, Documents, Downloads</b> directly (they contain system files). Create a new folder inside (e.g. <b>Desktop › ChitraCut</b>) and pick that. Or skip the folder — Export will open a Save-as window where you can save to the Desktop.</div>' : ''); }
 }
 $('#modal').addEventListener('click', async e => {
   if(e.target.closest('#xPickDir')){ e.preventDefault(); pickSaveDir(); return; }
@@ -1349,7 +1349,7 @@ $('#modal').addEventListener('click', async e => {
   if(e.target.closest('#xCancel')){ hideModal(); $('#modalBox').classList.remove('wide'); return; }
   if(!e.target.closest('#xGo')) return;
   const E = S.exp; E.name = ($('#xName')||{}).value || E.name;
-  if(!E.video && !E.audio && !E.gif) return alert('Video, Audio ಅಥವಾ GIF ಯಾವುದಾದರೂ ಒಂದು ಆರಿಸಿ');
+  if(!E.video && !E.audio && !E.gif) return alert('Choose Video, Audio or GIF');
   // choose where to save NOW (the browser only allows these dialogs right after a click)
   const vopt = {q:E.q, fps:E.fps, bitrate:expBitrate(E), fmt:E.fmt, codec:E.codec, audioOnly:!E.video, name:E.name}, gopt = {gif:true, q:E.gifRes, fps:12, name:E.name};
   const mode = saveDir ? 'folder' : FS_SAVE ? 'ask' : 'downloads';
@@ -1539,10 +1539,10 @@ function ctxForItem(it){
   if(k === 'clip' || k === 'clipimg'){
     const multi = selMulti.size >= 2;
     return [...base,
-      hasA ? (it.extracted ? ['Restore audio (extract ರದ್ದು)', () => restoreAudio(it), {icon:'undo'}] : ['Extract audio', () => extractAudio(it), {icon:'wave'}]) : null,
+      hasA ? (it.extracted ? ['Restore audio (undo extract)', () => restoreAudio(it), {icon:'undo'}] : ['Extract audio', () => extractAudio(it), {icon:'wave'}]) : null,
       hasA ? [it.volume > 0 ? 'Mute' : 'Unmute', () => toggleMuteItem(it), {icon:it.volume > 0 ? 'volx' : 'vol'}] : null,
       hasA ? ['Freeze frame (3s)', freezeFrame, {icon:'pause'}] : null,
-      [multi ? `Compound clip (${selMulti.size} clips)` : 'Compound clip… (Ctrl+click ಮಾಡಿ ಹಲವು ಆರಿಸಿ)', () => compoundClips([...selMulti]), {icon:'layers', dis:!multi}],
+      [multi ? `Compound clip (${selMulti.size} clips)` : 'Compound clip… (Ctrl+click to select several)', () => compoundClips([...selMulti]), {icon:'layers', dis:!multi}],
       hasA ? ['Reverse audio', () => reverseItem(it), {icon:'undo'}] : null,
       hasA ? ['Vocal / BGM remover…', () => { S.rt.clip = 'audio'; S.rs.audio = 'basic'; S.closed.stem = false; renderInspector(); const x = IB.querySelector('[data-sep]'); if(x) x.scrollIntoView({block:'center'}); }, {icon:'mic'}] : null,
       hasA ? ['Remove silences…', () => { S.rt.clip = 'audio'; S.rs.audio = 'basic'; S.closed.sil = false; renderInspector(); const x = IB.querySelector('[data-sil]'); if(x) x.scrollIntoView({block:'center'}); }, {icon:'wave'}] : null,
@@ -1557,8 +1557,8 @@ function ctxForItem(it){
       ['Move to main track', () => overlayToClip(it, it.start), {icon:'film'}], ...lay, ['Mirror', () => { flipSel(); renderTimeline(); }, {icon:'flip'}], '-', ...attrs];
   if(k === 'audio'){
     const own = it.linkClip && (S.clips.find(c => c.id === it.linkClip) || S.overlays.find(o => o.id === it.linkClip));
-    return [...base, own ? ['Video ಗೆ audio ಮರಳಿಸಿ (Restore)', () => restoreAudio(own), {icon:'undo'}] : null,
-      it.extracted ? ['Original audio ಮರಳಿಸಿ (Restore)', () => restoreAudio(it), {icon:'undo'}] : null,
+    return [...base, own ? ['Return audio to video (Restore)', () => restoreAudio(own), {icon:'undo'}] : null,
+      it.extracted ? ['Restore original audio', () => restoreAudio(it), {icon:'undo'}] : null,
       ['Vocal / BGM remover…', () => { S.rt.audio = 'audio'; S.rs.audio = 'basic'; S.closed.stem = false; renderInspector(); const x = IB.querySelector('[data-sep]'); if(x) x.scrollIntoView({block:'center'}); }, {icon:'mic'}],
       [it.volume > 0 ? 'Mute' : 'Unmute', () => toggleMuteItem(it), {icon:it.volume > 0 ? 'volx' : 'vol'}], ['Reverse audio', () => reverseItem(it), {icon:'undo'}],
       ['Detect beats / Beat sync', () => { S.rt.audio = 'audio'; S.rs.audio = 'basic'; renderInspector(); doBeat('detect', it); }, {icon:'music2'}],
@@ -1638,8 +1638,8 @@ function voiceBody(it){
     ${sec('vfx','Fine tune', sl(it,'Pitch','audio.pitch',-12,12,1)+sl(it,'Echo','audio.echo',0,100)+sl(it,'Reverb','audio.reverb',0,100)+
       `<div class="crow"><span>Room</span><select data-p="audio.reverbSize">${REVERBS.map(([k,n])=>`<option value="${k}" ${a.reverbSize===k?'selected':''}>${n}</option>`).join('')}</select></div>`+
       sl(it,'Chorus','audio.chorus',0,100)+sl(it,'Vibrato','audio.vibrato',0,100)+sl(it,'Tremolo','audio.trem',0,100)+sl(it,'Distortion','audio.dist',0,100)+sl(it,'8D pan','audio.pan8d',0,100))}
-    <div class="note">🎧 Voice ಮೇಲೆ click ಮಾಡಿದರೆ 3 ಸೆಕೆಂಡ್ preview ಕೇಳಿಸುತ್ತದೆ. ${VOICE_LIB.length} voices — ಎಲ್ಲವೂ ನಿಮ್ಮ browser ನಲ್ಲೇ, download ಇಲ್ಲ.</div>
-    ${!it.type?'<div class="btns"><button data-all="audio">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}`;
+    <div class="note">🎧 Click a voice to hear a 3-second preview. ${VOICE_LIB.length} voices — all in your browser, no download.</div>
+    ${!it.type?'<div class="btns"><button data-all="audio">Apply to all clips</button></div>':''}`;
 }
 function tfxGrid(cur){
   const cat = S.tfxCat || 'All', list = TFX.filter(t => cat === 'All' || t[2] === cat);
@@ -1648,13 +1648,13 @@ function tfxGrid(cur){
 }
 function ttsBody(it){
   const L = S.ttsLang || 'kan', st = S.ttsStyle || 'natural', sp = S.ttsSpeed || 1;
-  return `<div style="height:8px"></div>${it ? `<div class="note">🗣 ಈ text ಅನ್ನು ಧ್ವನಿಯಾಗಿ ಬದಲಿಸಿ audio track ಗೆ ಸೇರಿಸುತ್ತದೆ: <b>${esc((it.text||'').slice(0,60))}</b></div>` : `<div class="ltitle" style="margin-top:0">🗣 Text to speech</div><textarea id="ttsText" rows="4" placeholder="ಇಲ್ಲಿ ಬರೆಯಿರಿ… (ಕನ್ನಡ / English / हिन्दी)">${esc(S.ttsText||'')}</textarea>`}
-    <div class="ltitle">ಭಾಷೆ</div><div class="chiprow">${TTS_LANGS.map(([k,n])=>`<button data-ttsl="${k}" class="${L===k?'on':''}">${n}</button>`).join('')}</div>
+  return `<div style="height:8px"></div>${it ? `<div class="note">🗣 Converts this text to speech and adds it as an audio track: <b>${esc((it.text||'').slice(0,60))}</b></div>` : `<div class="ltitle" style="margin-top:0">🗣 Text to speech</div><textarea id="ttsText" rows="4" placeholder="Type here… (English / ಕನ್ನಡ / हिन्दी)">${esc(S.ttsText||'')}</textarea>`}
+    <div class="ltitle">Language</div><div class="chiprow">${TTS_LANGS.map(([k,n])=>`<button data-ttsl="${k}" class="${L===k?'on':''}">${n}</button>`).join('')}</div>
     <div class="ltitle">Voice style</div><div class="vgrid">${TTS_STYLES.map(([k,n])=>`<button class="vt2 ${st===k?'on':''}" data-ttss="${k}"><i style="--h:${VCOL(k)}">🗣</i><span>${n}</span></button>`).join('')}</div>
     <div class="prow"><div class="plab">Speed</div><input type="range" id="ttsSpeed" min="0.7" max="1.5" step="0.05" value="${sp}"><input class="num" type="number" id="ttsSpeedN" min="0.7" max="1.5" step="0.05" value="${sp}"></div>
     <div id="ttsStat" style="color:var(--mute);min-height:18px;margin-top:6px"></div><div class="prog"><div id="ttsBar"></div></div>
     <button class="primary" data-tts="gen" style="width:100%;padding:9px">🗣 Generate speech</button>
-    <div class="lnote">AI voice ನಿಮ್ಮ browser ನಲ್ಲೇ ತಯಾರಾಗುತ್ತದೆ. ಮೊದಲ ಬಾರಿ voice model download (ಕನ್ನಡ ~38 MB) — ನಂತರ cache. ⚠ ಈ voice models (Meta MMS) <b>non-commercial license</b> ನಲ್ಲಿ ಇವೆ.</div>`;
+    <div class="lnote">AI voice is generated in your browser. The voice model downloads once (~38 MB), then stays cached. ⚠ These voice models (Meta MMS) have a <b>non-commercial license</b>.</div>`;
 }
 const imgCache = {};
 function imgOf(url){ if(!imgCache[url]){ const i = new Image(); i.src = url; imgCache[url] = i; } return imgCache[url]; }
@@ -1695,9 +1695,28 @@ let aTile = null;
 const SAMPLE_IMG = (() => { const mk = (a,b,sun) => { const c = document.createElement('canvas'); c.width = 160; c.height = 120; const x = c.getContext('2d'), g = x.createLinearGradient(0,0,0,120); g.addColorStop(0,a); g.addColorStop(.6,b); g.addColorStop(.61,'#2f6b35'); g.addColorStop(1,'#1d3d22'); x.fillStyle = g; x.fillRect(0,0,160,120);
   x.fillStyle = sun; x.beginPath(); x.arc(118,34,15,0,7); x.fill(); x.fillStyle = '#d9a07a'; x.beginPath(); x.ellipse(62,70,16,20,0,0,7); x.fill(); x.fillStyle = '#3a2618'; x.beginPath(); x.ellipse(62,55,17,9,0,Math.PI,0); x.fill(); x.fillStyle = '#c0303a'; x.fillRect(44,88,36,32); const i = new Image(); i.src = c.toDataURL(); return i; };
   return [mk('#5d9be0','#f2c79a','#ffe9a8'), mk('#3b1d5e','#ff7a59','#ffd36e')]; })();
+// ---- v14: font picker (178 fonts · English + 10 Indian scripts + Urdu) ----
+function fontOptions(cur, auto){ return (auto ? `<option value=>✨ Auto (best for title)</option>` : '') + FONT_GROUPS.map(g => `<optgroup label="${g}">${FONT_LIB.filter(x => x[1] === g).map(([f]) => `<option value="${esc(f)}" ${cur===f?'selected':''}>${esc(f)}</option>`).join('')}</optgroup>`).join(''); }
+function fontPicker(cur){
+  const g = S.fontGrp || (FONT_LIB.find(x => x[0] === cur) || [,'Sans'])[1], q = (S.fontQ || '').toLowerCase();
+  const list = FONT_LIB.filter(x => q ? x[0].toLowerCase().includes(q) : (g === 'All' || x[1] === g));
+  return `<input class="fsearch" id="fontQ" placeholder="Search ${FONT_LIB.length} fonts…" value="${esc(S.fontQ||'')}">
+    <div class="chiprow fgrp">${['All', ...FONT_GROUPS].map(k => `<button data-fgrp="${k}" class="${!q && g===k?'on':''}">${k}</button>`).join('')}</div>
+    <div class="fonts">${list.map(([f,gr,smp]) => `<button class="${cur===f?'on':''}" data-set="font" data-val="${esc(f)}" data-lazyfont="${esc(f)}" style="font-family:'${f}',Inter,sans-serif" title="${esc(f)}"><b>${smp || 'Aa'}</b><span>${esc(f)}</span></button>`).join('')}</div>`;
+}
+const fontIO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){ fontLink(e.target.dataset.lazyfont); fontIO.unobserve(e.target); } }), {rootMargin:'120px'}) : null;
+function lazyFonts(root){ root.querySelectorAll('[data-lazyfont]').forEach(b => fontIO ? fontIO.observe(b) : fontLink(b.dataset.lazyfont)); }
+new MutationObserver(() => lazyFonts(IB)).observe(IB, {childList:true});
+IB.addEventListener('click', e => { const b = e.target.closest('[data-fgrp]'); if(!b) return; S.fontGrp = b.dataset.fgrp; S.fontQ = ''; renderInspector(); });
+IB.addEventListener('input', e => { if(e.target.id !== 'fontQ') return; S.fontQ = e.target.value; const it = selItem(); const box = e.target.closest('.sbody') || e.target.parentNode; const html = fontPicker(it && it.font); const tmp = document.createElement('div'); tmp.innerHTML = html; box.querySelector('.fonts').replaceWith(tmp.querySelector('.fonts')); box.querySelector('.fgrp').replaceWith(tmp.querySelector('.fgrp')); lazyFonts(box); });
+function refreshPreviews(){
+  const a = document.activeElement; if(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
+  if(['effects','transitions','filters','stickers','text'].includes(S.ltab)) renderLeft();
+  if(IB.querySelector('canvas.apv, .pv, canvas.gpv')) renderInspector();
+}
 function tileImgs(c){
   const i = +(c.dataset.i || 0), L = SCENES.list, n = L.length;
-  if(c.dataset.pfx) return {fx: sceneFor(S.ltab === 'effects' ? (S.lsub.effects || 'Trending') : 'All', i)};
+  if(c.dataset.pfx){ const cat = S.ltab === 'effects' ? (S.lsub.effects || 'Trending') : 'All', off = [...cat].reduce((a,ch) => a + ch.charCodeAt(0), 0); return {fx: L[(i + off) % n]}; }
   return {A: L[i % n], B: L[(i + 3) % n]};
 }
 function drawGpv(c, t){
@@ -1752,11 +1771,11 @@ function v8Input(e){
   return false;
 }
 async function runTTS(it, btn){
-  const text = it ? it.text : (S.ttsText || ($('#ttsText')||{}).value || ''); if(!text.trim()) return alert('ಮೊದಲು text ಬರೆಯಿರಿ');
+  const text = it ? it.text : (S.ttsText || ($('#ttsText')||{}).value || ''); if(!text.trim()) return alert('Type some text first');
   const st = $('#ttsStat'), bar = $('#ttsBar'); btn.disabled = true;
   try{
     await ttsToTimeline(text, S.ttsLang || 'kan', S.ttsStyle || 'natural', it ? it.start : S.time, S.ttsSpeed || 1, (m,p) => { if(st) st.textContent = m; if(bar) bar.style.width = (p*100) + '%'; });
-    const st2 = $('#ttsStat'); if(st2) st2.textContent = '✅ Audio track ಗೆ ಸೇರಿಸಲಾಗಿದೆ';
+    const st2 = $('#ttsStat'); if(st2) st2.textContent = '✅ Added to audio track';
   }catch(err){ const st2 = $('#ttsStat'); if(st2) st2.textContent = '❌ ' + err.message; else alert(err.message); }
   btn.disabled = false;
 }
@@ -1772,7 +1791,7 @@ function v8Click(t, it){
   if(d.tfx){
     const o = selOv();
     if(o && o.type === 'text'){ pushUndo(); o.tfx = d.tfx === 'none' ? '' : d.tfx; if(o.tfx && !o.size0){ o.bgOn = false; } renderInspector(); renderLeft(); }
-    else if(d.tfx !== 'none') addOverlay(newOverlay('text', {text:'ನಿಮ್ಮ ಪಠ್ಯ', size:80, font:'Anton', tfx:d.tfx, shadow:0}), 'text');
+    else if(d.tfx !== 'none') addOverlay(newOverlay('text', {text:'Your text', size:80, font:'Anton', tfx:d.tfx, shadow:0}), 'text');
     return true;
   }
   if(d.vp){
@@ -1790,7 +1809,7 @@ function v8Click(t, it){
 function templatesGrid(cat){
   const list = TPL.filter(t => cat === 'All' || t.cat === cat);
   return `<div class="tiles tplt">${list.map(t=>`<button class="tile" data-tpl="${t.id}"><div class="tth tplth r${t.ratio.replace(':','x')}"><canvas data-tplc="${t.id}" width="${t.ratio==='16:9'?192:108}" height="${t.ratio==='16:9'?108:192}"></canvas></div><span>${t.name}</span><small>${t.ratio} · ${t.n} media</small></button>`).join('')}</div>
-    <div class="lnote">✨ Template ಆರಿಸಿ → ನಿಮ್ಮ photos / videos ಆರಿಸಿ → ವಿಡಿಯೋ ಸಿದ್ಧ. ನಂತರ ಎಲ್ಲವನ್ನೂ ಬದಲಿಸಬಹುದು. Music ಸೇರಿಸಿ <b>Beat sync</b> ಮಾಡಿದರೆ ಇನ್ನೂ ಚೆನ್ನಾಗಿರುತ್ತದೆ.</div>`;
+    <div class="lnote">✨ Pick a template → pick your photos / videos → video ready. Everything stays editable. Add music and use <b>Beat sync</b> for even better results.</div>`;
 }
 function paintTplCanvas(c, t){
   const x = c.getContext('2d'), W = c.width, H = c.height, g = x.createLinearGradient(0,0,W,H);
@@ -1814,14 +1833,14 @@ function paintV9(root){
 function bubbleBody(it){
   return `<div style="height:8px"></div><div class="tiles bubt"><button class="tile ${!it.bubble?'on':''}" data-bub="none"><div class="tth">${ic('ban')}</div><span>None</span></button>${BUBBLES.map(([k,n])=>`<button class="tile ${it.bubble===k?'on':''}" data-bub="${k}"><div class="tth tfxth"><canvas data-bubc="${k}" width="120" height="72"></canvas></div><span>${n}</span></button>`).join('')}</div><div style="height:10px"></div>
     ${it.bubble ? colorRow(it,'Bubble color','bubColor',true) + colorRow(it,'Border','bubStroke') : ''}
-    <div class="note">💬 Bubble ಹಾಕಿದರೆ text ಹಿಂದೆ ಆಕಾರ ಬರುತ್ತದೆ. Text ಬಣ್ಣ Basic tab ನಲ್ಲಿ ಬದಲಿಸಿ.</div>`;
+    <div class="note">💬 A bubble adds a shape behind the text. Change text colour in the Basic tab.</div>`;
 }
 function captionsEditor(){
   const caps = S.overlays.filter(o => o.type === 'text' && o.caption).sort((a,b) => a.start - b.start);
-  if(!caps.length) return '<div class="lnote">ಇನ್ನೂ captions ಇಲ್ಲ. <b>Auto captions</b> ಅಥವಾ SRT import ಮಾಡಿ.</div>';
+  if(!caps.length) return '<div class="lnote">No captions yet. Use <b>Auto captions</b> or import an SRT.</div>';
   return `<div class="capfind"><input type="text" id="capFind" placeholder="Find" value="${esc(S.capFind||'')}"><input type="text" id="capRepl" placeholder="Replace" value="${esc(S.capRepl||'')}"><button data-caprepl="1">Replace all</button></div>
-    <div class="caplist">${caps.map((o,i)=>`<div class="caprow ${S.sel===o.id?'on':''}" data-cid="${o.id}"><span class="ct" data-capgo="${o.id}">${fmtTC(o.start)}</span><textarea rows="1" data-capt="${o.id}" data-ci2="${i}">${esc(o.text)}</textarea><button class="ib sm" data-capmerge="${o.id}" title="ಮುಂದಿನದರ ಜೊತೆ ಸೇರಿಸಿ">⤓</button><button class="ib sm" data-capdel="${o.id}" title="Delete">✕</button></div>`).join('')}</div>
-    <div class="lnote">✏️ Text ಮೇಲೆ click → video ಆ ಜಾಗಕ್ಕೆ ಹೋಗುತ್ತದೆ. <b>Enter</b> = ಮುಂದಿನ caption, <b>Shift+Enter</b> = ಹೊಸ ಸಾಲು. ⤓ = ಮುಂದಿನ caption ಜೊತೆ ಸೇರಿಸಿ.</div>`;
+    <div class="caplist">${caps.map((o,i)=>`<div class="caprow ${S.sel===o.id?'on':''}" data-cid="${o.id}"><span class="ct" data-capgo="${o.id}">${fmtTC(o.start)}</span><textarea rows="1" data-capt="${o.id}" data-ci2="${i}">${esc(o.text)}</textarea><button class="ib sm" data-capmerge="${o.id}" title="Merge with next">⤓</button><button class="ib sm" data-capdel="${o.id}" title="Delete">✕</button></div>`).join('')}</div>
+    <div class="lnote">✏️ Click a caption → the video jumps there. <b>Enter</b> = next caption, <b>Shift+Enter</b> = new line. ⤓ = merge with next caption.</div>`;
 }
 LC.addEventListener('focusin', e => { const ta = e.target.closest('[data-capt]'); if(!ta) return; const o = S.overlays.find(x => x.id === ta.dataset.capt); if(!o) return; pause(); S.sel = o.id; seek(o.start + .02); pushUndo(); LC.querySelectorAll('.caprow').forEach(r => r.classList.toggle('on', r.dataset.cid === o.id)); renderTimeline(); });
 LC.addEventListener('keydown', e => {
@@ -1830,16 +1849,16 @@ LC.addEventListener('keydown', e => {
 });
 function doBeat(a, it){
   if(a === 'detect'){ const sec_ = IB.querySelector('[data-beat="detect"]'); if(sec_){ sec_.disabled = true; sec_.textContent = '⏳ Analyzing…'; }
-    detectBeats(it).then(() => { renderTimeline(); renderInspector(); }).catch(err => { alert('Beat detect ಆಗಲಿಲ್ಲ: ' + err.message); renderInspector(); }); return; }
+    detectBeats(it).then(() => { renderTimeline(); renderInspector(); }).catch(err => { alert('Beat detection failed: ' + err.message); renderInspector(); }); return; }
   if(a === 'cut'){ const n = cutToBeats(it, S.beatEvery || 2); if(n) renderInspector(); }
 }
 async function doSilence(a, c){
-  const st = $('#silStat'); if(st) st.textContent = '⏳ Audio ಓದುತ್ತಿದೆ…';
+  const st = $('#silStat'); if(st) st.textContent = '⏳ Reading audio…';
   try{
     const r = await analyzeSilence(c, {thr:S.silAuto === false ? (S.silThr ?? -40) : null, minSil:S.silMin ?? .6, pad:.12});
     if(S.silAuto !== false){ S.silThr = r.thr; const a1 = $('#silThr'), a2 = $('#silThrN'); if(a1){ a1.value = r.thr; setFill(a1); } if(a2) a2.value = r.thr; }
-    if(a === 'analyze'){ const st2 = $('#silStat'); if(st2) st2.innerHTML = `${r.cuts} ಕಡೆ ಮೌನ · <b>${r.removed.toFixed(1)} s</b> ಕಡಿಮೆ ಆಗುತ್ತದೆ (threshold ${r.thr} dB)`; return; }
-    if(!r.cuts && r.keep.length === 1 && Math.abs(r.keep[0][0]-c.in) < .05 && Math.abs(r.keep[0][1]-c.out) < .05){ const st2 = $('#silStat'); if(st2) st2.textContent = 'ಮೌನದ ಭಾಗ ಸಿಗಲಿಲ್ಲ'; return; }
+    if(a === 'analyze'){ const st2 = $('#silStat'); if(st2) st2.innerHTML = `${r.cuts} silent parts · <b>${r.removed.toFixed(1)} s</b> will be removed (threshold ${r.thr} dB)`; return; }
+    if(!r.cuts && r.keep.length === 1 && Math.abs(r.keep[0][0]-c.in) < .05 && Math.abs(r.keep[0][1]-c.out) < .05){ const st2 = $('#silStat'); if(st2) st2.textContent = 'No silence found'; return; }
     applySilenceCut(c, r.keep);
   }catch(err){ const st2 = $('#silStat'); if(st2) st2.textContent = '❌ ' + err.message; }
 }
@@ -1868,7 +1887,7 @@ function v9Click(t, it){
   if(d.capdel){ pushUndo(); S.overlays = S.overlays.filter(x => x.id !== d.capdel); afterEdit(); renderLeft(); return true; }
   if(d.capmerge){ const caps = S.overlays.filter(o => o.type === 'text' && o.caption).sort((a,b) => a.start - b.start), i = caps.findIndex(o => o.id === d.capmerge), a = caps[i], b = caps[i+1];
     if(a && b){ pushUndo(); a.text = (a.text + ' ' + b.text).trim(); a.dur = b.start + b.dur - a.start; S.overlays = S.overlays.filter(x => x !== b); afterEdit(); renderLeft(); } return true; }
-  if(d.caprepl){ const f = S.capFind || ''; if(!f) return true; pushUndo(); let n = 0; for(const o of S.overlays) if(o.type === 'text' && o.caption && o.text.includes(f)){ o.text = o.text.split(f).join(S.capRepl || ''); n++; } afterEdit(); renderLeft(); alert(n + ' captions ಬದಲಾದವು'); return true; }
+  if(d.caprepl){ const f = S.capFind || ''; if(!f) return true; pushUndo(); let n = 0; for(const o of S.overlays) if(o.type === 'text' && o.caption && o.text.includes(f)){ o.text = o.text.split(f).join(S.capRepl || ''); n++; } afterEdit(); renderLeft(); alert(n + ' captions changed'); return true; }
   return false;
 }
 // ---- template dialog ----
@@ -1878,18 +1897,18 @@ function openTemplateDialog(id){
   tplPick = S.media.filter(m => !m.missing && m.type !== 'audio').slice(0, t.n).map(m => m.id);
   const keys = t.texts.filter(z => z.key);
   showModal(`<h3 style="margin-top:0">✨ ${esc(t.name)} <small style="color:var(--mute);font-weight:400">${t.ratio}</small></h3>
-    <div style="color:var(--mute);margin-bottom:6px">ಬಳಸಬೇಕಾದ photos / videos ಆರಿಸಿ (ಕ್ರಮವಾಗಿ). ${t.n} ಸೂಕ್ತ — ಕಡಿಮೆ ಇದ್ದರೆ ಮತ್ತೆ ಬಳಸುತ್ತದೆ.</div>
+    <div style="color:var(--mute);margin-bottom:6px">Pick the photos / videos to use (in order). ${t.n} recommended — fewer will be reused.</div>
     <div class="tplpick" id="tplPick"></div>
-    <div class="btns"><button id="tplImp">${ic('import')} ಇನ್ನಷ್ಟು import</button></div>
+    <div class="btns"><button id="tplImp">${ic('import')} Import more</button></div>
     ${keys.map(z=>`<div class="xrow"><span>${z.key==='title'?'Title':'Subtitle'}</span><input type="text" data-tplk="${z.key}" value="${esc(z.text)}"></div>`).join('')}
-    <div class="note">⚠ ಈಗಿನ timeline ನ clips / text ಬದಲಾಗುತ್ತವೆ (Audio ಹಾಗೇ ಇರುತ್ತದೆ). ತಪ್ಪಾದರೆ Ctrl+Z.</div>
+    <div class="note">⚠ Current timeline clips / text will be replaced (audio stays). Undo with Ctrl+Z.</div>
     <div class="btns" style="justify-content:flex-end"><button id="tplCancel">Cancel</button><button class="primary" id="tplGo" data-id="${id}">✨ Use template</button></div>`);
   renderTplPick();
 }
 function renderTplPick(){
   const box = $('#tplPick'); if(!box) return;
   const list = S.media.filter(m => !m.missing && m.type !== 'audio');
-  box.innerHTML = list.length ? list.map(m => { const i = tplPick.indexOf(m.id); return `<button class="tpm ${i>=0?'on':''}" data-tpm="${m.id}" style="background-image:url(${m.thumb||''})">${i>=0?`<b>${i+1}</b>`:''}<span>${m.type==='video'?fmtT(m.duration):'IMG'}</span></button>`; }).join('') : '<div class="lnote">ಇನ್ನೂ media ಇಲ್ಲ — "ಇನ್ನಷ್ಟು import" ಒತ್ತಿ.</div>';
+  box.innerHTML = list.length ? list.map(m => { const i = tplPick.indexOf(m.id); return `<button class="tpm ${i>=0?'on':''}" data-tpm="${m.id}" style="background-image:url(${m.thumb||''})">${i>=0?`<b>${i+1}</b>`:''}<span>${m.type==='video'?fmtT(m.duration):'IMG'}</span></button>`; }).join('') : '<div class="lnote">No media yet — press "Import more".</div>';
 }
 const tplIn = document.createElement('input'); tplIn.type = 'file'; tplIn.accept = 'video/*,image/*'; tplIn.multiple = true; tplIn.hidden = true; document.body.appendChild(tplIn);
 tplIn.onchange = async () => { for(const f of tplIn.files){ try{ const m = f.type.startsWith('video/') ? await addVideoMedia(f) : await addImageMedia(f); tplPick.push(m.id); }catch(err){ alert(f.name + ': ' + err.message); } } tplIn.value = ''; renderTplPick(); renderLeft(); };
@@ -1899,70 +1918,78 @@ $('#modal').addEventListener('click', e => {
   if(e.target.closest('#tplCancel')){ hideModal(); return; }
   const go = e.target.closest('#tplGo'); if(!go) return;
   const t = TPL.find(z => z.id === go.dataset.id), medias = tplPick.map(media).filter(Boolean);
-  if(!medias.length) return alert('ಕನಿಷ್ಠ ಒಂದು photo / video ಆರಿಸಿ');
+  if(!medias.length) return alert('Pick at least one photo / video');
   const texts = {}; $('#modalBox').querySelectorAll('[data-tplk]').forEach(x => texts[x.dataset.tplk] = x.value);
   hideModal(); buildTemplate(t, medias, texts); updatePInfo(); renderLeft();
 });
 // ---- v13: AI auto thumbnail ----
-const TH = {size:'yt', title:'', sub:'', photos:[], frames:null, thumbs:[], sel:-1, busy:false};
-const TH_SUBS = ['','NEW','PART 1','MUST WATCH','ವೈರಲ್','ಹೊಸದು','TOP 5','LIVE'];
+const TH = {size:'yt', title:'', sub:'', photos:[], frames:null, thumbs:[], sel:-1, busy:false, again:false, font:'', theme:'auto', scale:100, runs:0};
+const TH_SUBS = ['','NEW','PART 1','MUST WATCH','VIRAL','EPISODE 1','TOP 5','LIVE','2026','FULL VLOG'];
 const thIn = document.createElement('input'); thIn.type = 'file'; thIn.accept = 'image/*'; thIn.multiple = true; thIn.style.display = 'none'; document.body.appendChild(thIn);
 thIn.onchange = async () => {
-  for(const f of thIn.files){ try{ const b = await createImageBitmap(f), k = Math.min(1, 1280/Math.max(b.width, b.height)), c = document.createElement('canvas'); c.width = Math.round(b.width*k); c.height = Math.round(b.height*k); c.getContext('2d').drawImage(b, 0, 0, c.width, c.height); c._url = c.toDataURL('image/jpeg', .7); TH.photos.push(c); }catch(e){ alert(f.name + ': image ಓದಲು ಆಗಲಿಲ್ಲ'); } }
+  for(const f of thIn.files){ try{ const b = await createImageBitmap(f), k = Math.min(1, 1280/Math.max(b.width, b.height)), c = document.createElement('canvas'); c.width = Math.round(b.width*k); c.height = Math.round(b.height*k); c.getContext('2d').drawImage(b, 0, 0, c.width, c.height); c._url = c.toDataURL('image/jpeg', .7); TH.photos.push(c); }catch(e){ alert(f.name + ': could not read image'); } }
   thIn.value = ''; renderThPhotos(); if(TH.frames) thGenerate(false);
 };
 function openThumb(){
-  if(!S.total && !TH.photos.length) return alert('ಮೊದಲು video ಅಥವಾ photos ಸೇರಿಸಿ'); pause();
+  if(!S.total && !TH.photos.length) return alert('Add a video or photos first'); pause();
   TH.title = TH.title || autoTitle(); TH.frames = null; TH.thumbs = []; TH.sel = -1;
-  showModal(`<div class="thwrap"><div class="thhead"><h3>✨ AI Auto Thumbnail</h3><span class="thsub">ನಿಮ್ಮ video ದ ಅತ್ಯುತ್ತಮ frames + AI ವ್ಯಕ್ತಿ cut-out ಬಳಸಿ ತಾನಾಗಿ ತಯಾರಾಗುತ್ತದೆ</span><button class="thx" id="thClose">✕</button></div>
+  showModal(`<div class="thwrap"><div class="thhead"><h3>✨ AI Auto Thumbnail</h3><span class="thsub">Built automatically from the best frames of your video + AI person cut-out</span><button class="thx" id="thClose">✕</button></div>
     <div class="thbody"><div class="thside">
       <label>Platform</label><div class="thsizes">${THUMB_SIZES.map(([k,n]) => `<button data-thsz="${k}" class="${TH.size===k?'on':''}">${n}</button>`).join('')}</div>
-      <label>Title</label><textarea id="thTitle" rows="2" placeholder="ವಿಡಿಯೋ title">${esc(TH.title)}</textarea>
-      <label>Badge / Subtitle</label><input id="thSub" value="${esc(TH.sub)}" placeholder="ಉದಾ: NEW / PART 1"><div class="thchips">${TH_SUBS.filter(Boolean).map(t => `<button data-thsubq="${esc(t)}">${esc(t)}</button>`).join('')}</div>
-      <label>ನಿಮ್ಮ Photos (ಐಚ್ಛಿಕ)</label><div id="thPhotos" class="thphotos"></div>
-      <button class="primary thgo" id="thGo">✨ Generate</button><button id="thMore">🔀 ಇನ್ನಷ್ಟು designs</button>
+      <label>Title</label><textarea id="thTitle" rows="2" placeholder="Video title">${esc(TH.title)}</textarea>
+      <label>Badge / Subtitle</label><input id="thSub" value="${esc(TH.sub)}" placeholder="e.g. NEW / PART 1"><div class="thchips">${TH_SUBS.filter(Boolean).map(t => `<button data-thsubq="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+      <label>Title font</label><select id="thFont">${fontOptions(TH.font, true)}</select>
+      <label>Text style</label><div class="thchips thth">${Object.keys(THUMB_THEMES).map(k => `<button data-ththeme="${k}" class="${TH.theme===k?'on':''}">${k[0].toUpperCase()+k.slice(1)}</button>`).join('')}</div>
+      <label>Text size <b id="thScaleV">${TH.scale}%</b></label><input type="range" id="thScale" min="60" max="140" value="${TH.scale}">
+      <label>Your photos (optional)</label><div id="thPhotos" class="thphotos"></div>
+      <button class="primary thgo" id="thGo">✨ Generate</button><button id="thMore">🔀 More designs</button>
       <div id="thProg" class="thprog"></div>
-    </div><div class="thmain"><div id="thBig" class="thbig"><div class="themp">✨ <b>Generate</b> ಒತ್ತಿ — video ವಿಶ್ಲೇಷಿಸಿ 8 ವಿಭಿನ್ನ thumbnails ತಯಾರಾಗುತ್ತವೆ</div></div>
+    </div><div class="thmain"><div id="thBig" class="thbig"><div class="themp"><div class="thhero">✨</div><b>Press Generate</b><br>Your video is analysed and 10 different thumbnail designs are created.<br><small>Pick a platform, title, font and style first — you can change them any time.</small></div></div>
       <div id="thGrid" class="thgrid"></div>
-      <div class="btns thact"><button id="thManual">✏️ Manual editor</button><button id="thAdd" disabled>${ic('plus')} Video ಆರಂಭಕ್ಕೆ ಸೇರಿಸಿ</button><button class="primary" id="thDl" disabled>${ic('export')} Download PNG</button></div>
+      <div class="btns thact"><button id="thManual">✏️ Manual editor</button><button id="thAdd" disabled>${ic('plus')} Add to video start</button><button class="primary" id="thDl" disabled>${ic('export')} Download PNG</button></div>
     </div></div></div>`);
   $('#modalBox').classList.add('wide','thm'); renderThPhotos();
-  if(S.total) thGenerate(false);
 }
 function renderThPhotos(){ const b = $('#thPhotos'); if(!b) return; b.innerHTML = TH.photos.map((p,i) => `<div class="thph"><img src="${p._url}"><button data-thdel="${i}">✕</button></div>`).join('') + `<button class="thadd" id="thAddPh">${ic('plus')}<span>Photo</span></button>`; }
-function thOpt(shuffle){ return {size:TH.size, title:(TH.title || autoTitle()).trim(), sub:TH.sub.trim(), shuffle}; }
+function thOpt(shuffle){ return {size:TH.size, title:(TH.title || autoTitle()).trim(), sub:TH.sub.trim(), shuffle, font:TH.font, theme:TH.theme, scale:TH.scale}; }
 async function thGenerate(shuffle){
-  if(TH.busy) return; TH.busy = true; const pg = $('#thProg'), go = $('#thGo'); go && (go.disabled = true);
+  if(TH.busy){ TH.again = shuffle; return; } TH.busy = true; const pg = $('#thProg'), go = $('#thGo'), more = $('#thMore');
+  [go, more].forEach(b => b && (b.disabled = true, b.classList.add('busy')));
+  if(go) go.innerHTML = '<span class="spin"></span> Generating…';
+  const big = $('#thBig'); if(big && !TH.thumbs.length) big.innerHTML = '<div class="themp"><span class="spin lg"></span><br>Analysing your video…</div>';
   const prog = (m, p) => { if(pg) pg.innerHTML = `<div>${m}</div><i style="width:${Math.round((p||0)*100)}%"></i>`; };
   try{
-    prog('🔤 Fonts…', .02); await thFonts();
+    prog('🔤 Loading fonts…', .02); const o0 = thOpt(); await thFonts([TH.font, scriptFont(o0.title)], o0.title);
     if(!TH.frames && S.total) TH.frames = await collectThumbFrames(12, prog);
-    const frames = [...(TH.frames || [])], o = thOpt(shuffle);
+    const frames = [...(TH.frames || [])], o = thOpt(shuffle || TH.runs > 0); TH.runs++;
     const r = await makeThumbnails(Object.assign({}, o, {frames, photos:TH.photos}), prog);
-    TH.thumbs = r.thumbs; TH.sel = 0;
+    TH.thumbs = r.thumbs; TH.sel = 0; const gEl = $('#thGrid'); if(gEl) gEl.scrollLeft = 0;
     const segOk = r.frames.some(f => f.seg);
-    prog(segOk ? '✅ ಸಿದ್ಧ — AI ವ್ಯಕ್ತಿ cut-out ಬಳಸಲಾಗಿದೆ' : '✅ ಸಿದ್ಧ' + (navigator.onLine ? ' (ವ್ಯಕ್ತಿ ಕಾಣದ ಕಾರಣ card designs)' : ' — offline: AI cut-out ಇಲ್ಲದೆ'), 1);
+    prog(segOk ? '✅ Ready — AI person cut-out used' : '✅ Ready' + (navigator.onLine ? ' (no person found, using card designs)' : ' — offline: without AI cut-out'), 1);
     renderThGrid();
   }catch(e){ console.error(e); prog('⚠️ ' + (e.message || e), 0); }
-  finally{ TH.busy = false; go && (go.disabled = false); }
+  finally{ TH.busy = false; [go, more].forEach(b => b && (b.disabled = false, b.classList.remove('busy'))); if(go) go.innerHTML = '✨ Generate again'; if(TH.again !== false){ const a = TH.again; TH.again = false; thGenerate(a); } }
 }
-const thFonts = () => thumbFonts();
+const thFonts = (a, b) => thumbFonts(a, b);
 function renderThGrid(){
   const g = $('#thGrid'), big = $('#thBig'); if(!g) return;
   g.innerHTML = ''; TH.thumbs.forEach((t,i) => { const b = document.createElement('button'); b.className = 'thtile' + (i === TH.sel ? ' on' : ''); b.dataset.thi = i; const c = document.createElement('canvas'), k = 220/Math.max(t.c.width, t.c.height); c.width = Math.round(t.c.width*k); c.height = Math.round(t.c.height*k); c.getContext('2d').drawImage(t.c, 0, 0, c.width, c.height); b.appendChild(c); g.appendChild(b); });
   const t = TH.thumbs[TH.sel]; big.innerHTML = ''; if(t){ const c = document.createElement('canvas'); c.width = t.c.width; c.height = t.c.height; c.getContext('2d').drawImage(t.c, 0, 0); big.appendChild(c); }
   $('#thDl').disabled = $('#thAdd').disabled = !t;
 }
-function thRedraw(){ const o = thOpt(false), [W,H] = THUMB_SIZES.find(s => s[0] === TH.size).slice(2); TH.thumbs.forEach(t => t.c = renderThumb(t, W, H, o)); renderThGrid(); }
+$('#modal').addEventListener('change', async e => { if(e.target.id !== 'thFont') return; TH.font = e.target.value; await thFonts([TH.font], TH.title); thRedraw(); });
+function thRedraw(){ if(!TH.thumbs.length) return; const o = thOpt(false), [W,H] = THUMB_SIZES.find(s => s[0] === TH.size).slice(2); TH.thumbs.forEach(t => t.c = renderThumb(t, W, H, o)); renderThGrid(); }
 let thT = null;
 $('#modal').addEventListener('input', e => {
   if(e.target.id === 'thTitle'){ TH.title = e.target.value; clearTimeout(thT); thT = setTimeout(thRedraw, 250); }
   if(e.target.id === 'thSub'){ TH.sub = e.target.value; clearTimeout(thT); thT = setTimeout(thRedraw, 250); }
+  if(e.target.id === 'thScale'){ TH.scale = +e.target.value; $('#thScaleV').textContent = TH.scale + '%'; clearTimeout(thT); thT = setTimeout(thRedraw, 120); }
 });
 $('#modal').addEventListener('click', async e => {
   const q = s => e.target.closest(s);
   if(q('#thClose')){ hideModal(); $('#modalBox').classList.remove('wide','thm'); return; }
   const sz = q('[data-thsz]'); if(sz){ TH.size = sz.dataset.thsz; $('#modalBox').querySelectorAll('[data-thsz]').forEach(b => b.classList.toggle('on', b === sz)); if(TH.thumbs.length) thRedraw(); return; }
+  const tt = q('[data-ththeme]'); if(tt){ TH.theme = tt.dataset.ththeme; $('#modalBox').querySelectorAll('[data-ththeme]').forEach(b => b.classList.toggle('on', b === tt)); thRedraw(); return; }
   const sq = q('[data-thsubq]'); if(sq){ TH.sub = sq.dataset.thsubq; $('#thSub').value = TH.sub; thRedraw(); return; }
   if(q('#thAddPh')){ thIn.click(); return; }
   const dp = q('[data-thdel]'); if(dp){ TH.photos.splice(+dp.dataset.thdel, 1); renderThPhotos(); return; }
@@ -1984,23 +2011,23 @@ let covFrame = null, covTimer = null;
 const COV_SIZES = [['yt','YouTube 1280×720',[1280,720]],['same','Video ratio',null],['sq','Square 1080',[1080,1080]],['vert','Reels 1080×1920',[1080,1920]]];
 function covDims(){ const s = COV_SIZES.find(z => z[0] === COV.out); if(s && s[2]) return s[2]; const k = 1280/Math.max(out.width, out.height); return [Math.round(out.width*k), Math.round(out.height*k)]; }
 async function openCover(){
-  if(!S.total) return alert('ಮೊದಲು media ಸೇರಿಸಿ'); pause();
-  if(!COV.title) COV.title = S.project ? S.project.name : 'ನನ್ನ ವಿಡಿಯೋ';
+  if(!S.total) return alert('Add media first'); pause();
+  if(!COV.title) COV.title = S.project ? S.project.name : 'My Video';
   COV.t = clamp(COV.t || S.time, 0, S.total);
   const styles = ['kannadaGold','gold3d','fire','neonBlue','comic','popart','sticker','dblOutline','red3d','royal','silver','minimalShadow'];
   showModal(`<div class="xwrap"><div class="xprev cov"><canvas id="covCv"></canvas></div><div class="xform"><h3 style="margin:0 0 10px">🖼 Cover / Thumbnail</h3>
     <div class="xrow"><span>Frame</span><input type="range" id="covT" min="0" max="${S.total.toFixed(2)}" step="0.04" value="${COV.t}"></div>
     <div class="xrow"><span>Title</span><textarea id="covTitle" rows="2">${esc(COV.title)}</textarea></div>
-    <div class="xrow"><span>Subtitle</span><input type="text" id="covSub" value="${esc(COV.sub)}" placeholder="ಉದಾ: Part 1 / NEW"></div>
+    <div class="xrow"><span>Subtitle</span><input type="text" id="covSub" value="${esc(COV.sub)}" placeholder="e.g. Part 1 / NEW"></div>
     <div class="covst">${styles.map(k=>`<button data-covst="${k}" class="${COV.style===k?'on':''}"><canvas data-tfxc="${k}" width="96" height="44"></canvas></button>`).join('')}</div>
-    <div class="xrow"><span>Font</span><select id="covFont">${FONTS.map(([f,n])=>`<option value="${f}" ${COV.font===f?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="xrow"><span>Font</span><select id="covFont">${fontOptions(COV.font)}</select></div>
     <div class="xrow"><span>Size</span><input type="range" id="covSize" min="20" max="120" value="${COV.size}"></div>
     <div class="xrow"><span>Position</span><select id="covPos">${[['top','Top'],['center','Center'],['bottom','Bottom']].map(([k,n])=>`<option value="${k}" ${COV.pos===k?'selected':''}>${n}</option>`).join('')}</select></div>
     <div class="xrow"><span>Shade</span><input type="range" id="covShade" min="0" max="90" value="${COV.shade}"></div>
     <div class="xrow"><span>Brightness</span><input type="range" id="covBright" min="-40" max="40" value="${COV.bright}"></div>
     <div class="xrow"><span>Saturation</span><input type="range" id="covSat" min="-50" max="60" value="${COV.sat}"></div>
     <div class="xrow"><span>Size</span><select id="covOut">${COV_SIZES.map(([k,n])=>`<option value="${k}" ${COV.out===k?'selected':''}>${n}</option>`).join('')}</select></div>
-    <div class="btns" style="justify-content:flex-end"><button id="covClose">Close</button><button id="covAdd">${ic('plus')} Video ಆರಂಭಕ್ಕೆ ಸೇರಿಸಿ</button><button class="primary" id="covDl">${ic('export')} Download PNG</button></div>
+    <div class="btns" style="justify-content:flex-end"><button id="covClose">Close</button><button id="covAdd">${ic('plus')} Add to video start</button><button class="primary" id="covDl">${ic('export')} Download PNG</button></div>
     </div></div>`);
   $('#modalBox').classList.add('wide'); paintV8($('#modalBox'), null);
   covFrame = await grabFrame(COV.t); drawCovPreview();
@@ -2115,19 +2142,19 @@ addEventListener('appinstalled', () => { installEvt = null; updInstallBtn(); });
 updInstallBtn();
 async function doInstall(){
   if(installEvt){ installEvt.prompt(); const r = await installEvt.userChoice; if(r.outcome === 'accepted'){ installEvt = null; updInstallBtn(); } return; }
-  showModal(`<h3 style="margin-top:0">📲 ChitraCut ಅನ್ನು app ಆಗಿ install ಮಾಡಿ</h3>
-    ${isIOS ? `<p><b>iPhone / iPad (Safari):</b></p><ol><li>ಕೆಳಗಿನ <b>Share</b> ಬಟನ್ (⬆ ಚೌಕ) ಒತ್ತಿ</li><li><b>Add to Home Screen</b> ಆರಿಸಿ</li><li><b>Add</b> ಒತ್ತಿ</li></ol>`
-      : `<p><b>Android (Chrome):</b> ಮೇಲಿನ ⋮ menu › <b>Install app</b> / <b>Add to Home screen</b></p><p><b>PC (Chrome / Edge):</b> address bar ನ ಬಲಭಾಗದ ⊕ install icon ಒತ್ತಿ</p>`}
-    <p style="color:var(--mute)">Install ಆದ ನಂತರ home screen ನಲ್ಲಿ ChitraCut icon ಬರುತ್ತದೆ — browser ಇಲ್ಲದೆ app ತರಹ full screen ನಲ್ಲಿ ತೆರೆಯುತ್ತದೆ, internet ಇಲ್ಲದೆಯೂ ಕೆಲಸ ಮಾಡುತ್ತದೆ.</p>
+  showModal(`<h3 style="margin-top:0">📲 Install ChitraCut as an app</h3>
+    ${isIOS ? `<p><b>iPhone / iPad (Safari):</b></p><ol><li>Tap the <b>Share</b> button (⬆ square) at the bottom</li><li>Choose <b>Add to Home Screen</b></li><li>Tap <b>Add</b></li></ol>`
+      : `<p><b>Android (Chrome):</b> top ⋮ menu › <b>Install app</b> / <b>Add to Home screen</b></p><p><b>PC (Chrome / Edge):</b> click the ⊕ install icon at the right of the address bar</p>`}
+    <p style="color:var(--mute)">After installing, the ChitraCut icon appears on your home screen — it opens full screen like an app and works without internet.</p>
     <div class="btns" style="justify-content:flex-end"><button class="primary" id="xCancel">OK</button></div>`);
 }
 function offlineCard(){
-  const inst = standalone() ? '✅ App ಆಗಿ install ಆಗಿದೆ' : `<button id="hInstall">${ic('install')} App ಆಗಿ install ಮಾಡಿ</button>`;
-  return `<div class="ocard"><div><b>${ic('wifi')} Internet ಇಲ್ಲದೆ ಬಳಸಿ</b><span>Editing, effects, filters, export ಎಲ್ಲವೂ offline ನಲ್ಲಿ ಕೆಲಸ ಮಾಡುತ್ತವೆ. ಒಮ್ಮೆ internet ಇದ್ದಾಗ "Offline ready" ಒತ್ತಿದರೆ ಕನ್ನಡ fonts ಮತ್ತು Remove BG AI ಕೂಡ ಉಳಿಯುತ್ತವೆ.</span></div>
-    <div class="obtn">${inst}<button id="hOffline">${ic('install')} Offline ready ಮಾಡಿ</button></div></div>`;
+  const inst = standalone() ? '✅ Installed as an app' : `<button id="hInstall">${ic('install')} Install as app</button>`;
+  return `<div class="ocard"><div><b>${ic('wifi')} Use without internet</b><span>Editing, effects, filters and export all work offline. Press "Offline ready" once while online to also keep fonts, preview photos and the Remove BG AI.</span></div>
+    <div class="obtn">${inst}<button id="hOffline">${ic('install')} Make offline ready</button></div></div>`;
 }
 async function prepareOffline(btn){
-  if(!navigator.onLine) return alert('ಈಗ internet ಇಲ್ಲ — internet ಇದ್ದಾಗ ಒತ್ತಿ');
+  if(!navigator.onLine) return alert('No internet now — press this when online');
   btn.disabled = true; const say = m => btn.innerHTML = m;
   try{
     if(navigator.storage && navigator.storage.persist) await navigator.storage.persist();
@@ -2147,15 +2174,15 @@ if(/[?&]new=1/.test(location.search)) setTimeout(() => { newProject(); }, 900);
 /* ---- vocal / BGM remover UI ---- */
 let sepBusy = false;
 async function runSep(which){
-  if(which === 'stop'){ stopStems(); sepBusy = false; const st = $('#sepStat'); if(st) st.textContent = 'ನಿಲ್ಲಿಸಲಾಯಿತು'; ['#sepProg','#sepStopB'].forEach(q => { const e = $(q); if(e) e.style.display = 'none'; }); return; }
+  if(which === 'stop'){ stopStems(); sepBusy = false; const st = $('#sepStat'); if(st) st.textContent = 'Stopped'; ['#sepProg','#sepStopB'].forEach(q => { const e = $(q); if(e) e.style.display = 'none'; }); return; }
   if(sepBusy) return; const it = selItem(); if(!it || !(it.type === 'audio' || !it.type)) return;
-  const m = media(it.mediaId); if(!m || m.type === 'image') return alert('Audio ಇರುವ clip / music ಆರಿಸಿ');
+  const m = media(it.mediaId); if(!m || m.type === 'image') return alert('Select a clip / music with audio');
   sepBusy = true; pause();
   const show = (msg, p) => { const st = $('#sepStat'), pr = $('#sepProg'), bar = $('#sepBar'), sb = $('#sepStopB'); if(st) st.textContent = msg; if(pr){ pr.style.display = ''; bar.style.width = (p*100) + '%'; } if(sb) sb.style.display = which === 'quick' ? 'none' : ''; };
-  show(which === 'quick' ? '⚡ ತಯಾರಾಗುತ್ತಿದೆ…' : '⏳ ಆರಂಭ…', 0);
+  show(which === 'quick' ? '⚡ Processing…' : '⏳ Starting…', 0);
   try{
     const n = await separateStems(it, which, show);
     sepBusy = false; renderInspector(); renderLeft();
-    const st = $('#sepStat'); if(st) st.textContent = `✅ ${n} ಹೊಸ audio track ಸೇರಿಸಲಾಗಿದೆ — ಮೂಲ audio mute ಆಗಿದೆ`;
+    const st = $('#sepStat'); if(st) st.textContent = `✅ ${n} new audio track(s) added — original audio muted`;
   }catch(err){ sepBusy = false; stopStems(); const st = $('#sepStat'); if(st) st.textContent = '❌ ' + err.message; else alert(err.message); const pr = $('#sepProg'); if(pr) pr.style.display = 'none'; const sb = $('#sepStopB'); if(sb) sb.style.display = 'none'; }
 }

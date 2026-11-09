@@ -101,7 +101,9 @@ const TRANS_CATS = [['Trending',['pullIn','zoomBlur','whipL','glare','flashShake
   ['Shape',['circleOpen','circleClose','diamond','clock','blinds','blindsV','doors','barn','heart','star','inkSpread']],
   ['3D',['flip','cube','spin','spinZoom','stretchT','squeezeT']],
   ['Distort',['swirlT','waveT','fisheyeT','zoomBlur','prismT']]];
-const FONTS = [['Noto Sans Kannada','ಕನ್ನಡ Sans'],['Baloo Tamma 2','ಬಲೂ ತಮ್ಮ'],['Anek Kannada','ಅನೇಕ್'],['Tiro Kannada','ತಿರೋ'],['Noto Serif Kannada','ಕನ್ನಡ Serif'],['Poppins','Poppins'],['Montserrat','Montserrat'],['Oswald','Oswald'],['Bebas Neue','Bebas Neue'],['Anton','Anton'],['Pacifico','Pacifico'],['Lobster','Lobster'],['Dancing Script','Dancing'],['Permanent Marker','Marker']];
+const FONT_LIB = [["Inter", "Sans", ""], ["Poppins", "Sans", ""], ["Montserrat", "Sans", ""], ["Roboto", "Sans", ""], ["Open Sans", "Sans", ""], ["Lato", "Sans", ""], ["Raleway", "Sans", ""], ["Nunito", "Sans", ""], ["Work Sans", "Sans", ""], ["Rubik", "Sans", ""], ["Outfit", "Sans", ""], ["Manrope", "Sans", ""], ["DM Sans", "Sans", ""], ["Kanit", "Sans", ""], ["Barlow", "Sans", ""], ["Josefin Sans", "Sans", ""], ["Quicksand", "Sans", ""], ["Exo 2", "Sans", ""], ["Titillium Web", "Sans", ""], ["Ubuntu", "Sans", ""], ["Bebas Neue", "Display", ""], ["Anton", "Display", ""], ["Oswald", "Display", ""], ["Archivo Black", "Display", ""], ["Bangers", "Display", ""], ["Bungee", "Display", ""], ["Righteous", "Display", ""], ["Russo One", "Display", ""], ["Staatliches", "Display", ""], ["Teko", "Display", ""], ["Alfa Slab One", "Display", ""], ["Luckiest Guy", "Display", ""], ["Fredoka", "Display", ""], ["Titan One", "Display", ""], ["Passion One", "Display", ""], ["Lilita One", "Display", ""], ["Black Ops One", "Display", ""], ["Monoton", "Display", ""], ["Audiowide", "Display", ""], ["Orbitron", "Display", ""], ["Chakra Petch", "Display", ""], ["Press Start 2P", "Display", ""], ["Creepster", "Display", ""], ["Bowlby One SC", "Display", ""], ["Rubik Mono One", "Display", ""], ["Bungee Shade", "Display", ""], ["Faster One", "Display", ""], ["Ultra", "Display", ""], ["Playfair Display", "Serif", ""], ["Merriweather", "Serif", ""], ["Lora", "Serif", ""], ["Cinzel", "Serif", ""], ["Abril Fatface", "Serif", ""], ["DM Serif Display", "Serif", ""], ["Cormorant Garamond", "Serif", ""], ["Libre Baskerville", "Serif", ""], ["Bodoni Moda", "Serif", ""], ["Prata", "Serif", ""], ["Yeseva One", "Serif", ""], ["Cinzel Decorative", "Serif", ""], ["Pacifico", "Script", ""], ["Lobster", "Script", ""], ["Dancing Script", "Script", ""], ["Great Vibes", "Script", ""], ["Satisfy", "Script", ""], ["Sacramento", "Script", ""], ["Allura", "Script", ""], ["Parisienne", "Script", ""], ["Kaushan Script", "Script", ""], ["Yellowtail", "Script", ""], ["Cookie", "Script", ""], ["Courgette", "Script", ""], ["Alex Brush", "Script", ""], ["Tangerine", "Script", ""], ["Pinyon Script", "Script", ""], ["Mr Dafoe", "Script", ""], ["Monsieur La Doulaise", "Script", ""], ["Permanent Marker", "Handwriting", ""], ["Caveat", "Handwriting", ""], ["Shadows Into Light", "Handwriting", ""], ["Indie Flower", "Handwriting", ""], ["Amatic SC", "Handwriting", ""], ["Patrick Hand", "Handwriting", ""], ["Gloria Hallelujah", "Handwriting", ""], ["Rock Salt", "Handwriting", ""], ["Architects Daughter", "Handwriting", ""], ["Covered By Your Grace", "Handwriting", ""], ["Reenie Beanie", "Handwriting", ""], ["Nothing You Could Do", "Handwriting", ""], ["Space Mono", "Mono", ""], ["Roboto Mono", "Mono", ""], ["VT323", "Mono", ""], ["Share Tech Mono", "Mono", ""], ["Noto Sans Kannada", "Kannada", "ಕನ್ನಡ"], ["Baloo Tamma 2", "Kannada", "ಕನ್ನಡ"], ["Anek Kannada", "Kannada", "ಕನ್ನಡ"], ["Hubballi", "Kannada", "ಕನ್ನಡ"], ["Akaya Kanadaka", "Kannada", "ಕನ್ನಡ"], ["Tiro Kannada", "Kannada", "ಕನ್ನಡ"], ["Noto Serif Kannada", "Kannada", "ಕನ್ನಡ"], ["Noto Sans Devanagari", "Hindi / Marathi", "हिन्दी"], ["Hind", "Hindi / Marathi", "हिन्दी"], ["Mukta", "Hindi / Marathi", "हिन्दी"], ["Baloo 2", "Hindi / Marathi", "हिन्दी"], ["Kalam", "Hindi / Marathi", "हिन्दी"], ["Yatra One", "Hindi / Marathi", "हिन्दी"], ["Rozha One", "Hindi / Marathi", "हिन्दी"], ["Martel", "Hindi / Marathi", "हिन्दी"], ["Khand", "Hindi / Marathi", "हिन्दी"], ["Rajdhani", "Hindi / Marathi", "हिन्दी"], ["Modak", "Hindi / Marathi", "हिन्दी"], ["Amita", "Hindi / Marathi", "हिन्दी"], ["Eczar", "Hindi / Marathi", "हिन्दी"], ["Tiro Devanagari Hindi", "Hindi / Marathi", "हिन्दी"], ["Sarpanch", "Hindi / Marathi", "हिन्दी"], ["Laila", "Hindi / Marathi", "हिन्दी"], ["Palanquin Dark", "Hindi / Marathi", "हिन्दी"], ["Gotu", "Hindi / Marathi", "हिन्दी"], ["Noto Sans Tamil", "Tamil", "தமிழ்"], ["Mukta Malar", "Tamil", "தமிழ்"], ["Baloo Thambi 2", "Tamil", "தமிழ்"], ["Catamaran", "Tamil", "தமிழ்"], ["Hind Madurai", "Tamil", "தமிழ்"], ["Pavanam", "Tamil", "தமிழ்"], ["Kavivanar", "Tamil", "தமிழ்"], ["Meera Inimai", "Tamil", "தமிழ்"], ["Anek Tamil", "Tamil", "தமிழ்"], ["Tiro Tamil", "Tamil", "தமிழ்"], ["Noto Serif Tamil", "Tamil", "தமிழ்"], ["Noto Sans Telugu", "Telugu", "తెలుగు"], ["Ramabhadra", "Telugu", "తెలుగు"], ["Mallanna", "Telugu", "తెలుగు"], ["Mandali", "Telugu", "తెలుగు"], ["Gurajada", "Telugu", "తెలుగు"], ["NTR", "Telugu", "తెలుగు"], ["Baloo Tammudu 2", "Telugu", "తెలుగు"], ["Hind Guntur", "Telugu", "తెలుగు"], ["Anek Telugu", "Telugu", "తెలుగు"], ["Suranna", "Telugu", "తెలుగు"], ["Dhurjati", "Telugu", "తెలుగు"], ["Tiro Telugu", "Telugu", "తెలుగు"], ["Noto Sans Malayalam", "Malayalam", "മലയാളം"], ["Baloo Chettan 2", "Malayalam", "മലയാളം"], ["Manjari", "Malayalam", "മലയാളം"], ["Gayathri", "Malayalam", "മലയാളം"], ["Chilanka", "Malayalam", "മലയാളം"], ["Anek Malayalam", "Malayalam", "മലയാളം"], ["Noto Serif Malayalam", "Malayalam", "മലയാളം"], ["Noto Sans Bengali", "Bengali", "বাংলা"], ["Hind Siliguri", "Bengali", "বাংলা"], ["Baloo Da 2", "Bengali", "বাংলা"], ["Galada", "Bengali", "বাংলা"], ["Atma", "Bengali", "বাংলা"], ["Mina", "Bengali", "বাংলা"], ["Anek Bangla", "Bengali", "বাংলা"], ["Tiro Bangla", "Bengali", "বাংলা"], ["Noto Sans Gujarati", "Gujarati", "ગુજરાતી"], ["Hind Vadodara", "Gujarati", "ગુજરાતી"], ["Baloo Bhai 2", "Gujarati", "ગુજરાતી"], ["Mukta Vaani", "Gujarati", "ગુજરાતી"], ["Shrikhand", "Gujarati", "ગુજરાતી"], ["Rasa", "Gujarati", "ગુજરાતી"], ["Anek Gujarati", "Gujarati", "ગુજરાતી"], ["Noto Sans Gurmukhi", "Punjabi", "ਪੰਜਾਬੀ"], ["Baloo Paaji 2", "Punjabi", "ਪੰਜਾਬੀ"], ["Mukta Mahee", "Punjabi", "ਪੰਜਾਬੀ"], ["Anek Gurmukhi", "Punjabi", "ਪੰਜਾਬੀ"], ["Tiro Gurmukhi", "Punjabi", "ਪੰਜਾਬੀ"], ["Noto Sans Oriya", "Odia", "ଓଡ଼ିଆ"], ["Baloo Bhaina 2", "Odia", "ଓଡ଼ିଆ"], ["Anek Odia", "Odia", "ଓଡ଼ିଆ"], ["Noto Nastaliq Urdu", "Urdu / Arabic", "اردو"], ["Cairo", "Urdu / Arabic", "اردو"], ["Tajawal", "Urdu / Arabic", "اردو"], ["Amiri", "Urdu / Arabic", "اردو"], ["Lalezar", "Urdu / Arabic", "اردو"], ["Reem Kufi", "Urdu / Arabic", "اردو"], ["Noto Naskh Arabic", "Urdu / Arabic", "اردو"]];
+const FONT_GROUPS = ["Sans", "Display", "Serif", "Script", "Handwriting", "Mono", "Kannada", "Hindi / Marathi", "Tamil", "Telugu", "Malayalam", "Bengali", "Gujarati", "Punjabi", "Odia", "Urdu / Arabic"];
+const FONTS = FONT_LIB.map(([f,g]) => [f, f]);
 const TEXT_PRESETS = [
   {color:'#ffffff',strokeW:0,bgOn:false,shadow:30,shadowColor:'#000000'},
   {color:'#ffffff',stroke:'#000000',strokeW:6,bgOn:false,shadow:0},
@@ -139,8 +141,8 @@ const BFX_T = {none:0,portraitBlur:1,colorPop:2,spotlight:3,bodyGlow:4,neonOutli
 const FX_T = {none:0,rgbsplit:1,glitch:2,vhs:3,pixelate:4,mirror:5,kaleido:6,invert:7,blur:8,oldfilm:9,shake:10,zoompulse:11,flash:12,bright:13,rainbow:14,
   fisheye:16,wave:17,swirl:18,edgeneon:19,posterize:20,duotone:21,thermal:22,nightvision:23,crt:24,mirrorv:25,letterbox:26,lightleak:27,chroma:28,glow:29,
   blackflash:30,vertigo:31,split3:32,split9:33,rollshutter:34,zoomlens:35,tiltshift:36,lightsweep:37,prism:38,bokeh:39,snow:40,rain:41,sparkle:42,filmframe:43,neonglow:44,sepiaburn:45,strobecolor:46,lensflare:47,colorpop:48,infrared:49,heartbeat:0,cambounce:0,shake2:0};
-const CAP_LANGS = [['kannada','ಕನ್ನಡ'],['english','English'],['hindi','हिन्दी'],['tamil','தமிழ்'],['telugu','తెలుగు'],['marathi','मराठी'],['malayalam','മലയാളം']];
-const SR_LANGS = [['kn-IN','ಕನ್ನಡ'],['en-IN','English (India)'],['hi-IN','हिन्दी'],['ta-IN','தமிழ்'],['te-IN','తెలుగు'],['mr-IN','मराठी'],['ml-IN','മലയാളം']];
+const CAP_LANGS = [['kannada','Kannada · ಕನ್ನಡ'],['english','English'],['hindi','हिन्दी'],['tamil','தமிழ்'],['telugu','తెలుగు'],['marathi','मराठी'],['malayalam','മലയാളം']];
+const SR_LANGS = [['kn-IN','Kannada · ಕನ್ನಡ'],['en-IN','English (India)'],['hi-IN','हिन्दी'],['ta-IN','தமிழ்'],['te-IN','తెలుగు'],['mr-IN','मराठी'],['ml-IN','മലയാളം']];
 
 /* ================= KEYFRAMES ================= */
 const KF_CLIP = ['tf.scale','tf.x','tf.y','tf.rot','opacity'];
@@ -183,7 +185,7 @@ function setVal(it,path,v){
 function inRange(it){ if(it.type) return S.time >= it.start && S.time <= it.start+it.dur; const d=derived[it.id]; return S.time >= d.start && S.time <= d.start+d.dur; }
 function toggleKf(){
   const it = selItem(); if(!it || !kfList(it).length) return;
-  if(!inRange(it)) return alert('Playhead ಅನ್ನು ಈ item ಒಳಗೆ ತನ್ನಿ, ನಂತರ ◆ ಒತ್ತಿ');
+  if(!inRange(it)) return alert('Move the playhead inside this item, then press ◆');
   pushUndo(); it.kf = it.kf || [];
   const k = atKf(it);
   if(k){
@@ -1084,8 +1086,17 @@ function render(now){
 
 /* ================= OVERLAYS ================= */
 const loadedFonts = new Set();
+const BASE_FONTS = new Set(['Inter','Noto Sans Kannada','Baloo Tamma 2','Anek Kannada','Tiro Kannada','Noto Serif Kannada','Poppins','Montserrat','Bebas Neue','Anton','Pacifico','Lobster','Dancing Script','Permanent Marker','Oswald']);
+const fontCss = new Set();
+function fontLink(f){
+  if(!f || BASE_FONTS.has(f) || fontCss.has(f)) return; fontCss.add(f);
+  const l = document.createElement('link'); l.rel = 'stylesheet'; l.dataset.font = f; l.href = 'https://fonts.googleapis.com/css2?family=' + f.replace(/ /g,'+') + '&display=swap'; document.head.appendChild(l);
+  return new Promise(r => { l.onload = l.onerror = r; setTimeout(r, 4000); });
+}
 function ensureFont(f){
   if(loadedFonts.has(f) || !document.fonts) return; loadedFonts.add(f);
+  const css = fontLink(f);
+  if(css){ const smp = (FONT_LIB.find(x => x[0] === f) || [])[2] || ''; css.then(() => Promise.all([document.fonts.load(`700 40px "${f}"`, smp + ' Aa'), document.fonts.load(`400 40px "${f}"`, smp + ' Aa')])).then(() => { try{ if(typeof render === 'function') render(performance.now()); }catch(e){} }).catch(()=>{}); return; }
   document.fonts.load(`700 40px "${f}"`, 'ಕನ್ನಡ Aa').catch(()=>{});
   document.fonts.load(`400 40px "${f}"`, 'ಕನ್ನಡ Aa').catch(()=>{});
 }
@@ -1309,7 +1320,7 @@ function drawOverlays(ctx){
 /* ================= LUTs ================= */
 function addLut(name,n,data,id,custom){
   const max = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-  if(n*n > max) throw new Error(`LUT size ${n} ತುಂಬಾ ದೊಡ್ಡದು (ಈ device max ${Math.floor(Math.sqrt(max))})`);
+  if(n*n > max) throw new Error(`LUT size ${n} is too large (device max ${Math.floor(Math.sqrt(max))})`);
   const t = mkTex(); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,n*n,n,0,gl.RGBA,gl.UNSIGNED_BYTE,data);
   const l = {id:id||nid(), name, n, tex:t, custom:!!custom, data:custom?data:null}; S.luts.push(l); return l;
 }
@@ -1321,7 +1332,7 @@ function parseCube(txt){
     if(/^[A-Za-z_]/.test(t)) continue;
     const p=t.split(/\s+/).map(Number); if(p.length>=3 && !isNaN(p[0])) vals.push(p[0],p[1],p[2]);
   }
-  if(!n || vals.length < n*n*n*3) throw new Error('ಸರಿಯಾದ 3D .cube LUT ಅಲ್ಲ');
+  if(!n || vals.length < n*n*n*3) throw new Error('Not a valid 3D .cube LUT');
   const data = new Uint8Array(n*n*n*4);
   for(let b=0;b<n;b++) for(let g=0;g<n;g++) for(let r=0;r<n;r++){
     const i=(r+g*n+b*n*n)*3, o=(g*n*n+b*n+r)*4;
@@ -1369,10 +1380,10 @@ function frameLuma(c){ const d=c.getContext('2d').getImageData(0,0,c.width,c.hei
 async function probe(url){
   const v=mkVideo(null); v.muted=true;
   try{
-    await new Promise((res,rej)=>{ v.onloadedmetadata=res; v.onerror=()=>rej(new Error('ಈ video ಓದಲು ಆಗುತ್ತಿಲ್ಲ — MP4 (H.264) ಆಗಿ convert ಮಾಡಿ ಪ್ರಯತ್ನಿಸಿ')); v.src=url; });
+    await new Promise((res,rej)=>{ v.onloadedmetadata=res; v.onerror=()=>rej(new Error('Cannot read this video — convert it to MP4 (H.264) and try again')); v.src=url; });
     if(!isFinite(v.duration)) await seekTo(v,1e7);
     const dur=v.duration||1;
-    if(!v.videoWidth) throw new Error('Video ಚಿತ್ರ decode ಆಗುತ್ತಿಲ್ಲ (HEVC/H.265 ಇರಬಹುದು). Phone camera settings ನಲ್ಲಿ "Most compatible / H.264" ಆರಿಸಿ ಅಥವಾ MP4 H.264 ಗೆ convert ಮಾಡಿ.');
+    if(!v.videoWidth) throw new Error('Cannot decode the video picture (it may be HEVC/H.265). In phone camera settings choose "Most compatible / H.264" or convert to MP4 H.264.');
     const c=document.createElement('canvas'); c.width=160; c.height=Math.round(160*v.videoHeight/v.videoWidth)||90;
     let best=null, bestL=-1;
     for(const t of [Math.min(1,dur/2), dur*.35, dur*.65, .05]){
@@ -1397,7 +1408,7 @@ async function genStrip(m){
     if(typeof renderTimeline==='function'){ layout(); renderTimeline(); }
   }catch(e){} finally{ m._stripping=false; dropEl(v); }
 }
-function loadImg(url){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=()=>rej(new Error('ಈ photo ಓದಲು ಆಗುತ್ತಿಲ್ಲ')); img.src=url; }); }
+function loadImg(url){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=()=>rej(new Error('Cannot read this photo')); img.src=url; }); }
 async function probeImage(url){
   const img=await loadImg(url);
   const c=document.createElement('canvas'); c.width=160; c.height=Math.round(160*img.naturalHeight/img.naturalWidth)||90;
@@ -1412,7 +1423,7 @@ function probeAudio(url){
       a.ontimeupdate=()=>{ if(isFinite(a.duration)){ a.ontimeupdate=null; res(a.duration); } };
       a.currentTime=1e7;
     };
-    a.onerror=()=>rej(new Error('ಈ audio ಓದಲು ಆಗುತ್ತಿಲ್ಲ'));
+    a.onerror=()=>rej(new Error('Cannot read this audio'));
     a.src=url;
   });
 }
@@ -1573,7 +1584,7 @@ function pasteAttrs(it){ if(!it || !attrClip) return; pushUndo(); for(const k in
 async function deleteMedia(id){
   const m = media(id); if(!m) return;
   const used = S.clips.filter(c=>c.mediaId===id).length + S.overlays.filter(o=>o.mediaId===id).length + S.audios.filter(a=>a.mediaId===id).length;
-  if(!confirm(`"${m.name}" ಅನ್ನು project ನಿಂದ ಅಳಿಸಬೇಕೆ?` + (used ? `\n(Timeline ನಲ್ಲಿ ${used} ಕಡೆ ಬಳಸಲಾಗಿದೆ — ಅವೂ ತೆಗೆಯಲ್ಪಡುತ್ತವೆ)` : ''))) return false;
+  if(!confirm(`"${m.name}" — delete from project?` + (used ? `\n(Used ${used} time(s) on the timeline — those will be removed too)` : ''))) return false;
   pause();
   for(const c of S.clips.filter(c=>c.mediaId===id)){ if(vids[c.id]){ dropEl(vids[c.id]); delete vids[c.id]; } dropChainFor(c.id); if(active===c) active=null; }
   for(const o of S.overlays.filter(o=>o.mediaId===id)){ if(ovVids[o.id]){ dropEl(ovVids[o.id]); delete ovVids[o.id]; } }
@@ -1588,7 +1599,7 @@ async function deleteMedia(id){
 }
 // freeze frame: split the clip at the playhead and insert a 3 s still image of that frame
 async function freezeFrame(){
-  const c = clipAt(S.time); if(!c || isImg(c)) return alert('Playhead ಅನ್ನು main track ನ video ಮೇಲೆ ಇಡಿ');
+  const c = clipAt(S.time); if(!c || isImg(c)) return alert('Place the playhead over a main-track video');
   const v = getVid(c), src = localToSrc(c, S.time - derived[c.id].start);
   await seekTo(v, src); await waitFrame(v);
   const k = document.createElement('canvas'); k.width = v.videoWidth; k.height = v.videoHeight; k.getContext('2d').drawImage(v,0,0);
@@ -1683,21 +1694,21 @@ $('#modal').addEventListener('click',e=>{ if(e.target.id==='modal' && !recState 
 /* ================= VOICE-OVER RECORDING (+ live captions) ================= */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 function openRecord(){
-  if(!navigator.mediaDevices || !window.MediaRecorder) return alert('ಈ browser ನಲ್ಲಿ recording support ಇಲ್ಲ. Chrome ಬಳಸಿ.');
+  if(!navigator.mediaDevices || !window.MediaRecorder) return alert('This browser does not support recording. Use Chrome.');
   pause();
   showModal(`<h3 style="margin-top:0">🎙 Voice-over</h3>
-    <div class="note">Playhead (${fmtTC(S.time)}) ಇರುವ ಸ್ಥಳದಿಂದ record ಆಗುತ್ತದೆ. Video ಜೊತೆಗೆ play ಆಗುತ್ತದೆ — ಮಾತನಾಡಿ. Headphone ಬಳಸಿದರೆ ಉತ್ತಮ.</div>
-    <div class="row crow"><span>Record ಮಾಡುವಾಗ video ಸದ್ದು mute</span><input type="checkbox" id="rMute" checked></div>
-    <div class="row crow"><span>Live captions (ಮಾತು → text)</span><input type="checkbox" id="rCap" ${SR?'checked':'disabled'}></div>
-    <div class="row crow"><span>ಭಾಷೆ</span><select id="rLang">${SR_LANGS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select></div>
-    ${SR?'':'<div class="note">Live captions ಗೆ Chrome ಬೇಕು.</div>'}
+    <div class="note">Recording starts at the playhead (${fmtTC(S.time)}). The video plays along — speak now. Headphones recommended.</div>
+    <div class="row crow"><span>Mute video sound while recording</span><input type="checkbox" id="rMute" checked></div>
+    <div class="row crow"><span>Live captions (speech → text)</span><input type="checkbox" id="rCap" ${SR?'checked':'disabled'}></div>
+    <div class="row crow"><span>Language</span><select id="rLang">${SR_LANGS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select></div>
+    ${SR?'':'<div class="note">Live captions need Chrome.</div>'}
     <div id="recTime">00:00.00</div>
     <div class="btns" style="justify-content:center"><button id="rStart" class="danger">● Start</button><button id="rStop" disabled>■ Stop</button><button id="rClose">Close</button></div>`);
 }
 async function startRec(){
   let stream;
   try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}); }
-  catch(e){ return alert('Microphone ಅನುಮತಿ ಸಿಗಲಿಲ್ಲ: '+e.message); }
+  catch(e){ return alert('Microphone permission denied: '+e.message); }
   initAudio(); await AC.resume();
   const mt=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'].find(t=>MediaRecorder.isTypeSupported(t));
   const mr=new MediaRecorder(stream, mt?{mimeType:mt}:{}), chunks=[];
@@ -1739,7 +1750,7 @@ function stopRec(){
       const a=newAudioItem(m,{kind:'voice',start:r.t0,dur:Math.min(m.duration,dur)}); S.audios.push(a); S.sel=a.id;
       for(const s of r.caps.flatMap(splitSeg)) S.overlays.push(newOverlay('text',{...deep(CAPTION_STYLE),text:s.text,start:s.start,dur:Math.max(.5,s.end-s.start)}));
       afterEdit(); renderMediaPanel();
-    }catch(e){ alert('Recording save ಆಗಲಿಲ್ಲ: '+e.message); }
+    }catch(e){ alert('Recording could not be saved: '+e.message); }
     hideModal();
   };
   r.mr.stop(); pause(); spk.gain.value=1;
@@ -1789,7 +1800,7 @@ let capLangNow='';
 async function runCaptions(){
   const src=capSource(); if(!src || capBusy) return;
   const st=$('#cStatus'), bar=$('#cBar'), btn=$('#cRun');
-  capBusy=true; btn.disabled=true; st.textContent='🎧 Audio ಓದುತ್ತಿದೆ…';
+  capBusy=true; btn.disabled=true; st.textContent='🎧 Reading audio…';
   try{
     const {from,to,map}=srcRange(src);
     const ab=await new OfflineAudioContext(1,1,16000).decodeAudioData(await mediaBlobs[src.mediaId].arrayBuffer());
@@ -1805,21 +1816,21 @@ async function runCaptions(){
           files[d.p.file]=[d.p.loaded,d.p.total];
           const L=Object.values(files).reduce((a,b)=>a+b[0],0), T=Object.values(files).reduce((a,b)=>a+b[1],0);
           st.textContent=`⬇ Model download: ${(L/1048576).toFixed(0)} / ${(T/1048576).toFixed(0)} MB`; bar.style.width=(L/T*100)+'%';
-        } else if(d.type==='status'){ st.textContent='✍ ಮಾತನ್ನು text ಆಗಿ ಬದಲಿಸುತ್ತಿದೆ… (ಸ್ವಲ್ಪ ಸಮಯ ಬೇಕು)'; bar.style.width='100%'; }
+        } else if(d.type==='status'){ st.textContent='✍ Converting speech to text… (this takes a moment)'; bar.style.width='100%'; }
         else if(d.type==='done') resolve(d.chunks);
         else if(d.type==='error') reject(new Error(d.msg));
       };
-      capWorker.onerror=e=>reject(new Error(e.message||'Worker error (internet ಬೇಕು)'));
+      capWorker.onerror=e=>reject(new Error(e.message||'Worker error (internet needed)'));
       capLangNow=$('#cLang').value;
       capWorker.postMessage({audio,model:'Xenova/whisper-'+$('#cModel').value,language:capLangNow},[audio.buffer]);
     });
     const segs=res.map(ch=>{ const a=ch.timestamp[0]||0, b=ch.timestamp[1]!=null?ch.timestamp[1]:a+2; return {start:map(from+a), end:map(from+b), text:(ch.text||'').trim()}; })
       .filter(s=>s.text && s.end>s.start).flatMap(splitSeg);
-    if(!segs.length) throw new Error('ಮಾತು ಕೇಳಿಸಲಿಲ್ಲ');
+    if(!segs.length) throw new Error('No speech detected');
     let tr=false;   // small Whisper models often write Kannada in English letters → convert to ಕನ್ನಡ script
     if(capLangNow==='kannada' && latinRatio(segs.map(x=>x.text).join(' '))>.4){ segs.forEach(x=>x.text=translitKn(x.text)); tr=true; }
     addCaptions(segs);
-    st.textContent=`✅ ${segs.length} captions ಸೇರಿಸಲಾಗಿದೆ`+(tr?' (English ಅಕ್ಷರದಲ್ಲಿ ಬಂದದ್ದನ್ನು ಕನ್ನಡ ಲಿಪಿಗೆ ಬದಲಿಸಲಾಗಿದೆ — ತಪ್ಪಿದ್ದರೆ edit ಮಾಡಿ. ಉತ್ತಮ ಕನ್ನಡಕ್ಕೆ Small model ಬಳಸಿ)':'');
+    st.textContent=`✅ ${segs.length} captions added`+(tr?' (Romanised Kannada was converted to Kannada script — edit any mistakes. Use the Small model for better Kannada)':'');
   }catch(e){ st.textContent='❌ '+e.message; capWorker&&capWorker.terminate(); capWorker=null; }
   capBusy=false; if($('#cRun')) $('#cRun').disabled=false;
 }
@@ -1835,7 +1846,7 @@ const srtT = t => { const ms=Math.round(Math.max(0,t)*1000); return `${pad(Math.
 const srtP = s => { const m=s.match(/(\d+):(\d+):(\d+)[,.](\d+)/); return m ? +m[1]*3600 + +m[2]*60 + +m[3] + +m[4]/1000 : 0; };
 function exportSRT(){
   let caps=S.overlays.filter(o=>o.type==='text'&&o.caption); if(!caps.length) caps=S.overlays.filter(o=>o.type==='text');
-  if(!caps.length) return alert('Captions ಇಲ್ಲ');
+  if(!caps.length) return alert('No captions');
   caps=[...caps].sort((a,b)=>a.start-b.start);
   const txt=caps.map((o,i)=>`${i+1}\n${srtT(o.start)} --> ${srtT(o.start+o.dur)}\n${o.text}\n`).join('\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'})); a.download=(S.project?S.project.name:'captions')+'.srt'; a.click();
@@ -1847,7 +1858,7 @@ function importSRT(txt){
     const [a,b]=L[i].split('-->').map(x=>srtP(x.trim())); const text=L.slice(i+1).join('\n').trim();
     if(text && b>a) segs.push({start:a,end:b,text});
   }
-  if(!segs.length) return alert('SRT ನಲ್ಲಿ captions ಸಿಗಲಿಲ್ಲ');
+  if(!segs.length) return alert('No captions found in the SRT');
   addCaptions(segs);
 }
 $('#modal').addEventListener('click',e=>{
@@ -1855,7 +1866,7 @@ $('#modal').addEventListener('click',e=>{
   if(id==='cRun') runCaptions();
   if(id==='cSrtOut') exportSRT();
   if(id==='cSrtIn') $('#srtIn').click();
-  if(id==='cDelAll'){ const n=S.overlays.filter(o=>o.caption).length; if(n && confirm(n+' captions delete ಮಾಡಲೇ?')){ pushUndo(); S.overlays=S.overlays.filter(o=>!o.caption); afterEdit(); } }
+  if(id==='cDelAll'){ const n=S.overlays.filter(o=>o.caption).length; if(n && confirm(n+' captions — delete?')){ pushUndo(); S.overlays=S.overlays.filter(o=>!o.caption); afterEdit(); } }
 });
 $('#srtIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(f){ importSRT(await f.text()); hideModal(); } };
 
@@ -2024,19 +2035,19 @@ async function writeOut(blob, name, opt){
 }
 function saveBlob(blob, name){ const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; a.click(); return url; }
 async function exportVideo(opt){
-  if(!S.total) return alert('ಮೊದಲು video / photo import ಮಾಡಿ');
-  if(!window.MediaRecorder) return alert('ಈ browser export support ಮಾಡುವುದಿಲ್ಲ. Chrome ಬಳಸಿ.');
+  if(!S.total) return alert('Import a video / photo first');
+  if(!window.MediaRecorder) return alert('This browser does not support export. Use Chrome.');
   opt = Object.assign({q:1080, fps:30, bitrate:0, fmt:'mp4', codec:'h264', audioOnly:false, gif:false, name:''}, opt||{});
   if(opt.gif) return exportGif(opt);
   const {mime, ext} = chooseMime(opt);
   const px = opt.q*opt.q*16/9, br = opt.bitrate || Math.round(px*opt.fps*.1);   // "recommended" ≈ 0.1 bit / pixel / frame
-  showOverlay('Exporting…', `${opt.audioOnly ? 'Audio' : opt.q+'p · '+opt.fps+'fps · '+(br/1e6).toFixed(1)+' Mbps'} — ಈ tab ತೆರೆದಿಡಿ, real-time ನಲ್ಲಿ render ಆಗುತ್ತದೆ`, '<button id="ovCancel">Cancel</button>');
+  showOverlay('Exporting…', `${opt.audioOnly ? 'Audio' : opt.q+'p · '+opt.fps+'fps · '+(br/1e6).toFixed(1)+' Mbps'} — keep this tab open, it renders in real time`, '<button id="ovCancel">Cancel</button>');
   try{
     const blob = await recordTimeline({t0:0, t1:S.total, q:opt.q, fps:opt.fps, bitrate:br, mime, audioOnly:opt.audioOnly});
     const name = opt.name ? cleanName(opt.name) + ext : expName(ext), r = await writeOut(blob, name, opt);
-    showOverlay('✅ Export ಮುಗಿಯಿತು', r.where + '  ('+(blob.size/1048576).toFixed(1)+' MB · '+mime.split(';')[0]+')', `<a href="${r.url}" download="${name}"><button>⬇ Download copy</button></a><button class="primary" id="ovClose">Close</button>`);
+    showOverlay('✅ Export finished', r.where + '  ('+(blob.size/1048576).toFixed(1)+' MB · '+mime.split(';')[0]+')', `<a href="${r.url}" download="${name}"><button>⬇ Download copy</button></a><button class="primary" id="ovClose">Close</button>`);
     return true;
-  }catch(e){ if(e && e.message === 'cancel') return false; showOverlay('⚠ Export ಆಗಲಿಲ್ಲ', (e && e.message) || String(e), '<button id="ovClose">Close</button>'); }
+  }catch(e){ if(e && e.message === 'cancel') return false; showOverlay('⚠ Export failed', (e && e.message) || String(e), '<button id="ovClose">Close</button>'); }
 }
 // wait until every visible video has the frame for S.time, then render it
 async function renderAt(t){
@@ -2050,9 +2061,9 @@ async function renderAt(t){
 async function exportGif(opt){
   const fps = Math.min(opt.fps, 15), maxW = opt.q >= 720 ? 480 : 320, k = Math.min(1, maxW/Math.max(out.width, out.height));
   const w = Math.round(out.width*k), h = Math.round(out.height*k), n = Math.max(1, Math.ceil(S.total*fps));
-  if(n > 600 && !confirm(`GIF ದೊಡ್ಡದು (${n} frames). ಮುಂದುವರಿಸಬೇಕೆ?`)) return;
+  if(n > 600 && !confirm(`Large GIF (${n} frames). Continue?`)) return;
   pause(); exporting = true;
-  showOverlay('GIF ತಯಾರಾಗುತ್ತಿದೆ…', `${w}×${h} · ${fps} fps`, '<button id="ovCancel">Cancel</button>');
+  showOverlay('Creating GIF…', `${w}×${h} · ${fps} fps`, '<button id="ovCancel">Cancel</button>');
   const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', {willReadFrequently:true});
   const g = new GifWriter(w, h, Math.round(100/fps));
   try{
@@ -2063,8 +2074,8 @@ async function exportGif(opt){
     }
     if(!exporting) return;
     exporting = false; const blob = g.end(), name = cleanName(opt.name) + '.gif', r = await writeOut(blob, name, opt);
-    showOverlay('✅ GIF ಮುಗಿಯಿತು', r.where + '  ('+(blob.size/1048576).toFixed(1)+' MB)', `<a href="${r.url}" download="${name}"><button>⬇ Download copy</button></a><button class="primary" id="ovClose">Close</button>`);
-  }catch(e){ exporting = false; showOverlay('⚠ GIF ಆಗಲಿಲ್ಲ', e.message, '<button id="ovClose">Close</button>'); }
+    showOverlay('✅ GIF finished', r.where + '  ('+(blob.size/1048576).toFixed(1)+' MB)', `<a href="${r.url}" download="${name}"><button>⬇ Download copy</button></a><button class="primary" id="ovClose">Close</button>`);
+  }catch(e){ exporting = false; showOverlay('⚠ GIF failed', e.message, '<button id="ovClose">Close</button>'); }
 }
 // tiny GIF89a encoder (fixed 6×7×6 colour cube + ordered dithering, LZW)
 function GifWriter(w, h, delay){
@@ -2106,13 +2117,13 @@ function GifWriter(w, h, delay){
 }
 // compound clip: render a run of main-track clips (with their effects) into one new clip
 async function compoundClips(ids){
-  const list = S.clips.filter(c => ids.includes(c.id)); if(list.length < 2) return alert('Compound ಮಾಡಲು 2 ಅಥವಾ ಹೆಚ್ಚು clip ಆರಿಸಿ (Ctrl / Shift + click)');
+  const list = S.clips.filter(c => ids.includes(c.id)); if(list.length < 2) return alert('Select 2 or more clips to compound (Ctrl / Shift + click)');
   const i0 = S.clips.indexOf(list[0]), i1 = S.clips.indexOf(list[list.length-1]);
-  if(i1 - i0 + 1 !== list.length) return alert('ಒಂದರ ಪಕ್ಕ ಒಂದು ಇರುವ clip ಗಳನ್ನು ಮಾತ್ರ compound ಮಾಡಬಹುದು');
+  if(i1 - i0 + 1 !== list.length) return alert('Only adjacent clips can be compounded');
   const t0 = derived[list[0].id].start, t1 = derived[list[list.length-1].id].start + derived[list[list.length-1].id].dur;
   const mime = pickMime('webm','vp9',1080) || pickMime('webm','vp8',1080) || pickMime('mp4','h264',1080);
-  if(!mime) return alert('ಈ browser ನಲ್ಲಿ ಆಗುವುದಿಲ್ಲ');
-  showOverlay('Compound clip ತಯಾರಾಗುತ್ತಿದೆ…', `${list.length} clips · ${fmtT(t1-t0)} (real-time)`, '<button id="ovCancel">Cancel</button>');
+  if(!mime) return alert('Not supported in this browser');
+  showOverlay('Creating compound clip…', `${list.length} clips · ${fmtT(t1-t0)} (real-time)`, '<button id="ovCancel">Cancel</button>');
   try{
     const blob = await recordTimeline({t0, t1, q:S.quality, fps:30, bitrate:12e6, mime, mainOnly:true});
     const m = await addVideoMedia(new File([blob], `Compound ${S.media.filter(x=>/^Compound/.test(x.name)).length+1}.${mime.includes('mp4')?'mp4':'webm'}`, {type:mime.split(';')[0]}));
@@ -2120,7 +2131,7 @@ async function compoundClips(ids){
     const c = newClip(m); c.out = Math.min(m.duration, t1 - t0); c.trans = deep(list[0].trans); c.compoundOf = list.map(x => x.id);
     S.clips.splice(i0, list.length, c); S.sel = c.id; selMulti.clear(); afterEdit(); renderMediaPanel();
     $('#overlay').style.display = 'none';
-  }catch(e){ if(e && e.message === 'cancel') return; showOverlay('⚠ ಆಗಲಿಲ್ಲ', e.message || String(e), '<button id="ovClose">Close</button>'); }
+  }catch(e){ if(e && e.message === 'cancel') return; showOverlay('⚠ Failed', e.message || String(e), '<button id="ovClose">Close</button>'); }
 }
 const selMulti = new Set();
 function onPlaybackEnd(){ if(exporting && recDone) recDone(); }

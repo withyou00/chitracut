@@ -94,7 +94,7 @@ const GFX = [
      ctx.save(); ctx.scale(k,k); ctx.fillStyle=o.color; heartPath(ctx,s); ctx.fill(); ctx.restore();
      for(let i=0;i<12;i++){ const a=i/12*Math.PI*2, d=clamp((p-.2)/.8,0,1); if(d<=0||d>=1) continue; ctx.globalAlpha=1-d; ctx.fillStyle=i%2?o.color:'#ffd166';
        ctx.save(); ctx.translate(Math.cos(a)*s*(.4+d*.5),Math.sin(a)*s*(.4+d*.5)); heartPath(ctx,s*.14); ctx.fill(); ctx.restore(); } ctx.globalAlpha=1; }},
-  {id:'comment', name:'Comment Bubble', cat:'Social', dur:3.5, aspect:.42, color:'#ffffff', text:'Comment ಮಾಡಿ 💬', thumbT:2,
+  {id:'comment', name:'Comment Bubble', cat:'Social', dur:3.5, aspect:.42, color:'#ffffff', text:'Comment 💬', thumbT:2,
    draw(ctx,t,w,h,o){ const pop=backOut(clamp(t/.4,0,1)); if(pop<=0) return; ctx.save(); ctx.scale(pop,pop);
      ctx.fillStyle=o.color; rrp(ctx,-w/2,-h/2,w,h*.8,h*.2); ctx.fill(); ctx.beginPath(); ctx.moveTo(-w*.3,h*.28); ctx.lineTo(-w*.38,h*.5); ctx.lineTo(-w*.18,h*.29); ctx.fill();
      if(t<1.3){ for(let i=0;i<3;i++){ ctx.fillStyle='#888'; ctx.globalAlpha=.4+.6*Math.max(0,Math.sin(t*8-i)); ctx.beginPath(); ctx.arc(-h*.25+i*h*.25,-h*.1,h*.08,0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; }
@@ -107,21 +107,21 @@ const GFX = [
      ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.lineWidth=s*.08; ctx.beginPath(); ctx.arc(0,0,s*.88,0,Math.PI*2); ctx.stroke();
      ctx.strokeStyle=o.color; ctx.beginPath(); ctx.arc(0,0,s*.88,-Math.PI/2,-Math.PI/2+f*Math.PI*2); ctx.stroke();
      const k=backOut(clamp(f/.3,0,1)); ctx.save(); ctx.scale(k,k); ctx.fillStyle='#fff'; ctx.font=FONT(s*1.05,900); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(n),0,s*.05); ctx.restore(); }},
-  {id:'title', name:'Title Reveal', cat:'Intro & End', dur:4, aspect:.3, color:'#20d5ec', text:'ನನ್ನ ಶೀರ್ಷಿಕೆ', text2:'Subtitle here', thumbT:2,
+  {id:'title', name:'Title Reveal', cat:'Intro & End', dur:4, aspect:.3, color:'#20d5ec', text:'My Title', text2:'Subtitle here', thumbT:2,
    draw(ctx,t,w,h,o){ const lk=easeO(t/.6), out=clamp((t-3.4)/.6,0,1); ctx.globalAlpha*=1-out;
      ctx.fillStyle=o.color; ctx.fillRect(-w/2*lk,-h*.02,w*lk,h*.04);
      const tk=easeO((t-.45)/.6); ctx.save(); ctx.beginPath(); ctx.rect(-w/2,-h/2,w,h*.48); ctx.clip();
      ctx.fillStyle='#fff'; ctx.font=FONT(h*.34,900); ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillText(o.text||'',0,-h*.08+(1-tk)*h*.5); ctx.restore();
      ctx.save(); ctx.beginPath(); ctx.rect(-w/2,h*.02,w,h*.48); ctx.clip(); ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font=FONT(h*.16,500); ctx.textBaseline='top'; ctx.textAlign='center'; ctx.fillText(o.text2||'',0,h*.1-(1-easeO((t-.7)/.6))*h*.4); ctx.restore();
      const sh=((t-1.2)/.8); if(sh>0&&sh<1){ const g=ctx.createLinearGradient(-w/2+sh*w*1.4-w*.2,0,-w/2+sh*w*1.4,0); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(.5,'rgba(255,255,255,.55)'); g.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=g; ctx.globalCompositeOperation='source-atop'; ctx.fillRect(-w/2,-h/2,w,h); ctx.globalCompositeOperation='source-over'; } }},
-  {id:'lowerthird', name:'Lower Third', cat:'Intro & End', dur:5, aspect:.24, color:'#20d5ec', text:'ನಿಮ್ಮ ಹೆಸರು', text2:'Teacher · Karnataka', thumbT:2,
+  {id:'lowerthird', name:'Lower Third', cat:'Intro & End', dur:5, aspect:.24, color:'#20d5ec', text:'Your Name', text2:'Teacher · Karnataka', thumbT:2,
    draw(ctx,t,w,h,o){ const inK=easeO(t/.5), outK=easeO((5-t)/.5), k=Math.min(inK,outK); if(k<=0) return;
      ctx.fillStyle=o.color; ctx.fillRect(-w/2,-h/2,w*.03,h*k);
      ctx.save(); ctx.beginPath(); ctx.rect(-w/2+w*.03,-h/2,w*k,h); ctx.clip();
      ctx.fillStyle='rgba(10,10,14,.85)'; ctx.fillRect(-w/2+w*.03,-h/2,w*.97,h*.6); ctx.fillStyle='#fff'; ctx.fillRect(-w/2+w*.03,h*.1,w*.75,h*.4);
      ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillStyle='#fff'; ctx.font=FONT(h*.3,800); ctx.fillText(o.text||'',-w/2+w*.07,-h*.2);
      ctx.fillStyle='#111'; ctx.font=FONT(h*.2,600); ctx.fillText(o.text2||'',-w/2+w*.07,h*.3); ctx.restore(); }},
-  {id:'theend', name:'Thanks for Watching', cat:'Intro & End', dur:4, aspect:.4, color:'#ffd166', text:'Thanks for watching', text2:'ಮತ್ತೆ ಸಿಗೋಣ!', thumbT:2,
+  {id:'theend', name:'Thanks for Watching', cat:'Intro & End', dur:4, aspect:.4, color:'#ffd166', text:'Thanks for watching', text2:'See you soon!', thumbT:2,
    draw(ctx,t,w,h,o){ const a=easeO(t/.8); ctx.globalAlpha*=a; ctx.strokeStyle=o.color; ctx.lineWidth=h*.025; const lw=w*.4*easeO((t-.3)/.8);
      ctx.beginPath(); ctx.moveTo(-lw,-h*.32); ctx.lineTo(lw,-h*.32); ctx.moveTo(-lw,h*.32); ctx.lineTo(lw,h*.32); ctx.stroke();
      ctx.fillStyle='#fff'; ctx.font=FONT(h*.2,800); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(o.text||'',0,-h*.07);
@@ -382,7 +382,7 @@ self.onmessage=e=>{
 };`;
 function srcRangeOf(it){ return !it.type ? {from:it.in, len:it.out-it.in} : {from:it.in, len:it.dur*it.speed}; }
 async function reduceNoise(it, strength, onProg){
-  const m = media(it.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file ಸಿಗಲಿಲ್ಲ');
+  const m = media(it.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file not found');
   const {from, len} = srcRangeOf(it);
   const ab = await new OfflineAudioContext(1,1,44100).decodeAudioData(await blob.arrayBuffer());
   const s0 = Math.floor(from*ab.sampleRate), n = Math.max(1, Math.min(ab.length - s0, Math.ceil(len*ab.sampleRate)));
@@ -577,7 +577,7 @@ function filterName(k){ if(!k || k === 'none') return 'None'; if(k.startsWith('p
 const pfThumbCache = {key:'', urls:{}};
 function sampleFrame(it){
   const c = document.createElement('canvas'); c.width = 96; c.height = 64; const x = c.getContext('2d', {willReadFrequently:true});
-  const sc = SCENES.portrait; if(sc.complete && sc.naturalWidth){ x.drawImage(sc, 0, 0, 320, 213, 0, 0, 96, 64); return {c, key:'scene'}; }
+  const sc = SCENES.portrait; if(sc.complete && sc.naturalWidth){ const k = Math.max(96/sc.naturalWidth, 64/sc.naturalHeight); x.drawImage(sc, (96-sc.naturalWidth*k)/2, (64-sc.naturalHeight*k)/2, sc.naturalWidth*k, sc.naturalHeight*k); return {c, key:'scene'+SCENES.ver}; }
   let el = null;
   if(it){ if(it.type === 'video') el = ovVids[it.id]; else if(!it.type && !isImg(it)) el = vids[it.id]; if(!el || (el.tagName === 'VIDEO' && el.readyState < 2)) el = images[it.mediaId] || null; }
   const m = it && media(it.mediaId);
@@ -604,7 +604,7 @@ function pfThumbs(it){
 
 /* ---------------- REVERSE AUDIO (offline, new media) ---------------- */
 async function reverseAudioItem(it){
-  const m = media(it.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file ಸಿಗಲಿಲ್ಲ');
+  const m = media(it.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file not found');
   const {from, len} = srcRangeOf(it);
   const ab = await new OfflineAudioContext(1,1,44100).decodeAudioData(await blob.arrayBuffer());
   const s0 = Math.floor(from*ab.sampleRate), n = Math.max(1, Math.min(ab.length - s0, Math.ceil(len*ab.sampleRate)));
@@ -829,7 +829,7 @@ const TFX = [
   ['marker','Marker','Outline',{fill:'#ffffff',strokes:[[6,'#e3122b']]}],
   ['bubble','Bubble','Outline',{fill:['#ffffff','#bfe9ff'],strokes:[[9,'#2a7bd6']],shadow:[0,6,8,'#0007']}],
   ['minimalShadow','Soft Shadow','Outline',{fill:'#ffffff',shadow:[0,6,18,'#000c']}],
-  ['kannadaGold','ಕನ್ನಡ ಹಳದಿ-ಕೆಂಪು','Trending',{fill:['#ffe600','#ffb800'],strokes:[[6,'#c8102e']],shadow:[0,4,8,'#0009']}],
+  ['kannadaGold','Yellow-Red Gold','Trending',{fill:['#ffe600','#ffb800'],strokes:[[6,'#c8102e']],shadow:[0,4,8,'#0009']}],
   ['royal','Royal','Trending',{fill:['#f9e7a1','#d4a017'],strokes:[[5,'#3d0a54']],glow:[12,'#d4a017']}],
   ['mint','Mint','Trending',{fill:'#c9ffe9',strokes:[[6,'#0b6e4f']],shadow:[4,4,0,'#0b6e4f']}],
 ];
@@ -877,15 +877,15 @@ let ttsWorker = null;
 async function synthSpeech(text, lang, onProg){
   const L = TTS_LANGS.find(l => l[0] === lang) || TTS_LANGS[0];
   const parts = text.replace(/\s+/g,' ').split(/(?<=[.!?।|\n])\s+/).map(s => s.trim()).filter(Boolean).flatMap(s => s.length > 220 ? s.match(/.{1,200}(\s|$)/g) : [s]);
-  if(!parts.length) throw new Error('Text ಖಾಲಿ ಇದೆ');
+  if(!parts.length) throw new Error('Text is empty');
   if(!ttsWorker) ttsWorker = new Worker(URL.createObjectURL(new Blob([TTS_SRC],{type:'text/javascript'})),{type:'module'});
   const files = {};
   const res = await new Promise((resolve, reject) => {
     ttsWorker.onmessage = e => { const d = e.data;
       if(d.type === 'progress' && d.p && d.p.status === 'progress' && d.p.total){ files[d.p.file] = [d.p.loaded, d.p.total]; const a = Object.values(files).reduce((s,x)=>s+x[0],0), b = Object.values(files).reduce((s,x)=>s+x[1],0); onProg && onProg(`⬇ Voice model: ${(a/1048576).toFixed(0)} / ${(b/1048576).toFixed(0)} MB`, a/b); }
-      else if(d.type === 'status') onProg && onProg(`🗣 ಧ್ವನಿ ತಯಾರಾಗುತ್ತಿದೆ… ${d.i+1}/${d.n}`, (d.i+1)/d.n);
+      else if(d.type === 'status') onProg && onProg(`🗣 Generating voice… ${d.i+1}/${d.n}`, (d.i+1)/d.n);
       else if(d.type === 'done') resolve(d); else if(d.type === 'error') reject(new Error(d.msg)); };
-    ttsWorker.onerror = e => reject(new Error(e.message || 'TTS worker error (internet ಬೇಕು)'));
+    ttsWorker.onerror = e => reject(new Error(e.message || 'TTS worker error (internet needed)'));
     ttsWorker.postMessage({model:L[2], parts});
   });
   const gap = Math.round(res.sr*.22), total = res.out.reduce((s,a) => s + a.length + gap, 0), all = new Float32Array(total); let o = 0;
@@ -967,18 +967,18 @@ function drawBubble(x, id, bw, bh, px, fill, stroke){
    ===================================================================== */
 const TT = (id,name,items) => ({id,name,items});
 const TEXT_TPL = [
-  TT('news','Breaking News',[{text:'BREAKING NEWS',size:54,y:78,font:'Oswald',bubble:'ribbon',bubColor:'#d81b20',bubStroke:'#ffffff',color:'#ffffff',anim:{in:'wipeIn',out:'fade',loop:'none',inDur:.5,outDur:.3}},{text:'ಇಲ್ಲಿ ಸುದ್ದಿ ಬರೆಯಿರಿ',size:34,y:86,bubble:'pill',bubColor:'#111111',bubStroke:'#111111',color:'#ffffff',anim:{in:'fadeLeft',out:'fade',loop:'none',inDur:.6,outDur:.3}}]),
+  TT('news','Breaking News',[{text:'BREAKING NEWS',size:54,y:78,font:'Oswald',bubble:'ribbon',bubColor:'#d81b20',bubStroke:'#ffffff',color:'#ffffff',anim:{in:'wipeIn',out:'fade',loop:'none',inDur:.5,outDur:.3}},{text:'Type the news here',size:34,y:86,bubble:'pill',bubColor:'#111111',bubStroke:'#111111',color:'#ffffff',anim:{in:'fadeLeft',out:'fade',loop:'none',inDur:.6,outDur:.3}}]),
   TT('subscribe','Subscribe',[{text:'SUBSCRIBE',size:60,y:80,font:'Anton',bubble:'pill',bubColor:'#e62117',bubStroke:'#e62117',color:'#ffffff',anim:{in:'popUp',out:'zoomOut',loop:'pulse',inDur:.5,outDur:.4}}]),
-  TT('sale','Sale',[{text:'50% OFF',size:110,y:45,font:'Anton',tfx:'comic',anim:{in:'crashZoom',out:'fade',loop:'shake',inDur:.5,outDur:.3}},{text:'ಇಂದು ಮಾತ್ರ!',size:40,y:60,bubble:'shout',bubColor:'#ffe600',bubStroke:'#111111',color:'#111111',anim:{in:'popUp',out:'fade',loop:'none',inDur:.5,outDur:.3}}]),
-  TT('lower','Lower Third',[{text:'ನಿಮ್ಮ ಹೆಸರು',size:46,y:80,x:30,align:'left',bubble:'tag',bubColor:'#20d5ec',bubStroke:'#04262b',color:'#04262b',anim:{in:'fadeLeft',out:'fadeLeft',loop:'none',inDur:.5,outDur:.4}},{text:'ಹುದ್ದೆ / ಶಾಲೆ',size:30,y:87,x:28,align:'left',color:'#ffffff',bgOn:true,bgColor:'#000000',bgAlpha:70,anim:{in:'fadeLeft',out:'fadeLeft',loop:'none',inDur:.7,outDur:.4}}]),
-  TT('quote','Quote',[{text:'“ ನಿಮ್ಮ ನುಡಿ ಇಲ್ಲಿ ”',size:48,y:50,font:'Tiro Kannada',bubble:'note',bubColor:'#fff6b0',bubStroke:'#8a6d00',color:'#3b2a00',anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.5}}]),
-  TT('bday','Happy Birthday',[{text:'Happy Birthday',size:72,y:40,font:'Pacifico',tfx:'candy',anim:{in:'elastic',out:'fade',loop:'breathe',inDur:.8,outDur:.5}},{text:'ಹುಟ್ಟುಹಬ್ಬದ ಶುಭಾಶಯಗಳು',size:40,y:52,font:'Baloo Tamma 2',tfx:'kannadaGold',anim:{in:'letterPop',out:'fade',loop:'none',inDur:1,outDur:.5}}]),
-  TT('festival','ಹಬ್ಬದ ಶುಭಾಶಯ',[{text:'ಹಬ್ಬದ ಶುಭಾಶಯಗಳು',size:70,y:45,font:'Baloo Tamma 2',tfx:'gold3d',anim:{in:'zoomBlurIn',out:'fade',loop:'glowPulse',inDur:.8,outDur:.5}}]),
+  TT('sale','Sale',[{text:'50% OFF',size:110,y:45,font:'Anton',tfx:'comic',anim:{in:'crashZoom',out:'fade',loop:'shake',inDur:.5,outDur:.3}},{text:'Today only!',size:40,y:60,bubble:'shout',bubColor:'#ffe600',bubStroke:'#111111',color:'#111111',anim:{in:'popUp',out:'fade',loop:'none',inDur:.5,outDur:.3}}]),
+  TT('lower','Lower Third',[{text:'Your Name',size:46,y:80,x:30,align:'left',bubble:'tag',bubColor:'#20d5ec',bubStroke:'#04262b',color:'#04262b',anim:{in:'fadeLeft',out:'fadeLeft',loop:'none',inDur:.5,outDur:.4}},{text:'Title / Organisation',size:30,y:87,x:28,align:'left',color:'#ffffff',bgOn:true,bgColor:'#000000',bgAlpha:70,anim:{in:'fadeLeft',out:'fadeLeft',loop:'none',inDur:.7,outDur:.4}}]),
+  TT('quote','Quote',[{text:'“ Your quote here ”',size:48,y:50,font:'Tiro Kannada',bubble:'note',bubColor:'#fff6b0',bubStroke:'#8a6d00',color:'#3b2a00',anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.5}}]),
+  TT('bday','Happy Birthday',[{text:'Happy Birthday',size:72,y:40,font:'Pacifico',tfx:'candy',anim:{in:'elastic',out:'fade',loop:'breathe',inDur:.8,outDur:.5}},{text:'Happy Birthday',size:40,y:52,font:'Baloo Tamma 2',tfx:'kannadaGold',anim:{in:'letterPop',out:'fade',loop:'none',inDur:1,outDur:.5}}]),
+  TT('festival','Festival Wishes',[{text:'Happy Festival',size:70,y:45,font:'Baloo Tamma 2',tfx:'gold3d',anim:{in:'zoomBlurIn',out:'fade',loop:'glowPulse',inDur:.8,outDur:.5}}]),
   TT('cinematic','Cinematic Title',[{text:'THE JOURNEY',size:84,y:48,font:'Bebas Neue',tfx:'silver',anim:{in:'focusIn',out:'blur',loop:'none',inDur:1.2,outDur:.8}},{text:'a film by you',size:26,y:57,font:'Montserrat',color:'#dddddd',anim:{in:'fade',out:'fade',loop:'none',inDur:1.5,outDur:.6}}]),
-  TT('chapter','Chapter',[{text:'ಅಧ್ಯಾಯ 1',size:36,y:44,font:'Montserrat',color:'#20d5ec',anim:{in:'fadeDown',out:'fade',loop:'none',inDur:.6,outDur:.4}},{text:'ಪಾಠದ ಹೆಸರು',size:74,y:52,font:'Baloo Tamma 2',tfx:'minimalShadow',anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.4}}]),
+  TT('chapter','Chapter',[{text:'Chapter 1',size:36,y:44,font:'Montserrat',color:'#20d5ec',anim:{in:'fadeDown',out:'fade',loop:'none',inDur:.6,outDur:.4}},{text:'Lesson Name',size:74,y:52,font:'Baloo Tamma 2',tfx:'minimalShadow',anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.4}}]),
   TT('comicpop','Comic Pop',[{text:'WOW!',size:110,y:45,font:'Anton',tfx:'popart',curve:30,bubble:'shout',bubColor:'#ffe600',bubStroke:'#111111',anim:{in:'popUp',out:'zoomOut',loop:'wobble',inDur:.4,outDur:.3}}]),
   TT('neonsign','Neon Sign',[{text:'OPEN',size:100,y:48,font:'Montserrat',tfx:'neonPink',anim:{in:'strobeIn',out:'fade',loop:'glowPulse',inDur:1,outDur:.4}}]),
-  TT('arc','Arc Title',[{text:'ನಮ್ಮ ಶಾಲೆ ನಮ್ಮ ಹೆಮ್ಮೆ',size:56,y:40,font:'Baloo Tamma 2',tfx:'royal',curve:45,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.4}}]),
+  TT('arc','Arc Title',[{text:'Our School, Our Pride',size:56,y:40,font:'Baloo Tamma 2',tfx:'royal',curve:45,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.4}}]),
 ];
 function addTextTemplate(id){
   const t = TEXT_TPL.find(x => x.id === id); if(!t) return; pushUndo(); let last = null;
@@ -990,16 +990,16 @@ function addTextTemplate(id){
    v9: VIDEO TEMPLATES — your photos / videos go into a ready design
    ===================================================================== */
 const TPL = [
-  {id:'school',name:'ಶಾಲಾ ಕಾರ್ಯಕ್ರಮ',cat:'Events',ratio:'16:9',n:6,slot:3,trans:['fade','zoomIn','circleOpen','slideL'],loop:'kenburns',filter:'pf:natural',col:['#0f4c81','#f2c33a'],
-   texts:[{text:'ಶಾಲಾ ವಾರ್ಷಿಕೋತ್ಸವ',key:'title',size:78,y:42,font:'Baloo Tamma 2',tfx:'kannadaGold',at:0,dur:3.5,anim:{in:'zoomBlurIn',out:'fade',loop:'none',inDur:.8,outDur:.5}},
+  {id:'school',name:'School Event',cat:'Events',ratio:'16:9',n:6,slot:3,trans:['fade','zoomIn','circleOpen','slideL'],loop:'kenburns',filter:'pf:natural',col:['#0f4c81','#f2c33a'],
+   texts:[{text:'Annual Day',key:'title',size:78,y:42,font:'Baloo Tamma 2',tfx:'kannadaGold',at:0,dur:3.5,anim:{in:'zoomBlurIn',out:'fade',loop:'none',inDur:.8,outDur:.5}},
           {text:'2026',key:'sub',size:40,y:55,font:'Montserrat',bubble:'ribbon',bubColor:'#c8102e',bubStroke:'#ffffff',color:'#ffffff',at:.4,dur:3.1,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.6,outDur:.4}},
-          {text:'ಧನ್ಯವಾದಗಳು',size:80,y:50,font:'Baloo Tamma 2',tfx:'gold',at:-3,dur:3,anim:{in:'popUp',out:'fade',loop:'none',inDur:.6,outDur:.6}}]},
+          {text:'Thank You',size:80,y:50,font:'Baloo Tamma 2',tfx:'gold',at:-3,dur:3,anim:{in:'popUp',out:'fade',loop:'none',inDur:.6,outDur:.6}}]},
   {id:'bday',name:'Birthday',cat:'Events',ratio:'9:16',n:6,slot:2.5,trans:['heart','star','circleOpen','zoomIn'],loop:'zoomInOut',filter:'pf:peach',col:['#ff5fb6','#ffd1f0'],gfx:[['confetti',0]],
    texts:[{text:'Happy Birthday',key:'title',size:80,y:30,font:'Pacifico',tfx:'candy',at:0,dur:4,anim:{in:'elastic',out:'fade',loop:'breathe',inDur:.8,outDur:.5}},
-          {text:'ನಿಮ್ಮ ಹೆಸರು',key:'sub',size:52,y:42,font:'Baloo Tamma 2',tfx:'kannadaGold',at:.6,dur:3.4,anim:{in:'letterPop',out:'fade',loop:'none',inDur:1,outDur:.5}}]},
-  {id:'festival',name:'ಹಬ್ಬ',cat:'Events',ratio:'9:16',n:5,slot:3,trans:['star','fade','flashShake','circleOpen'],loop:'kenburns',filter:'pf:goldenhour',col:['#ff8a00','#7a1f00'],gfx:[['fireworks',0]],
-   texts:[{text:'ಹಬ್ಬದ ಶುಭಾಶಯಗಳು',key:'title',size:72,y:40,font:'Baloo Tamma 2',tfx:'gold3d',at:0,dur:4,anim:{in:'zoomBlurIn',out:'fade',loop:'glowPulse',inDur:.8,outDur:.5}},
-          {text:'ನಿಮ್ಮ ಹೆಸರು',key:'sub',size:40,y:52,color:'#ffffff',bubble:'pill',bubColor:'#7a1f00',bubStroke:'#f2c33a',at:.6,dur:3.4,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.6,outDur:.4}}]},
+          {text:'Your Name',key:'sub',size:52,y:42,font:'Baloo Tamma 2',tfx:'kannadaGold',at:.6,dur:3.4,anim:{in:'letterPop',out:'fade',loop:'none',inDur:1,outDur:.5}}]},
+  {id:'festival',name:'Festival',cat:'Events',ratio:'9:16',n:5,slot:3,trans:['star','fade','flashShake','circleOpen'],loop:'kenburns',filter:'pf:goldenhour',col:['#ff8a00','#7a1f00'],gfx:[['fireworks',0]],
+   texts:[{text:'Happy Festival',key:'title',size:72,y:40,font:'Baloo Tamma 2',tfx:'gold3d',at:0,dur:4,anim:{in:'zoomBlurIn',out:'fade',loop:'glowPulse',inDur:.8,outDur:.5}},
+          {text:'Your Name',key:'sub',size:40,y:52,color:'#ffffff',bubble:'pill',bubColor:'#7a1f00',bubStroke:'#f2c33a',at:.6,dur:3.4,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.6,outDur:.4}}]},
   {id:'ytintro',name:'YouTube Intro',cat:'YouTube',ratio:'16:9',n:3,slot:1.4,trans:['rgbGlitch','whipL','zoomBlur'],loop:'none',filter:'pf:blockbuster',col:['#111','#e62117'],
    texts:[{text:'MY CHANNEL',key:'title',size:96,y:46,font:'Anton',tfx:'neonBlue',at:.2,dur:3.6,anim:{in:'glitchSlide',out:'digital',loop:'rgbLoop',inDur:.6,outDur:.4}},
           {text:'Welcome!',key:'sub',size:40,y:60,font:'Montserrat',color:'#ffffff',at:.9,dur:2.9,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.5,outDur:.3}}]},
@@ -1009,15 +1009,15 @@ const TPL = [
    texts:[{text:'WAIT FOR IT…',key:'title',size:64,y:20,font:'Anton',tfx:'dblOutline',at:0,dur:2.4,anim:{in:'punchIn',out:'fade',loop:'shakeLoop',inDur:.3,outDur:.2}}]},
   {id:'memories',name:'Memories',cat:'Social',ratio:'9:16',n:6,slot:3.5,trans:['fade','blurDissolve','fade'],loop:'kenburns',filter:'pf:film400',col:['#3b2a1a','#e8d5b0'],gfx:[['filmdust',0]],
    texts:[{text:'Memories',key:'title',size:80,y:44,font:'Dancing Script',tfx:'minimalShadow',at:.2,dur:4,anim:{in:'focusIn',out:'fade',loop:'none',inDur:1.2,outDur:.6}},
-          {text:'ನೆನಪುಗಳು',key:'sub',size:44,y:54,font:'Tiro Kannada',color:'#f5e6c8',at:.8,dur:3.4,anim:{in:'fade',out:'fade',loop:'none',inDur:1,outDur:.6}}]},
+          {text:'Memories',key:'sub',size:44,y:54,font:'Tiro Kannada',color:'#f5e6c8',at:.8,dur:3.4,anim:{in:'fade',out:'fade',loop:'none',inDur:1,outDur:.6}}]},
   {id:'travel',name:'Travel Diary',cat:'Social',ratio:'16:9',n:6,slot:2.5,trans:['slideL','whipR','zoomIn','slideU'],loop:'kenburns',filter:'pf:nature',col:['#1fb6ff','#7fffd4'],
    texts:[{text:'TRAVEL DIARY',key:'title',size:86,y:44,font:'Bebas Neue',tfx:'ocean',at:.2,dur:3.6,anim:{in:'motionL',out:'motionR',loop:'none',inDur:.7,outDur:.5}},
-          {text:'ನನ್ನ ಪ್ರವಾಸ',key:'sub',size:40,y:56,bubble:'brush',bubColor:'#ffe600',bubStroke:'#000',color:'#111',at:.7,dur:3.1,anim:{in:'wipeIn',out:'fade',loop:'none',inDur:.6,outDur:.4}}]},
-  {id:'lesson',name:'ಪಾಠದ ಪರಿಚಯ',cat:'Education',ratio:'16:9',n:2,slot:4,trans:['fade'],loop:'zoomOutSlow',filter:'pf:clean',col:['#0b6e4f','#c9ffe9'],gfx:[['lowerthird',4.2]],
-   texts:[{text:'ಅಧ್ಯಾಯ 1',key:'sub',size:40,y:38,font:'Montserrat',color:'#20d5ec',at:.2,dur:3.6,anim:{in:'fadeDown',out:'fade',loop:'none',inDur:.6,outDur:.4}},
-          {text:'ಪಾಠದ ಹೆಸರು',key:'title',size:84,y:50,font:'Baloo Tamma 2',tfx:'mint',at:.4,dur:3.4,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.4}}]},
+          {text:'My Trip',key:'sub',size:40,y:56,bubble:'brush',bubColor:'#ffe600',bubStroke:'#000',color:'#111',at:.7,dur:3.1,anim:{in:'wipeIn',out:'fade',loop:'none',inDur:.6,outDur:.4}}]},
+  {id:'lesson',name:'Lesson Intro',cat:'Education',ratio:'16:9',n:2,slot:4,trans:['fade'],loop:'zoomOutSlow',filter:'pf:clean',col:['#0b6e4f','#c9ffe9'],gfx:[['lowerthird',4.2]],
+   texts:[{text:'Chapter 1',key:'sub',size:40,y:38,font:'Montserrat',color:'#20d5ec',at:.2,dur:3.6,anim:{in:'fadeDown',out:'fade',loop:'none',inDur:.6,outDur:.4}},
+          {text:'Lesson Name',key:'title',size:84,y:50,font:'Baloo Tamma 2',tfx:'mint',at:.4,dur:3.4,anim:{in:'fadeUp',out:'fade',loop:'none',inDur:.8,outDur:.4}}]},
   {id:'quote',name:'Status / Quote',cat:'Social',ratio:'9:16',n:1,slot:7,trans:[],loop:'kenburns',filter:'pf:moody',col:['#222','#fff6b0'],
-   texts:[{text:'“ ಕಲಿಕೆ ಎಂದಿಗೂ ನಿಲ್ಲಬಾರದು ”',key:'title',size:56,y:50,font:'Tiro Kannada',bubble:'note',bubColor:'#fff6b0',bubStroke:'#8a6d00',color:'#3b2a00',at:.3,dur:6.5,anim:{in:'letterFade',out:'fade',loop:'float',inDur:1.5,outDur:.6}}]},
+   texts:[{text:'“ Never stop learning ”',key:'title',size:56,y:50,font:'Tiro Kannada',bubble:'note',bubColor:'#fff6b0',bubStroke:'#8a6d00',color:'#3b2a00',at:.3,dur:6.5,anim:{in:'letterFade',out:'fade',loop:'float',inDur:1.5,outDur:.6}}]},
 ];
 const TPL_CATS = ['All','Events','Social','YouTube','Education'];
 function buildTemplate(tpl, medias, texts){
@@ -1051,7 +1051,7 @@ function buildTemplate(tpl, medias, texts){
    v9: BEAT DETECTION + AUTO CUT TO BEATS
    ===================================================================== */
 async function detectBeats(a){
-  const m = media(a.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Audio file ಸಿಗಲಿಲ್ಲ');
+  const m = media(a.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Audio file not found');
   const sr = 11025, ab = await new OfflineAudioContext(1,1,sr).decodeAudioData(await blob.arrayBuffer());
   const d = ab.getChannelData(0), hop = 256, n = Math.floor(d.length/hop), env = new Float32Array(n);
   let lp = 0, prev = 0;
@@ -1073,8 +1073,8 @@ async function detectBeats(a){
 // returns timeline times of the beats that fall inside the audio item
 const beatTimes = a => (a.beats||[]).filter(b => b >= a.in && b <= a.in + a.dur*a.speed).map(b => a.start + (b - a.in)/a.speed);
 function cutToBeats(a, every){
-  const T = beatTimes(a).filter((_,i) => i % every === 0); if(T.length < 2) return alert('Beats ಸಾಕಾಗುವಷ್ಟು ಇಲ್ಲ');
-  if(!S.clips.length) return alert('Main track ನಲ್ಲಿ photo / video ಸೇರಿಸಿ');
+  const T = beatTimes(a).filter((_,i) => i % every === 0); if(T.length < 2) return alert('Not enough beats');
+  if(!S.clips.length) return alert('Add photos / videos to the main track');
   pushUndo();
   const bounds = T[0] > .3 ? [0, ...T] : T.map((t,i) => i === 0 ? 0 : t);
   let k = 0;
@@ -1093,7 +1093,7 @@ function cutToBeats(a, every){
    v9: AUTO SILENCE CUT
    ===================================================================== */
 async function analyzeSilence(c, opt){
-  const m = media(c.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file ಸಿಗಲಿಲ್ಲ');
+  const m = media(c.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file not found');
   if(!c._pcm || c._pcmKey !== m.id){ const ab = await new OfflineAudioContext(1,1,16000).decodeAudioData(await blob.arrayBuffer()); c._pcm = ab.getChannelData(0); c._pcmKey = m.id; }
   const d = c._pcm, sr = 16000, win = 320, s0 = Math.floor(c.in*sr), s1 = Math.min(d.length, Math.floor(c.out*sr)), n = Math.floor((s1-s0)/win), db = new Float32Array(n);
   for(let i=0;i<n;i++){ let e = 0; for(let j=s0+i*win; j<s0+(i+1)*win; j++) e += d[j]*d[j]; db[i] = 10*Math.log10(e/win + 1e-10); }
@@ -1202,17 +1202,17 @@ async function getModel(urls){
       return await r.arrayBuffer();
     }catch(e){}
   }
-  throw new Error('AI model download ಆಗಲಿಲ್ಲ (internet ಬೇಕು — ಮೊದಲ ಬಾರಿ ~67 MB)');
+  throw new Error('AI model download failed (internet needed — ~67 MB the first time)');
 }
 onmessage=async e=>{
   const d=e.data; self.__base=d.base;
   try{
     if(!sess){
       const buf=await getModel(d.urls);
-      postMessage({type:'status',msg:'AI model ತೆರೆಯುತ್ತಿದೆ…'});
+      postMessage({type:'status',msg:'Opening AI model…'});
       const eps=d.gpu?['webgpu','wasm']:['wasm'];
       for(const p of eps){ try{ sess=await ort.InferenceSession.create(buf,{executionProviders:[p],graphOptimizationLevel:'all'}); ep=p; break; }catch(err){ sess=null; } }
-      if(!sess) throw new Error('AI model ಓಡಿಸಲು ಆಗಲಿಲ್ಲ');
+      if(!sess) throw new Error('Could not run the AI model');
     }
     const L=d.L, R=d.R, n=L.length, pad=GEN+TRIM-(n%GEN), tot=TRIM+n+pad;
     const mL=new Float32Array(tot), mR=new Float32Array(tot); mL.set(L,TRIM); mR.set(R,TRIM);
@@ -1233,7 +1233,7 @@ onmessage=async e=>{
 let stemWorker = null;
 function stopStems(){ if(stemWorker){ stemWorker.terminate(); stemWorker = null; } }
 async function decodeRange(it, sr){
-  const m = media(it.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file ಸಿಗಲಿಲ್ಲ');
+  const m = media(it.mediaId), blob = m && mediaBlobs[m.id]; if(!blob) throw new Error('Media file not found');
   const ab = await new OfflineAudioContext(2, 1, sr).decodeAudioData(await blob.arrayBuffer());
   const {from, len} = srcRangeOf(it), s0 = Math.floor(from*sr), n = Math.max(1, Math.min(ab.length - s0, Math.ceil(len*sr)));
   const L = ab.getChannelData(0).slice(s0, s0+n), R = (ab.numberOfChannels > 1 ? ab.getChannelData(1) : ab.getChannelData(0)).slice(s0, s0+n);
@@ -1246,15 +1246,15 @@ async function separateStems(it, which, onProg){
   if(which === 'quick'){   // centre-channel cancel + keep the bass
     iL = new Float32Array(n); iR = new Float32Array(n); let lp = 0;
     for(let i=0;i<n;i++){ const mid = (L[i]+R[i])/2, side = (L[i]-R[i])/2; lp += (mid - lp)*.02; iL[i] = side + lp; iR[i] = -side + lp; }
-    let same = 0; for(let i=0;i<n;i+=97) same += Math.abs(L[i]-R[i]); if(same/(n/97) < 1e-4) throw new Error('ಈ audio mono — Quick karaoke stereo ಹಾಡುಗಳಿಗೆ ಮಾತ್ರ. AI remover ಬಳಸಿ.');
+    let same = 0; for(let i=0;i<n;i+=97) same += Math.abs(L[i]-R[i]); if(same/(n/97) < 1e-4) throw new Error('This audio is mono — Quick karaoke works only on stereo songs. Use the AI remover.');
   } else {
     stopStems();
     stemWorker = new Worker(URL.createObjectURL(new Blob([STEM_SRC], {type:'text/javascript'})));
     const res = await new Promise((resolve, reject) => {
       stemWorker.onmessage = e => { const d = e.data;
-        if(d.type === 'dl') onProg(`⬇ AI model: ${(d.got/1048576).toFixed(0)} / ${(d.total/1048576).toFixed(0)} MB (ಮೊದಲ ಬಾರಿ ಮಾತ್ರ)`, d.got/d.total);
+        if(d.type === 'dl') onProg(`⬇ AI model: ${(d.got/1048576).toFixed(0)} / ${(d.total/1048576).toFixed(0)} MB (first time only)`, d.got/d.total);
         else if(d.type === 'status') onProg(d.msg, 0);
-        else if(d.type === 'prog'){ const left = d.sec/d.k*(d.n-d.k); onProg(`🎛 ${d.ep === 'webgpu' ? '⚡ GPU' : 'CPU'} · ${d.k}/${d.n} · ಉಳಿದ ಸಮಯ ~${left < 60 ? Math.ceil(left)+' s' : Math.ceil(left/60)+' min'}`, d.k/d.n); }
+        else if(d.type === 'prog'){ const left = d.sec/d.k*(d.n-d.k); onProg(`🎛 ${d.ep === 'webgpu' ? '⚡ GPU' : 'CPU'} · ${d.k}/${d.n} · time left ~${left < 60 ? Math.ceil(left)+' s' : Math.ceil(left/60)+' min'}`, d.k/d.n); }
         else if(d.type === 'done') resolve(d); else if(d.type === 'error') reject(new Error(d.msg)); };
       stemWorker.onerror = e => reject(new Error(e.message || 'worker error'));
       stemWorker.postMessage({L, R, urls:STEM_MODEL_URLS, base:location.href, comp:1.012, gpu:!!navigator.gpu});
@@ -1277,7 +1277,7 @@ async function separateStems(it, which, onProg){
    v13: PREVIEW SCENES — illustrated pictures used on every effect / transition /
    animation / filter tile (instead of the user's clip or test bars)
    ===================================================================== */
-const SCENES = (() => {
+const SCENE_ART = (() => {
   const W = 320, H = 240, R = (a,b) => a + Math.random()*(b-a);
   let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
   const mk = draw => { const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); seed = 7; draw(x); const i = new Image(); i.src = c.toDataURL('image/jpeg', .9); return i; };
@@ -1340,7 +1340,27 @@ const SCENES = (() => {
   });
   return {sunset, city, beach, flowers, portrait, neon, lake, list:[sunset, city, beach, flowers, portrait, neon, lake]};
 })();
-const SCENE_FOR = {Trending:'sunset', Cinematic:'sunset', Party:'neon', Light:'city', Retro:'beach', Glitch:'neon', Lens:'flowers', Motion:'lake', Split:'portrait', Weather:'city', Color:'flowers', All:'beach', body:'portrait'};
+/* v14: real photographs replace the drawn scenes.
+   Bundled (always available, offline): previews/*.jpg — CC0 / public-domain / CC-BY photos (see README credits).
+   Extra pack: free Unsplash-licensed photos from picsum.photos, loaded when online and cached by the service worker. */
+const PHOTO_LOCAL = ['temple','flower','coffee','cat','rocket','space'];
+const PHOTO_REMOTE = [1015,1018,1039,1043,1050,1067,1069,1074,1080,1011,1027,1005,64,91,338,1062];
+const PHOTOS = {}, PHOTO_ORDER = [], PHOTO_RANK = [...PHOTO_LOCAL, ...PHOTO_REMOTE.map(i => 'r' + i)];
+let photoVer = 0, photoT = null;
+function photoLoaded(k, img){ PHOTOS[k] = img; PHOTO_ORDER.push(k); PHOTO_ORDER.sort((a,b) => PHOTO_RANK.indexOf(a) - PHOTO_RANK.indexOf(b)); photoVer++; clearTimeout(photoT); photoT = setTimeout(() => { if(typeof refreshPreviews === 'function') refreshPreviews(); }, 350); }
+function loadPhotos(){
+  PHOTO_LOCAL.forEach(k => { const i = new Image(); i.onload = () => photoLoaded(k, i); i.src = 'previews/' + k + '.jpg'; });
+  if(navigator.onLine === false) return;
+  PHOTO_REMOTE.forEach((id, n) => setTimeout(() => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => { if(i.naturalWidth > 8) photoLoaded('r' + id, i); }; i.src = `https://picsum.photos/id/${id}/360/240`; }, 400 + n*60));
+}
+loadPhotos();
+const PHOTO_ROLE = {sunset:['r1015','temple'], city:['r1067','rocket'], beach:['r1050','coffee'], flowers:['flower'], portrait:['r1027','r64','cat'], neon:['space','r1069'], lake:['r1018','temple']};
+const SCENES = {
+  get list(){ const l = PHOTO_ORDER.map(k => PHOTOS[k]); return l.length >= 3 ? l : SCENE_ART.list; },
+  get ver(){ return photoVer; }
+};
+Object.keys(PHOTO_ROLE).forEach(role => Object.defineProperty(SCENES, role, {get(){ for(const k of PHOTO_ROLE[role]) if(PHOTOS[k]) return PHOTOS[k]; const l = PHOTO_ORDER.map(k => PHOTOS[k]); return l.length ? l[role.length % l.length] : SCENE_ART[role]; }}));
+const SCENE_FOR = {Trending:'portrait', Cinematic:'sunset', Party:'neon', Light:'city', Retro:'beach', Glitch:'neon', Lens:'flowers', Motion:'lake', Split:'portrait', Weather:'lake', Color:'flowers', All:'beach', body:'portrait'};
 function sceneFor(key, i){ if(SCENES[SCENE_FOR[key]]) return SCENES[SCENE_FOR[key]]; return SCENES.list[(i||0) % SCENES.list.length]; }
 
 /* =====================================================================
@@ -1348,7 +1368,12 @@ function sceneFor(key, i){ if(SCENES[SCENE_FOR[key]]) return SCENES[SCENE_FOR[ke
    person with AI (when possible) and builds YouTube / Instagram style designs
    ===================================================================== */
 const THUMB_SIZES = [['yt','YouTube 1280×720',1280,720],['shorts','Shorts / Reels 1080×1920',1080,1920],['insta','Instagram 1080×1080',1080,1080],['insta45','Instagram 1080×1350',1080,1350],['fb','Facebook 1200×630',1200,630]];
-const isKn = s => /[ಀ-೿]/.test(s);
+const isKn = s => /[^\u0000-\u024F\u2000-\u206F\u20A0-\u20CF\s\p{Emoji}]/u.test(s);   // any non-Latin script (Kannada, Hindi, Tamil, Urdu…)
+const SCRIPT_FONT = [[/[\u0C80-\u0CFF]/,'Baloo Tamma 2'],[/[\u0900-\u097F]/,'Baloo 2'],[/[\u0B80-\u0BFF]/,'Baloo Thambi 2'],[/[\u0C00-\u0C7F]/,'Baloo Tammudu 2'],[/[\u0D00-\u0D7F]/,'Baloo Chettan 2'],[/[\u0980-\u09FF]/,'Baloo Da 2'],[/[\u0A80-\u0AFF]/,'Baloo Bhai 2'],[/[\u0A00-\u0A7F]/,'Baloo Paaji 2'],[/[\u0B00-\u0B7F]/,'Baloo Bhaina 2'],[/[\u0600-\u06FF]/,'Lalezar']];
+const scriptFont = s => { for(const [re, f] of SCRIPT_FONT) if(re.test(s)) return f; return null; };
+let THUMB_FONT = '', THUMB_THEME = null, THUMB_SCALE = 1;
+const autoFont = s => THUMB_FONT ? `"${THUMB_FONT}","${scriptFont(s)||'Anton'}",sans-serif` : isKn(s) ? `"${scriptFont(s)||'Baloo 2'}","Noto Sans Kannada",sans-serif` : 'Anton,Impact,sans-serif';
+const caseT = s => isKn(s) || /Script|Vibes|Pacifico|Lobster|Satisfy|Sacramento|Allura|Parisienne|Yellowtail|Cookie|Courgette|Brush|Tangerine|Dafoe|Doulaise|Caveat|Dancing/.test(THUMB_FONT) ? s : s.toUpperCase();
 function autoTitle(){
   const nm = S.project && S.project.name || '';
   if(nm && !/^Project \d+$/.test(nm)) return nm;
@@ -1356,7 +1381,7 @@ function autoTitle(){
   if(t) return t.text.split('\n')[0];
   const cap = S.overlays.filter(o => o.caption).sort((a,b) => a.start - b.start)[0];
   if(cap) return cap.text.split(/\s+/).slice(0,5).join(' ');
-  return 'ನನ್ನ ವಿಡಿಯೋ';
+  return 'My Video';
 }
 // ---- frame analysis ----
 function frameStats(cnv){
@@ -1391,7 +1416,7 @@ async function collectThumbFrames(n, onProg){
   soloMain = true;
   try{
     for(let i=0;i<N;i++){
-      const t = S.total*(.06 + .88*i/(N-1)); onProg && onProg(`🎞 Frames ವಿಶ್ಲೇಷಣೆ ${i+1}/${N}`, i/N*.8);
+      const t = S.total*(.06 + .88*i/(N-1)); onProg && onProg(`🎞 Analysing frames ${i+1}/${N}`, i/N*.8);
       await renderAt(t); const k = Math.min(1, 1280/Math.max(out.width, out.height)), c = document.createElement('canvas');
       c.width = Math.round(out.width*k); c.height = Math.round(out.height*k); c.getContext('2d').drawImage(out, 0, 0, c.width, c.height);
       fr.push({c, t, st:frameStats(c)});
@@ -1427,8 +1452,9 @@ function wrapTitle(x, text, maxW, maxLines, px0, font, minPx){
     px = Math.floor(px*.9); }
 }
 function drawTitle(x, text, cx, cy, maxW, maxLines, px0, st, align, font){
-  font = font || (isKn(text) ? '"Baloo Tamma 2","Noto Sans Kannada",sans-serif' : 'Anton,Impact,"Noto Sans Kannada",sans-serif');
-  const T = isKn(text) ? text : text.toUpperCase(), {lines, px} = wrapTitle(x, T, maxW, maxLines, px0, font);
+  font = (THUMB_FONT && !font) ? autoFont(text) : (font || autoFont(text)); px0 *= THUMB_SCALE;
+  if(THUMB_THEME && !(st && st.keep)) st = THUMB_THEME;
+  const T = caseT(text), {lines, px} = wrapTitle(x, T, maxW, maxLines, px0, font);
   x.save(); x.font = `900 ${px}px ${font}`; x.textAlign = align || 'center'; x.textBaseline = 'middle';
   const lh = px*1.08, y0 = cy - (lines.length-1)*lh/2;
   lines.forEach((l,i) => drawStyledText(x, l, cx, y0 + i*lh, px, typeof st === 'function' ? st(i) : st)); x.restore();
@@ -1459,8 +1485,8 @@ const THUMB_LAYOUTS = {
     const f = F[0], u = Math.min(W,H); cover(x, tGrade(f.c, {c:1.18, s:1.35}), 0, 0, W, H);
     const vg = x.createRadialGradient(W/2,H/2,u*.3,W/2,H/2,Math.max(W,H)*.75); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.65)'); x.fillStyle = vg; x.fillRect(0,0,W,H);
     const bh = H*(H > W ? .2 : .3), by = H - bh*1.15; x.save(); x.translate(0, by); x.rotate(-.03); x.fillStyle = '#ffd400'; x.fillRect(-20, 0, W+40, bh); x.fillStyle = '#000'; x.fillRect(-20, bh*.92, W+40, bh*.08); x.restore();
-    { const fnt = isKn(o.title) ? '"Baloo Tamma 2","Noto Sans Kannada",sans-serif' : 'Anton,Impact,sans-serif', one = wrapTitle(x, isKn(o.title) ? o.title : o.title.toUpperCase(), W*.92, 1, bh*.62, fnt, bh*.2);
-      drawTitle(x, o.title, W/2, by + bh*.48, W*.92, one.px >= bh*.4 ? 1 : 2, one.px >= bh*.4 ? bh*.62 : bh*.42, {fill:'#111111', shadow:[0,0,0,'#0000']}); }
+    { const fnt = autoFont(o.title), one = wrapTitle(x, caseT(o.title), W*.92, 1, bh*.62, fnt, bh*.2);
+      drawTitle(x, o.title, W/2, by + bh*.48, W*.92, one.px >= bh*.4 ? 1 : 2, one.px >= bh*.4 ? bh*.62 : bh*.42, {fill:'#111111', shadow:[0,0,0,'#0000'], keep:true}); }
     if(o.sub) badge(x, o.sub, W*.18, H*.12, u*.07, '#e62117', '#fff');
   },
   compare(x, W, H, F, o){   // two moments side by side
@@ -1495,10 +1521,11 @@ const THUMB_LAYOUTS = {
     const f = F[0], u = Math.min(W,H); const c = tGrade(f.c, {c:1.2, s:1.1}); cover(x, c, 0, 0, W, H);
     x.save(); x.globalCompositeOperation = 'soft-light'; const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#0a5c7a'); g.addColorStop(1,'#ff8a3d'); x.fillStyle = g; x.fillRect(0,0,W,H); x.restore();
     const bar = H*.12; x.fillStyle = '#000'; x.fillRect(0,0,W,bar); x.fillRect(0,H-bar,W,bar);
-    x.save(); x.font = `${u*.13}px "Bebas Neue",Oswald,"Noto Sans Kannada",sans-serif`; if(!isKn(o.title)) x.letterSpacing = (u*.02)+'px';
-    const T = isKn(o.title) ? o.title : o.title.toUpperCase(); x.textAlign = 'center'; x.textBaseline = 'middle';
-    const {lines, px} = wrapTitle(x, T, W*.85, 2, u*.15, '"Bebas Neue",Oswald,"Noto Sans Kannada",sans-serif');
-    x.font = `${px}px "Bebas Neue",Oswald,"Noto Sans Kannada",sans-serif`; lines.forEach((l,i) => drawStyledText(x, l, W/2, H*.5 + (i-(lines.length-1)/2)*px*1.05, px, {fill:['#ffffff','#e8d9b0'], shadow:[0,4,20,'#000']}));
+    const cf = THUMB_FONT ? autoFont(o.title) : isKn(o.title) ? autoFont(o.title) : '"Bebas Neue",Oswald,sans-serif';
+    x.save(); x.font = `${u*.13}px ${cf}`; if(!isKn(o.title)) x.letterSpacing = (u*.02)+'px';
+    const T = caseT(o.title); x.textAlign = 'center'; x.textBaseline = 'middle';
+    const {lines, px} = wrapTitle(x, T, W*.85, 2, u*.15*THUMB_SCALE, cf);
+    x.font = `${px}px ${cf}`; lines.forEach((l,i) => drawStyledText(x, l, W/2, H*.5 + (i-(lines.length-1)/2)*px*1.05, px, THUMB_THEME || {fill:['#ffffff','#e8d9b0'], shadow:[0,4,20,'#000']}));
     if(o.sub){ x.font = `600 ${u*.04}px Montserrat,sans-serif`; x.fillStyle = '#ddd'; x.fillText(o.sub.toUpperCase(), W/2, H - bar*.5); } x.restore();
   },
   zoomcircle(x, W, H, F, o){
@@ -1521,15 +1548,37 @@ const THUMB_LAYOUTS = {
     if(o.sub) badge(x, o.sub, v ? W/2 : W*.3, v ? H*.33 : H*.8, u*.06, '#ffffff', hsl(h,90,30));
   }
 };
-const THUMB_ORDER = ['popout','banner','zoomcircle','gradient','neon','cinematic','collage','compare'];
+THUMB_LAYOUTS.split = function(x, W, H, F, o){   // solid colour panel + photo with a diagonal edge
+  const f = F[0], u = Math.min(W,H), v = H > W, h = f.st.hue, ac = hsl((h+180)%360, 85, 50);
+  cover(x, tGrade(f.c, {c:1.15, s:1.3}), v ? 0 : W*.35, v ? H*.35 : 0, v ? W : W*.65, v ? H*.65 : H);
+  x.save(); x.fillStyle = '#111'; x.beginPath(); if(v){ x.moveTo(0,0); x.lineTo(W,0); x.lineTo(W,H*.36); x.lineTo(0,H*.46); } else { x.moveTo(0,0); x.lineTo(W*.5,0); x.lineTo(W*.4,H); x.lineTo(0,H); } x.closePath(); x.fill();
+  x.strokeStyle = ac; x.lineWidth = u*.025; x.beginPath(); if(v){ x.moveTo(0,H*.46); x.lineTo(W,H*.36); } else { x.moveTo(W*.5,0); x.lineTo(W*.4,H); } x.stroke(); x.restore();
+  if(f.seg){ const co = cutout(f.c, f.seg, u*.01, '#fff'), b = f.seg.box, bh = (b[3]-b[1])*f.c.height, k = (v ? H*.55 : H*.95)/Math.max(bh, f.c.height*.4);
+    x.save(); x.shadowColor = '#000a'; x.shadowBlur = u*.04; x.drawImage(co, (v ? W/2 : W*.72) - (b[0]+b[2])/2*f.c.width*k, H - b[3]*f.c.height*k, co.width*k, co.height*k); x.restore(); }
+  drawTitle(x, o.title, v ? W/2 : W*.23, v ? H*.18 : H*.46, v ? W*.88 : W*.4, 4, u*.16, i => i === 0 ? {fill:ac, shadow:[0,4,0,'#000']} : {fill:'#ffffff', shadow:[0,4,0,'#000']});
+  if(o.sub) badge(x, o.sub, v ? W/2 : W*.2, v ? H*.31 : H*.86, u*.055, ac, '#fff');
+};
+THUMB_LAYOUTS.polaroid = function(x, W, H, F, o){   // tilted photo prints on a soft colour background
+  const u = Math.min(W,H), v = H > W, h = F[0].st.hue;
+  const g = x.createRadialGradient(W/2, H/2, u*.1, W/2, H/2, Math.max(W,H)*.75); g.addColorStop(0, hsl(h,60,88)); g.addColorStop(1, hsl((h+30)%360,55,62)); x.fillStyle = g; x.fillRect(0,0,W,H);
+  const pw = v ? W*.62 : W*.3, ph = pw*.92, spots = v ? [[W*.36,H*.5,-.12],[W*.64,H*.62,.1],[W*.5,H*.8,-.04]] : [[W*.2,H*.6,-.13],[W*.5,H*.56,.05],[W*.8,H*.62,.12]];
+  spots.forEach(([cx,cy,r],i) => { const f = F[i % F.length]; x.save(); x.translate(cx,cy); x.rotate(r); x.shadowColor = '#0006'; x.shadowBlur = u*.03; x.shadowOffsetY = u*.01; x.fillStyle = '#fff'; x.fillRect(-pw/2, -ph/2, pw, ph*1.12); x.shadowColor = 'transparent';
+    cover(x, tGrade(f.c, {s:1.25}), -pw/2 + pw*.05, -ph/2 + pw*.05, pw*.9, ph*.86); x.fillStyle = 'rgba(255,240,180,.75)'; x.rotate(-r*1.5); x.fillRect(-pw*.12, -ph/2 - u*.02, pw*.24, u*.045); x.restore(); });
+  drawTitle(x, o.title, W/2, H*(v ? .16 : .17), W*.92, 2, u*.14, {fill:'#ffffff', strokes:[[8,hsl(h,70,25)]], shadow:[0,6,0,hsl(h,70,20)]});
+  if(o.sub) badge(x, o.sub, W*.85, H*(v ? .28 : .32), u*.055, '#e62117', '#fff');
+};
+const THUMB_ORDER = ['popout','banner','zoomcircle','split','gradient','neon','cinematic','polaroid','collage','compare'];
+const THUMB_THEMES = {auto:null, white:{fill:'#ffffff', strokes:[[7,'#000000']], shadow:[0,6,10,'#000c']}, yellow:{fill:'#ffe600', strokes:[[8,'#000000']], shadow:[0,6,10,'#000c']},
+  fire:'fire', gold:'kannadaGold', neon:'neonPink', ice:'neonBlue', red:{fill:'#ffffff', strokes:[[5,'#e62117'],[9,'#000000']]}, pastel:{fill:['#ffd1f0','#c9e7ff'], strokes:[[6,'#3b1d5e']]}};
 async function makeThumbnails(opt, onProg){
   let frames = opt.frames;
   if(!frames){ frames = await collectThumbFrames(opt.n || 10, onProg); }
   if(opt.photos) for(const p of opt.photos) frames.unshift({c:p, t:-1, st:frameStats(p), user:true});
-  onProg && onProg('🤖 ವ್ಯಕ್ತಿಯನ್ನು ಗುರುತಿಸುತ್ತಿದೆ (AI)…', .8);
+  onProg && onProg('🤖 Detecting people (AI)…', .8);
   const top = pickFrames(frames, 5);
   for(const f of top) if(f.seg === undefined) f.seg = await personMask(f.c);
   const ranked = pickFrames(frames, 5), [W, H] = (THUMB_SIZES.find(s => s[0] === opt.size) || THUMB_SIZES[0]).slice(2);
+  thumbStyle(opt);
   const order = opt.shuffle ? [...THUMB_ORDER].sort(() => Math.random() - .5) : THUMB_ORDER, res = [];
   order.forEach((name, i) => {
     const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
@@ -1540,5 +1589,6 @@ async function makeThumbnails(opt, onProg){
   return {thumbs:res, frames};
 }
 
-function renderThumb(t, W, H, opt){ const c = document.createElement('canvas'); c.width = W; c.height = H; THUMB_LAYOUTS[t.name](c.getContext('2d'), W, H, t.F, opt); return c; }
-async function thumbFonts(){ if(!document.fonts) return; await Promise.all(['Anton','Baloo Tamma 2','Bebas Neue','Montserrat'].map(f => { ensureFont(f); return Promise.race([document.fonts.load(`900 60px "${f}"`, 'ಕನ್ನಡ AB'), new Promise(r => setTimeout(r, 2500))]).catch(()=>{}); })); }
+function thumbStyle(opt){ THUMB_FONT = opt.font || ''; THUMB_SCALE = (opt.scale || 100)/100; const th = THUMB_THEMES[opt.theme || 'auto']; THUMB_THEME = !th ? null : typeof th === 'string' ? (TFX_MAP[th] || {}).st || null : th; }
+function renderThumb(t, W, H, opt){ thumbStyle(opt); const c = document.createElement('canvas'); c.width = W; c.height = H; THUMB_LAYOUTS[t.name](c.getContext('2d'), W, H, t.F, opt); return c; }
+async function thumbFonts(extra, sample){ if(!document.fonts) return; const fs = ['Anton','Baloo Tamma 2','Bebas Neue','Montserrat', ...(extra||[]).filter(Boolean)]; await Promise.all(fs.map(async f => { const css = fontLink(f); if(css) await css; ensureFont(f); return Promise.race([document.fonts.load(`900 60px "${f}"`, (sample || 'ಕನ್ನಡ') + ' AB'), new Promise(r => setTimeout(r, 2500))]).catch(()=>{}); })); }

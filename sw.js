@@ -1,8 +1,8 @@
 // ChitraCut service worker — app works without internet after the first visit
-const CACHE = 'chitracut-v13';
+const CACHE = 'chitracut-v14';
 const RUNTIME = 'chitracut-runtime';   // fonts, AI libraries (kept across versions)
-const FILES = ['./', './index.html', './style.css', './core.js', './extras.js', './ui.js', './manifest.json', './icon-192.png', './icon-512.png'];
-const CDN = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net', 'storage.googleapis.com'];
+const FILES = ['./', './index.html', './style.css', './core.js', './extras.js', './ui.js', './manifest.json', './icon-192.png', './icon-512.png', './previews/temple.jpg', './previews/flower.jpg', './previews/coffee.jpg', './previews/cat.jpg', './previews/rocket.jpg', './previews/space.jpg'];
+const CDN = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net', 'storage.googleapis.com', 'picsum.photos'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));

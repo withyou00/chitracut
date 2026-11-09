@@ -99,3 +99,22 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - **✨ Thumbnail** (ಮೇಲಿನ button): video ದ 12 frames ವಿಶ್ಲೇಷಿಸಿ (sharpness, ಬಣ್ಣ, ಬೆಳಕು), ಅತ್ಯುತ್ತಮ frames ಆರಿಸಿ, AI ಮೂಲಕ ವ್ಯಕ್ತಿಯನ್ನು cut-out ಮಾಡಿ 8 ವಿಭಿನ್ನ designs ತಯಾರಿಸುತ್ತದೆ: Pop-out, Banner, Zoom circle, Gradient, Neon, Cinematic, Collage, VS compare.
 - YouTube / Shorts-Reels / Instagram (1:1, 4:5) / Facebook sizes · Title (auto) · Badge · ನಿಮ್ಮ photos upload · 🔀 ಇನ್ನಷ್ಟು designs · PNG download ಅಥವಾ video ಆರಂಭಕ್ಕೆ ಸೇರಿಸಿ · Manual editor.
 - AI cut-out ಗೆ ಮೊದಲ ಬಾರಿ internet ಬೇಕು (MediaPipe model); offline ಇದ್ದರೆ card designs ಬಳಸುತ್ತದೆ.
+
+## Phase 14 — English UI, real photo previews, 178 fonts, better thumbnails
+- The whole interface is now in English, so people from any state can use it (Kannada, Hindi, Tamil and other languages are still fully supported for text, captions and voice).
+- Effect / transition / animation / filter tiles use **real photographs** instead of drawings.
+  - Bundled in `previews/` (always available offline):
+    - coffee.jpg — CC0, photo by Rachel Michetti.
+    - cat.jpg — CC0, photo by Stéfan van der Walt.
+    - rocket.jpg — public domain, SpaceX.
+    - space.jpg — public domain, NASA / Hubble.
+    - temple.jpg — CC BY 2.0, photo by danielbuechele (Flickr).
+    - flower.jpg — CC BY 2.0, photo by vultilion (Flickr).
+  - When online, an extra pack of free Unsplash-licensed photos is loaded from picsum.photos and cached.
+- **Fonts:** 178 fonts — English (Sans, Display, Serif, Script, Handwriting, Mono), Kannada, Hindi/Marathi, Tamil, Telugu, Malayalam, Bengali, Gujarati, Punjabi, Odia, Urdu/Arabic.
+  - The font picker has search and categories; fonts load only when needed.
+- **AI Thumbnail:**
+  - Generation runs only when you click **Generate**, with a visible progress state.
+  - 10 layouts (new: Split, Polaroid).
+  - Title font choice, 9 text styles and a text-size slider.
+  - Correct fonts for every Indian script.
