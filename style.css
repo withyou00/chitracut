@@ -661,3 +661,40 @@ body.resizing iframe,body.resizing canvas{pointer-events:none}
 .sepg button b{font-size:12.5px;color:var(--text)}
 .sepg button span{font-size:10.5px;color:var(--mute)}
 .sepg button:hover{border-color:var(--acc)}
+
+/* v13 AI thumbnail */
+#modalBox.thm{width:min(1180px,96vw);max-width:96vw;padding:0;overflow:hidden}
+.thwrap{display:flex;flex-direction:column;max-height:92vh}
+.thhead{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #2c2c33;background:linear-gradient(90deg,#1d1530,#16161b)}
+.thhead h3{margin:0;font-size:17px;background:linear-gradient(90deg,#ff7ad9,#7ad7ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.thsub{font-size:12px;color:#aaa;flex:1}
+.thx{background:none;border:0;font-size:18px;color:#aaa;cursor:pointer}
+.thbody{display:flex;gap:0;min-height:0;flex:1;overflow:hidden}
+.thside{width:290px;flex:none;padding:14px;border-right:1px solid #2c2c33;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.thside label{font-size:11px;color:#9a9aa5;text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+.thside textarea,.thside input{width:100%;box-sizing:border-box;background:#222228;border:1px solid #33333b;color:#fff;border-radius:8px;padding:8px;font:inherit}
+.thsizes{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.thsizes button,.thchips button{background:#26262d;border:1.5px solid transparent;color:#ddd;border-radius:8px;padding:6px 4px;font-size:11px;cursor:pointer}
+.thsizes button.on{border-color:var(--acc);color:#fff;background:#1f3436}
+.thchips{display:flex;flex-wrap:wrap;gap:4px}.thchips button{padding:3px 8px;border-radius:20px}
+.thphotos{display:flex;flex-wrap:wrap;gap:6px}
+.thph{position:relative;width:60px;height:60px;border-radius:8px;overflow:hidden}.thph img{width:100%;height:100%;object-fit:cover}
+.thph button{position:absolute;top:2px;right:2px;background:#000a;border:0;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;padding:0}
+.thadd{width:60px;height:60px;border:1.5px dashed #555;background:none;color:#aaa;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;cursor:pointer}
+.thadd svg{width:18px;height:18px}
+.thgo{margin-top:12px;padding:11px;font-size:15px;background:linear-gradient(90deg,#ff3fa4,#7a5cff)!important;border:0!important}
+.thprog{font-size:12px;color:#bbb;min-height:30px}.thprog i{display:block;height:4px;border-radius:2px;margin-top:5px;background:linear-gradient(90deg,#ff3fa4,#25d7d0);transition:width .2s}
+.thmain{flex:1;min-width:0;display:flex;flex-direction:column;padding:14px;gap:10px;overflow:auto}
+.thbig{flex:1;min-height:240px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#1b1b20 0 25%,#202026 0 50%) 0 0/20px 20px;border-radius:10px}
+.thbig canvas{max-width:100%;max-height:52vh;border-radius:8px;box-shadow:0 10px 30px #000c}
+.themp{color:#aaa;text-align:center;padding:30px}
+.thgrid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;flex:none}
+.thtile{flex:none;padding:2px;background:#222;border:2px solid transparent;border-radius:8px;cursor:pointer}
+.thtile.on{border-color:var(--acc)}.thtile canvas{display:block;height:96px;width:auto;border-radius:5px}
+.thact{justify-content:flex-end;flex:none}
+@media (max-width:900px){
+  #modalBox.thm{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0}
+  .thwrap{max-height:100dvh;height:100%}.thbody{flex-direction:column;overflow:auto}
+  .thside{width:auto;border-right:0;border-bottom:1px solid #2c2c33;order:2}.thmain{order:1;overflow:visible}
+  .thsub{display:none}.thbig canvas{max-height:40vh}.thtile canvas{height:70px}
+}

@@ -205,7 +205,7 @@ function leftContent(tab, sub){
         <div class="lnote">ಇವು ChitraCut ನ ಸ್ವಂತ generic icons (Like, Bell, Verified ✓, Share…). YouTube / Facebook / Instagram ನ ನಿಜವಾದ logo ಗಳು trademark ಆಗಿರುವುದರಿಂದ ಸೇರಿಸಿಲ್ಲ.</div>`;
       return `<div class="tiles small">${EMOJIS.map(e=>`<button class="tile emoji" data-stk="${e}"><div class="tth">${e}</div></button>`).join('')}</div>`;
     case 'effects': {
-      const it = normItem(visTarget()), th = thumbFor(it), head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'ಮೊದಲು clip select ಮಾಡಿ'}</div>`;
+      const it = normItem(visTarget()), th = SCENES.portrait.src, head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'ಮೊದಲು clip select ಮಾಡಿ'}</div>`;
       if(sub === 'body'){
         const cur = it ? it.bfx.type : '';
         const st = !it || cur === 'none' ? '' : SEG ? '<div class="segstat ok">✓ AI body detection ready</div>' : segErr ? `<div class="segstat err">✗ ${esc(segErr)} — internet ಬೇಕು</div>` : '<div class="segstat">⏳ AI model load ಆಗುತ್ತಿದೆ… (ಮೊದಲ ಬಾರಿ ಮಾತ್ರ)</div>';
@@ -214,7 +214,7 @@ function leftContent(tab, sub){
           <div class="lnote">🧍 Body effects AI ಮೂಲಕ ವ್ಯಕ್ತಿಯನ್ನು ಗುರುತಿಸಿ ಅವರ ಸುತ್ತ / ಹಿನ್ನೆಲೆಗೆ ಮಾತ್ರ effect ಹಾಕುತ್ತದೆ (Portrait blur, Color pop, Glow…). ವ್ಯಕ್ತಿ ಸ್ಪಷ್ಟವಾಗಿ ಕಾಣುವ video ಗೆ ಉತ್ತಮ.</div>`;
       }
       const keys = sub === 'All' ? FX.map(f=>f[0]) : ['none', ...(FX_CATS.find(c=>c[0]===sub)||FX_CATS[0])[1]], cur = it ? it.fx.type : '';
-      return head + `<div class="tiles gtiles">${keys.map(k=>FX.find(f=>f[0]===k)).filter(Boolean).map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-fx="${k}"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-pfx="${k}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div>
+      return head + `<div class="tiles gtiles">${keys.map(k=>FX.find(f=>f[0]===k)).filter(Boolean).map(([k,n],i)=>`<button class="tile ${cur===k?'on':''}" data-fx="${k}"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-pfx="${k}" data-i="${i}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div>
         ${it && cur !== 'none' ? `<div style="margin-top:14px">${sl(it,'Intensity','fx.amount',0,100)}${sl(it,'Speed','fx.speed',0,100)}</div>${!it.type?'<div class="btns"><button data-all="fx">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}` : ''}
         <div class="lnote">⚡ Tile ಮೇಲೆ mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview. Click ಮಾಡಿದರೆ Player ನಲ್ಲಿ ತಕ್ಷಣ ಕಾಣುತ್ತದೆ. ಹಲವು clips ಗೆ ಒಮ್ಮೆಲೆ ಬೇಕಿದ್ದರೆ Adjustment layer ಬಳಸಿ.</div>`;
     }
@@ -222,7 +222,7 @@ function leftContent(tab, sub){
       const c = transTarget(), i = c ? S.clips.indexOf(c) : -1, cur = c ? c.trans.type : '';
       const keys = sub === 'All' ? TRANS.map(t=>t[0]) : ['none', ...(TRANS_CATS.find(z=>z[0]===sub)||TRANS_CATS[0])[1]];
       return `<div class="ltitle" style="margin-top:0">${c ? `Clip ${i} → Clip ${i+1}` : 'Transition ಗೆ ಕನಿಷ್ಠ 2 clips ಬೇಕು'}</div>
-        <div class="tiles gtiles">${keys.map(k=>TRANS.find(t=>t[0]===k)).filter(Boolean).map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-tr="${k}"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-ptr="${k}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div>
+        <div class="tiles gtiles">${keys.map(k=>TRANS.find(t=>t[0]===k)).filter(Boolean).map(([k,n],i)=>`<button class="tile ${cur===k?'on':''}" data-tr="${k}"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-ptr="${k}" data-i="${i}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div>
         ${c ? '<div class="btns" style="margin-top:12px"><button data-all="trans">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : ''}
         <div class="lnote">Tile ಮೇಲೆ mouse ಇಟ್ಟರೆ ನಿಜವಾದ preview. Timeline ನಲ್ಲಿ ಎರಡು clips ನಡುವಿನ <b>⇄</b> ಒತ್ತಿದರೂ ಆರಿಸಬಹುದು.</div>`;
     }
@@ -238,7 +238,7 @@ function leftContent(tab, sub){
       const head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'ಮೊದಲು clip select ಮಾಡಿ'}</div>
         <div class="chiprow">${PF_CATS.map(c=>`<button data-pfcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>`;
       let tiles;
-      if(cat === 'Basic'){ const th = thumbFor(it); tiles = Object.keys(FILTERS).map(k=>`<button class="tile ${cur===k?'on':''}" data-filt="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join(''); }
+      if(cat === 'Basic'){ const th = SCENES.portrait.src; tiles = Object.keys(FILTERS).map(k=>`<button class="tile ${cur===k?'on':''}" data-filt="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join(''); }
       else {
         const th = pfThumbs(it), list = cat === 'Featured' ? PF_FEATURED.map(id => PF_MAP[id]) : PRO_FILTERS.filter(f => f.cat === cat);
         tiles = `<button class="tile ${cur==='none'?'on':''}" data-filt="none"><div class="tth">${ic('ban')}</div><span>None</span></button>` +
@@ -450,7 +450,7 @@ function maskBody(it){
   return h;
 }
 function fxBody(it){
-  const th = thumbFor(it), f = it.fx;
+  const th = SCENES.beach.src, f = it.fx;
   return `<div class="tiles" style="margin-top:8px">${FX.map(([k,n])=>`<button class="tile ${f.type===k?'on':''}" data-set="fx.type" data-val="${k}" data-prev="fx"><div class="tth">${k==='none'?ic('ban'):`<div class="pv fx-${k}" style="background-image:url(${th})"></div>`}</div><span>${n}</span></button>`).join('')}</div>
     ${f.type!=='none' ? `<div style="height:12px"></div>${sl(it,'Intensity','fx.amount',0,100)}${sl(it,'Speed','fx.speed',0,100)}` : ''}
     ${!it.type ? '<div class="btns"><button data-all="fx">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>' : ''}`;
@@ -631,13 +631,12 @@ function speedBody(it, kind, sub){
   return sec('sp','Speed', sl(it,'Speed','speed',.1,10,.1)+`<div class="crow"><span>Duration</span><b id="durInfo" style="color:var(--text)">${fmtTC(it.out-it.in)} → ${fmtTC(derived[it.id].dur)}</b></div>`);
 }
 function transBody(it){
-  const i = S.clips.indexOf(it), ta = thumbFor(S.clips[i-1]), tb = thumbFor(it);
-  return `<div class="tiles" style="margin-top:10px">${TRANS.map(([k,n])=>`<button class="tile ${it.trans.type===k?'on':''}" data-set="trans.type" data-val="${k}" data-prev="trans"><div class="tth">${k==='none'?ic('ban'):`<div class="tpv t-${k}"><i class="ta" style="background-image:url(${ta})"></i><i class="tb" style="background-image:url(${tb})"></i></div>`}</div><span>${n}</span></button>`).join('')}</div><div style="height:12px"></div>
+  return `<div class="tiles gtiles" style="margin-top:10px">${TRANS.map(([k,n],i)=>`<button class="tile ${it.trans.type===k?'on':''}" data-set="trans.type" data-val="${k}" data-prev="trans"><div class="tth">${k==='none'?ic('ban'):`<canvas class="gpv" data-ptr="${k}" data-i="${i}" width="112" height="84"></canvas>`}</div><span>${n}</span></button>`).join('')}</div><div style="height:12px"></div>
     ${it.trans.type!=='none'?sl(it,'Duration','trans.dur',.1,2,.1):''}
     <div class="btns"><button data-all="trans">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>`;
 }
 function filterBody(it){
-  const th = thumbFor(it);
+  const th = SCENES.portrait.src;
   return `<div class="tiles" style="margin-top:10px">${Object.keys(FILTERS).map(k=>`<button class="tile ${it.filter===k?'on':''}" data-set="filter" data-val="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join('')}</div><div style="height:12px"></div>
     ${it.filter!=='none'?sl(it,'Strength','filterAmt',0,100):''}${!it.type?'<div class="btns"><button data-all="filter">ಎಲ್ಲಾ clips ಗೆ ಹಾಕಿ</button></div>':''}`;
 }
@@ -1373,7 +1372,8 @@ $('#modal').addEventListener('click', async e => {
    ===================================================================== */
 $('#btnHome').innerHTML = ic('home'); $('#logoIc').innerHTML = ic('play');
 $('#btnExport').innerHTML = ic('export') + '<span>Export</span>';
-{ const cb = document.createElement('button'); cb.id = 'btnCover'; cb.innerHTML = ic('edit') + '<span>Cover</span>'; cb.title = 'Cover / Thumbnail maker'; cb.onclick = () => openCover(); $('#btnExport').before(cb); } $('#btnFull').innerHTML = ic('full');
+IC.sparkle = '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>';
+{ const cb = document.createElement('button'); cb.id = 'btnCover'; cb.innerHTML = ic('sparkle') + '<span>Thumbnail</span>'; cb.title = 'AI Auto Thumbnail'; cb.onclick = () => openThumb(); $('#btnExport').before(cb); } $('#btnFull').innerHTML = ic('full');
 $('#btnHome').onclick = showHome;
 $('#btnExport').onclick = openExport;
 $('#btnPlay').onclick = () => S.playing ? pause() : play();
@@ -1668,7 +1668,7 @@ function animProbe(it, sub, name, p){
 function drawAnimTile(c, it, sub, name, p){
   const x = c.getContext('2d'), w = c.width, h = c.height, {R, W, H} = animProbe(it, sub, name, p);
   x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,w,h); x.fillStyle = '#1c1c20'; x.fillRect(0,0,w,h);
-  const isTxt = it.type === 'text' || it.type === 'sticker', img = isTxt ? null : imgOf(thumbFor(it));
+  const isTxt = it.type === 'text' || it.type === 'sticker', img = isTxt ? null : SCENES.list[[...name].reduce((a,ch)=>a+ch.charCodeAt(0),0) % SCENES.list.length];
   const draw = (ox, oy) => { if(isTxt){ x.fillStyle = '#fff'; x.font = '800 26px Inter,"Noto Sans Kannada",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(it.type === 'sticker' && !String(it.text).startsWith('svg:') ? it.text : 'Aa', ox, oy); }
     else if(img && img.complete && img.naturalWidth){ const k = Math.max(w*.8/img.naturalWidth, h*.8/img.naturalHeight), iw = img.naturalWidth*k, ih = img.naturalHeight*k; x.drawImage(img, ox - iw/2, oy - ih/2, iw, ih); } };
   x.save();
@@ -1695,29 +1695,33 @@ let aTile = null;
 const SAMPLE_IMG = (() => { const mk = (a,b,sun) => { const c = document.createElement('canvas'); c.width = 160; c.height = 120; const x = c.getContext('2d'), g = x.createLinearGradient(0,0,0,120); g.addColorStop(0,a); g.addColorStop(.6,b); g.addColorStop(.61,'#2f6b35'); g.addColorStop(1,'#1d3d22'); x.fillStyle = g; x.fillRect(0,0,160,120);
   x.fillStyle = sun; x.beginPath(); x.arc(118,34,15,0,7); x.fill(); x.fillStyle = '#d9a07a'; x.beginPath(); x.ellipse(62,70,16,20,0,0,7); x.fill(); x.fillStyle = '#3a2618'; x.beginPath(); x.ellipse(62,55,17,9,0,Math.PI,0); x.fill(); x.fillStyle = '#c0303a'; x.fillRect(44,88,36,32); const i = new Image(); i.src = c.toDataURL(); return i; };
   return [mk('#5d9be0','#f2c79a','#ffe9a8'), mk('#3b1d5e','#ff7a59','#ffd36e')]; })();
-function gpvImgs(){
-  const it = visTarget(), c = transTarget(), i = c ? S.clips.indexOf(c) : -1;
-  const fxI = it ? imgOf(thumbFor(it)) : SAMPLE_IMG[0];
-  const A = i > 0 ? imgOf(thumbFor(S.clips[i-1])) : SAMPLE_IMG[0], B = c ? imgOf(thumbFor(c)) : SAMPLE_IMG[1];
-  return {fxI, A: A.src === B.src ? SAMPLE_IMG[0] : A, B};
+function tileImgs(c){
+  const i = +(c.dataset.i || 0), L = SCENES.list, n = L.length;
+  if(c.dataset.pfx) return {fx: sceneFor(S.ltab === 'effects' ? (S.lsub.effects || 'Trending') : 'All', i)};
+  return {A: L[i % n], B: L[(i + 3) % n]};
+}
+function drawGpv(c, t){
+  const im = tileImgs(c);
+  if(c.dataset.pfx){ if(im.fx.complete) fxPreview(c, im.fx, c.dataset.pfx, t == null ? 1.3 : 1 + t); }
+  else if(im.A.complete && im.B.complete) transPreview(c, im.A, im.B, c.dataset.ptr, t == null ? .5 : Math.min(1, Math.max(0, (t % 1.8 - .3)/1.1)));
 }
 function paintGL(root){
   const cs = root.querySelectorAll('canvas.gpv'); if(!cs.length) return;
-  const im = gpvImgs(), pend = [im.fxI, im.A, im.B].filter(x => !x.complete || !x.naturalWidth);
-  if(pend.length){ pend.forEach(x => x.addEventListener('load', () => paintGL(root), {once:true})); }
-  cs.forEach(c => { try{ c.dataset.pfx ? fxPreview(c, im.fxI.naturalWidth ? im.fxI : SAMPLE_IMG[0], c.dataset.pfx, 1.3) : transPreview(c, im.A, im.B, c.dataset.ptr, .5); }catch(e){} });
+  if(SCENES.list.some(i => !i.complete)){ setTimeout(() => paintGL(root), 150); return; }
+  cs.forEach(c => { try{ drawGpv(c); }catch(e){} });
 }
 let gTile = null;
-LC.addEventListener('mouseover', e => {
-  const c = e.target.closest('.tile') && e.target.closest('.tile').querySelector('canvas.gpv'); if(!c || (gTile && gTile.c === c)) return;
-  if(gTile) cancelAnimationFrame(gTile.raf);
-  const t0 = performance.now(), im = gpvImgs();
-  const loop = () => { const t = (performance.now() - t0)/1000;
-    try{ c.dataset.pfx ? fxPreview(c, im.fxI.naturalWidth ? im.fxI : SAMPLE_IMG[0], c.dataset.pfx, 1 + t) : transPreview(c, im.A, im.B, c.dataset.ptr, Math.min(1, Math.max(0, (t % 1.8 - .3)/1.1))); }catch(err){}
-    gTile.raf = requestAnimationFrame(loop); };
-  gTile = {c, raf:requestAnimationFrame(loop)};
-});
-LC.addEventListener('mouseout', e => { const tl = e.target.closest('.tile'); if(!tl || tl.contains(e.relatedTarget) || !gTile) return; cancelAnimationFrame(gTile.raf); const c = gTile.c; gTile = null; const im = gpvImgs(); try{ c.dataset.pfx ? fxPreview(c, im.fxI, c.dataset.pfx, 1.3) : transPreview(c, im.A, im.B, c.dataset.ptr, .5); }catch(err){} });
+function gpvHover(root){
+  root.addEventListener('mouseover', e => {
+    const c = e.target.closest('.tile') && e.target.closest('.tile').querySelector('canvas.gpv'); if(!c || (gTile && gTile.c === c)) return;
+    if(gTile) cancelAnimationFrame(gTile.raf);
+    const t0 = performance.now();
+    const loop = () => { try{ drawGpv(c, (performance.now() - t0)/1000); }catch(err){} gTile.raf = requestAnimationFrame(loop); };
+    gTile = {c, raf:requestAnimationFrame(loop)};
+  });
+  root.addEventListener('mouseout', e => { const tl = e.target.closest('.tile'); if(!tl || tl.contains(e.relatedTarget) || !gTile) return; cancelAnimationFrame(gTile.raf); const c = gTile.c; gTile = null; try{ drawGpv(c); }catch(err){} });
+}
+gpvHover(LC); gpvHover(IB);
 function paintV8(root, it){
   paintGL(root);
   if(it) root.querySelectorAll('canvas.apv').forEach(c => { const sub = c.dataset.sub; drawAnimTile(c, it, sub, c.dataset.an, sub === 'combo' ? .3 : sub === 'in' ? .4 : .5); });
@@ -1725,7 +1729,7 @@ function paintV8(root, it){
   root.querySelectorAll('canvas[data-tfxc]').forEach(c => { const t = TFX_MAP[c.dataset.tfxc]; if(!t) return; const x = c.getContext('2d'); x.clearRect(0,0,c.width,c.height);
     x.font = '900 40px Anton,"Baloo Tamma 2",Inter,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; drawStyledText(x, t.id === 'kannadaGold' ? 'ಕನ್ನಡ' : 'ART', c.width/2, c.height/2+2, 40, t.st); });
   // images may still be loading the first time
-  if(it && root.querySelector('canvas.apv')){ const im = imgOf(thumbFor(it)); if(!im.complete) im.onload = () => paintV8(root, it); }
+  if(it && root.querySelector('canvas.apv') && SCENES.list.some(i => !i.complete)) setTimeout(() => paintV8(root, it), 200);
 }
 function hoverAnim(root, getIt){
   root.addEventListener('mouseover', e => {
@@ -1899,7 +1903,82 @@ $('#modal').addEventListener('click', e => {
   const texts = {}; $('#modalBox').querySelectorAll('[data-tplk]').forEach(x => texts[x.dataset.tplk] = x.value);
   hideModal(); buildTemplate(t, medias, texts); updatePInfo(); renderLeft();
 });
-// ---- cover maker ----
+// ---- v13: AI auto thumbnail ----
+const TH = {size:'yt', title:'', sub:'', photos:[], frames:null, thumbs:[], sel:-1, busy:false};
+const TH_SUBS = ['','NEW','PART 1','MUST WATCH','ವೈರಲ್','ಹೊಸದು','TOP 5','LIVE'];
+const thIn = document.createElement('input'); thIn.type = 'file'; thIn.accept = 'image/*'; thIn.multiple = true; thIn.style.display = 'none'; document.body.appendChild(thIn);
+thIn.onchange = async () => {
+  for(const f of thIn.files){ try{ const b = await createImageBitmap(f), k = Math.min(1, 1280/Math.max(b.width, b.height)), c = document.createElement('canvas'); c.width = Math.round(b.width*k); c.height = Math.round(b.height*k); c.getContext('2d').drawImage(b, 0, 0, c.width, c.height); c._url = c.toDataURL('image/jpeg', .7); TH.photos.push(c); }catch(e){ alert(f.name + ': image ಓದಲು ಆಗಲಿಲ್ಲ'); } }
+  thIn.value = ''; renderThPhotos(); if(TH.frames) thGenerate(false);
+};
+function openThumb(){
+  if(!S.total && !TH.photos.length) return alert('ಮೊದಲು video ಅಥವಾ photos ಸೇರಿಸಿ'); pause();
+  TH.title = TH.title || autoTitle(); TH.frames = null; TH.thumbs = []; TH.sel = -1;
+  showModal(`<div class="thwrap"><div class="thhead"><h3>✨ AI Auto Thumbnail</h3><span class="thsub">ನಿಮ್ಮ video ದ ಅತ್ಯುತ್ತಮ frames + AI ವ್ಯಕ್ತಿ cut-out ಬಳಸಿ ತಾನಾಗಿ ತಯಾರಾಗುತ್ತದೆ</span><button class="thx" id="thClose">✕</button></div>
+    <div class="thbody"><div class="thside">
+      <label>Platform</label><div class="thsizes">${THUMB_SIZES.map(([k,n]) => `<button data-thsz="${k}" class="${TH.size===k?'on':''}">${n}</button>`).join('')}</div>
+      <label>Title</label><textarea id="thTitle" rows="2" placeholder="ವಿಡಿಯೋ title">${esc(TH.title)}</textarea>
+      <label>Badge / Subtitle</label><input id="thSub" value="${esc(TH.sub)}" placeholder="ಉದಾ: NEW / PART 1"><div class="thchips">${TH_SUBS.filter(Boolean).map(t => `<button data-thsubq="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+      <label>ನಿಮ್ಮ Photos (ಐಚ್ಛಿಕ)</label><div id="thPhotos" class="thphotos"></div>
+      <button class="primary thgo" id="thGo">✨ Generate</button><button id="thMore">🔀 ಇನ್ನಷ್ಟು designs</button>
+      <div id="thProg" class="thprog"></div>
+    </div><div class="thmain"><div id="thBig" class="thbig"><div class="themp">✨ <b>Generate</b> ಒತ್ತಿ — video ವಿಶ್ಲೇಷಿಸಿ 8 ವಿಭಿನ್ನ thumbnails ತಯಾರಾಗುತ್ತವೆ</div></div>
+      <div id="thGrid" class="thgrid"></div>
+      <div class="btns thact"><button id="thManual">✏️ Manual editor</button><button id="thAdd" disabled>${ic('plus')} Video ಆರಂಭಕ್ಕೆ ಸೇರಿಸಿ</button><button class="primary" id="thDl" disabled>${ic('export')} Download PNG</button></div>
+    </div></div></div>`);
+  $('#modalBox').classList.add('wide','thm'); renderThPhotos();
+  if(S.total) thGenerate(false);
+}
+function renderThPhotos(){ const b = $('#thPhotos'); if(!b) return; b.innerHTML = TH.photos.map((p,i) => `<div class="thph"><img src="${p._url}"><button data-thdel="${i}">✕</button></div>`).join('') + `<button class="thadd" id="thAddPh">${ic('plus')}<span>Photo</span></button>`; }
+function thOpt(shuffle){ return {size:TH.size, title:(TH.title || autoTitle()).trim(), sub:TH.sub.trim(), shuffle}; }
+async function thGenerate(shuffle){
+  if(TH.busy) return; TH.busy = true; const pg = $('#thProg'), go = $('#thGo'); go && (go.disabled = true);
+  const prog = (m, p) => { if(pg) pg.innerHTML = `<div>${m}</div><i style="width:${Math.round((p||0)*100)}%"></i>`; };
+  try{
+    prog('🔤 Fonts…', .02); await thFonts();
+    if(!TH.frames && S.total) TH.frames = await collectThumbFrames(12, prog);
+    const frames = [...(TH.frames || [])], o = thOpt(shuffle);
+    const r = await makeThumbnails(Object.assign({}, o, {frames, photos:TH.photos}), prog);
+    TH.thumbs = r.thumbs; TH.sel = 0;
+    const segOk = r.frames.some(f => f.seg);
+    prog(segOk ? '✅ ಸಿದ್ಧ — AI ವ್ಯಕ್ತಿ cut-out ಬಳಸಲಾಗಿದೆ' : '✅ ಸಿದ್ಧ' + (navigator.onLine ? ' (ವ್ಯಕ್ತಿ ಕಾಣದ ಕಾರಣ card designs)' : ' — offline: AI cut-out ಇಲ್ಲದೆ'), 1);
+    renderThGrid();
+  }catch(e){ console.error(e); prog('⚠️ ' + (e.message || e), 0); }
+  finally{ TH.busy = false; go && (go.disabled = false); }
+}
+const thFonts = () => thumbFonts();
+function renderThGrid(){
+  const g = $('#thGrid'), big = $('#thBig'); if(!g) return;
+  g.innerHTML = ''; TH.thumbs.forEach((t,i) => { const b = document.createElement('button'); b.className = 'thtile' + (i === TH.sel ? ' on' : ''); b.dataset.thi = i; const c = document.createElement('canvas'), k = 220/Math.max(t.c.width, t.c.height); c.width = Math.round(t.c.width*k); c.height = Math.round(t.c.height*k); c.getContext('2d').drawImage(t.c, 0, 0, c.width, c.height); b.appendChild(c); g.appendChild(b); });
+  const t = TH.thumbs[TH.sel]; big.innerHTML = ''; if(t){ const c = document.createElement('canvas'); c.width = t.c.width; c.height = t.c.height; c.getContext('2d').drawImage(t.c, 0, 0); big.appendChild(c); }
+  $('#thDl').disabled = $('#thAdd').disabled = !t;
+}
+function thRedraw(){ const o = thOpt(false), [W,H] = THUMB_SIZES.find(s => s[0] === TH.size).slice(2); TH.thumbs.forEach(t => t.c = renderThumb(t, W, H, o)); renderThGrid(); }
+let thT = null;
+$('#modal').addEventListener('input', e => {
+  if(e.target.id === 'thTitle'){ TH.title = e.target.value; clearTimeout(thT); thT = setTimeout(thRedraw, 250); }
+  if(e.target.id === 'thSub'){ TH.sub = e.target.value; clearTimeout(thT); thT = setTimeout(thRedraw, 250); }
+});
+$('#modal').addEventListener('click', async e => {
+  const q = s => e.target.closest(s);
+  if(q('#thClose')){ hideModal(); $('#modalBox').classList.remove('wide','thm'); return; }
+  const sz = q('[data-thsz]'); if(sz){ TH.size = sz.dataset.thsz; $('#modalBox').querySelectorAll('[data-thsz]').forEach(b => b.classList.toggle('on', b === sz)); if(TH.thumbs.length) thRedraw(); return; }
+  const sq = q('[data-thsubq]'); if(sq){ TH.sub = sq.dataset.thsubq; $('#thSub').value = TH.sub; thRedraw(); return; }
+  if(q('#thAddPh')){ thIn.click(); return; }
+  const dp = q('[data-thdel]'); if(dp){ TH.photos.splice(+dp.dataset.thdel, 1); renderThPhotos(); return; }
+  if(q('#thGo')){ thGenerate(false); return; } if(q('#thMore')){ thGenerate(true); return; }
+  const tl = q('[data-thi]'); if(tl){ TH.sel = +tl.dataset.thi; renderThGrid(); return; }
+  if(q('#thManual')){ $('#modalBox').classList.remove('thm'); openCover(); return; }
+  const t = TH.thumbs[TH.sel]; if(!t) return;
+  if(q('#thDl')){ const blob = await new Promise(r => t.c.toBlob(r, 'image/png')); saveBlob(blob, ((S.project && S.project.name) || 'thumbnail').replace(/[\\/:*?"<>|]/g,'_') + '_' + TH.size + '.png'); return; }
+  if(q('#thAdd')){
+    const W = out.width*2, H = out.height*2, c = renderThumb(t, W, H, thOpt(false)), blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const m = await addImageMedia(new File([blob], 'Thumbnail.png', {type:'image/png'}));
+    pushUndo(); const cl = newClip(m); cl.out = 1; S.clips.unshift(cl); if(S.clips[1]) S.clips[1].trans = {type:'fade', dur:.4};
+    hideModal(); $('#modalBox').classList.remove('wide','thm'); afterEdit(); renderLeft(); seek(0);
+  }
+});
+// ---- cover maker (manual) ----
 const COV = {t:0, title:'', sub:'', style:'kannadaGold', font:'Baloo Tamma 2', size:60, pos:'bottom', shade:55, bright:5, sat:15, out:'yt'};
 let covFrame = null, covTimer = null;
 const COV_SIZES = [['yt','YouTube 1280×720',[1280,720]],['same','Video ratio',null],['sq','Square 1080',[1080,1080]],['vert','Reels 1080×1920',[1080,1920]]];

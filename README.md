@@ -93,3 +93,9 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 
 ## 📄 License
 ನಿಮ್ಮ ಆಯ್ಕೆ. ಮುಂದೆ ಮಾರಾಟ ಮಾಡುವುದಾದರೆ code ಅನ್ನು open-source license ಇಲ್ಲದೆ (All rights reserved) ಇಡಬಹುದು ಅಥವಾ repo ಅನ್ನು private ಮಾಡಿ ಕೇವಲ Pages ಮೂಲಕ app ಕೊಡಬಹುದು.
+
+## Phase 13 — Preview images + AI Auto Thumbnail
+- Effects, transitions, animations ಮತ್ತು filters tiles ಮೇಲೆ ಸುಂದರ illustrated preview images (sunset, city, beach, neon, portrait…) — ನಿಮ್ಮ clip ಬಳಸುವುದಿಲ್ಲ. Mouse ಇಟ್ಟರೆ live preview.
+- **✨ Thumbnail** (ಮೇಲಿನ button): video ದ 12 frames ವಿಶ್ಲೇಷಿಸಿ (sharpness, ಬಣ್ಣ, ಬೆಳಕು), ಅತ್ಯುತ್ತಮ frames ಆರಿಸಿ, AI ಮೂಲಕ ವ್ಯಕ್ತಿಯನ್ನು cut-out ಮಾಡಿ 8 ವಿಭಿನ್ನ designs ತಯಾರಿಸುತ್ತದೆ: Pop-out, Banner, Zoom circle, Gradient, Neon, Cinematic, Collage, VS compare.
+- YouTube / Shorts-Reels / Instagram (1:1, 4:5) / Facebook sizes · Title (auto) · Badge · ನಿಮ್ಮ photos upload · 🔀 ಇನ್ನಷ್ಟು designs · PNG download ಅಥವಾ video ಆರಂಭಕ್ಕೆ ಸೇರಿಸಿ · Manual editor.
+- AI cut-out ಗೆ ಮೊದಲ ಬಾರಿ internet ಬೇಕು (MediaPipe model); offline ಇದ್ದರೆ card designs ಬಳಸುತ್ತದೆ.
