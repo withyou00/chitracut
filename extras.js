@@ -1824,7 +1824,7 @@ function stabAt(c, st){
      • cut-out       : MediaPipe "magic touch" interactive segmenter (Apache-2.0)
    ===================================================================== */
 function ensureMagic(it){ if(!it.magic) it.magic = MAGIC_DEF(); return it.magic; }
-const MAGIC_DEF = () => ({on:false, layers:[], inS:'auto', outS:'auto', inDur:.7, outDur:.5, stag:.15, order:'lr', bg:'static'});
+const MAGIC_DEF = () => ({on:false, layers:[], inS:'rise', outS:'none', inDur:.6, outDur:.5, stag:.1, order:'lr', bg:'haze'});
 const MAGIC_STYLES = [['auto','Auto'],['left','Left'],['right','Right'],['top','Top'],['bottom','Bottom'],['pop','Pop'],['rise','Rise'],['fade','Fade'],['spin','Spin']];
 const MAGIC_RT = {};
 let ISEG = null, isegLoading = null, DET = null, detLoading = null;
@@ -1918,32 +1918,92 @@ async function magicAuto(it, onProg){
 }
 function iou(a, b){ const ix = Math.max(0, Math.min(a[2],b[2]) - Math.max(a[0],b[0])), iy = Math.max(0, Math.min(a[3],b[3]) - Math.max(a[1],b[1])), I = ix*iy;
   return I / ((a[2]-a[0])*(a[3]-a[1]) + (b[2]-b[0])*(b[3]-b[1]) - I); }
-// ---- fill the holes behind the objects (push-pull inpainting) ----
+// ---- fill the holes behind the objects: multi-scale PatchMatch "content-aware fill" ----
+// (copies real texture from the rest of the picture — ground, walls, sky — instead of blurring)
 function inpaint(img, hole, W, H){
-  const w = Math.min(W, 480), h = Math.round(H*w/W), c = document.createElement('canvas'); c.width = w; c.height = h;
-  const x = c.getContext('2d', {willReadFrequently:true}); x.drawImage(img, 0, 0, w, h); const d = x.getImageData(0,0,w,h).data;
-  const hm = document.createElement('canvas'); hm.width = w; hm.height = h; const hx = hm.getContext('2d', {willReadFrequently:true}); hx.drawImage(hole, 0, 0, w, h); const md = hx.getImageData(0,0,w,h).data;
-  let lv = {w, h, r:new Float32Array(w*h), g:new Float32Array(w*h), b:new Float32Array(w*h), a:new Float32Array(w*h)};
-  for(let i=0;i<w*h;i++){ const k = md[i*4+3] > 20 ? 0 : 1; lv.a[i] = k; lv.r[i] = d[i*4]*k; lv.g[i] = d[i*4+1]*k; lv.b[i] = d[i*4+2]*k; }
-  const pyr = [lv];
-  while(lv.w > 2 && lv.h > 2){ const nw = lv.w>>1, nh = lv.h>>1, n = {w:nw, h:nh, r:new Float32Array(nw*nh), g:new Float32Array(nw*nh), b:new Float32Array(nw*nh), a:new Float32Array(nw*nh)};
-    for(let y=0;y<nh;y++) for(let xx=0;xx<nw;xx++){ let r=0,g=0,b=0,a=0; for(const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]]){ const j = (y*2+dy)*lv.w + xx*2+dx; r+=lv.r[j]; g+=lv.g[j]; b+=lv.b[j]; a+=lv.a[j]; }
-      const o = y*nw+xx; n.r[o]=r; n.g[o]=g; n.b[o]=b; n.a[o]=a; }
-    for(let i=0;i<nw*nh;i++){ const a = n.a[i]; if(a > 0){ n.r[i]/=a; n.g[i]/=a; n.b[i]/=a; n.a[i] = Math.min(1, a); n.r[i]*=n.a[i]; n.g[i]*=n.a[i]; n.b[i]*=n.a[i]; } }
-    pyr.push(n); lv = n; }
-  for(let L=pyr.length-2; L>=0; L--){ const f = pyr[L], c2 = pyr[L+1];
-    for(let y=0;y<f.h;y++) for(let xx=0;xx<f.w;xx++){ const i = y*f.w+xx, a = f.a[i]; if(a >= 1) continue;
-      const cx = Math.min(c2.w-1, xx>>1), cy = Math.min(c2.h-1, y>>1), j = cy*c2.w+cx, ca = Math.max(1e-6, c2.a[j]);
-      f.r[i] = f.r[i] + (1-a)*c2.r[j]/ca; f.g[i] = f.g[i] + (1-a)*c2.g[j]/ca; f.b[i] = f.b[i] + (1-a)*c2.b[j]/ca; f.a[i] = 1; } }
-  const id = x.createImageData(w, h); for(let i=0;i<w*h;i++){ id.data[i*4] = pyr[0].r[i]; id.data[i*4+1] = pyr[0].g[i]; id.data[i*4+2] = pyr[0].b[i]; id.data[i*4+3] = 255; }
-  x.putImageData(id, 0, 0);
-  // final: original picture, with the filled colour shown only inside the (feathered) holes
+  const w0 = Math.min(W, 560), h0 = Math.round(H*w0/W), cvs = document.createElement('canvas'); cvs.width = w0; cvs.height = h0;
+  const cx = cvs.getContext('2d', {willReadFrequently:true}); cx.drawImage(img, 0, 0, w0, h0); const d = cx.getImageData(0,0,w0,h0).data;
+  const mc = document.createElement('canvas'); mc.width = w0; mc.height = h0; const mx = mc.getContext('2d', {willReadFrequently:true}); mx.drawImage(hole, 0, 0, w0, h0); const md = mx.getImageData(0,0,w0,h0).data;
+  const L0 = {w:w0, h:h0, I:new Float32Array(w0*h0*3), M:new Uint8Array(w0*h0)};
+  for(let i=0;i<w0*h0;i++){ L0.I[i*3] = d[i*4]; L0.I[i*3+1] = d[i*4+1]; L0.I[i*3+2] = d[i*4+2]; L0.M[i] = md[i*4+3] > 10 ? 1 : 0; }
+  const pyr = [L0];
+  while(Math.min(pyr[pyr.length-1].w, pyr[pyr.length-1].h) > 48){ const p = pyr[pyr.length-1], w = p.w>>1, h = p.h>>1, n = {w, h, I:new Float32Array(w*h*3), M:new Uint8Array(w*h)};
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const o = y*w+x; let m = 0;
+      for(let c=0;c<3;c++){ let v = 0; for(const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]]) v += p.I[((y*2+dy)*p.w + x*2+dx)*3+c]; n.I[o*3+c] = v/4; }
+      for(const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]]) m |= p.M[(y*2+dy)*p.w + x*2+dx]; n.M[o] = m; }
+    pyr.push(n); }
+  const R = 3, PN = (2*R+1)*(2*R+1);
+  let NX = null, NY = null, pw = 0;
+  for(let lv = pyr.length-1; lv >= 0; lv--){
+    const {w, h, I, M} = pyr[lv], N = w*h;
+    // integral image of the hole → which source patches are 100% real picture
+    const S = new Int32Array((w+1)*(h+1)); for(let y=0;y<h;y++){ let row = 0; for(let x=0;x<w;x++){ row += M[y*w+x]; S[(y+1)*(w+1)+x+1] = S[y*(w+1)+x+1] + row; } }
+    const holeIn = (x0,y0,x1,y1) => S[(y1+1)*(w+1)+x1+1] - S[y0*(w+1)+x1+1] - S[(y1+1)*(w+1)+x0] + S[y0*(w+1)+x0];
+    const valid = new Uint8Array(N), VL = [];
+    for(let y=R;y<h-R;y++) for(let x=R;x<w-R;x++) if(!holeIn(x-R,y-R,x+R,y+R)){ valid[y*w+x] = 1; VL.push(y*w+x); }
+    if(VL.length < 8) return inpaintSmooth(img, hole, W, H);
+    // target = every pixel whose patch touches the hole
+    const T = []; for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(holeIn(Math.max(0,x-R),Math.max(0,y-R),Math.min(w-1,x+R),Math.min(h-1,y+R))) T.push(y*w+x);
+    const nx = new Int32Array(N), ny = new Int32Array(N);
+    const rnd = () => VL[(Math.random()*VL.length)|0];
+    for(const p of T){ let s;
+      if(NX){ const px = p % w, py = (p / w)|0, q = Math.min(pw-1, px>>1) + Math.min(pyr[lv+1].h-1, py>>1)*pw; const sx = NX[q]*2 + (px&1), sy = NY[q]*2 + (py&1); s = (sx>=0 && sy>=0 && sx<w && sy<h && valid[sy*w+sx]) ? sy*w+sx : rnd(); }
+      else s = rnd();
+      nx[p] = s % w; ny[p] = (s / w)|0; }
+    if(lv === pyr.length-1){ // coarsest: start from a smooth guess
+      for(let it=0; it<200; it++) for(let i=0;i<N;i++){ if(!M[i]) continue; const x = i % w, y = (i/w)|0; let c0=0,c1=0,c2=0,k=0;
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const xx = x+dx, yy = y+dy; if(xx<0||yy<0||xx>=w||yy>=h) continue; const j = (yy*w+xx)*3; c0+=I[j]; c1+=I[j+1]; c2+=I[j+2]; k++; }
+        I[i*3] = c0/k; I[i*3+1] = c1/k; I[i*3+2] = c2/k; } }
+    const LK = PN*3*100/Math.pow(w*.15, 2);   // locality: prefer texture from near the hole (ground fills ground, wall fills wall)
+    const dist = (p, sx, sy, best) => { const px = p % w, py = (p/w)|0; let dd = LK*((px-sx)*(px-sx) + (py-sy)*(py-sy)); if(dd > best) return dd;
+      for(let oy=-R; oy<=R; oy++){ const ty = py+oy; if(ty<0||ty>=h) continue; const sr = (sy+oy)*w;
+        for(let ox=-R; ox<=R; ox++){ const tx = px+ox; if(tx<0||tx>=w) continue; const a = (ty*w+tx)*3, b = (sr+sx+ox)*3;
+          const e0 = I[a]-I[b], e1 = I[a+1]-I[b+1], e2 = I[a+2]-I[b+2]; dd += e0*e0+e1*e1+e2*e2; }
+        if(dd > best) return dd; }
+      return dd; };
+    const D = new Float32Array(N);
+    const vote = () => {
+      const acc = new Float32Array(N*3), ws = new Float32Array(N);
+      for(const p of T){ const px = p % w, py = (p/w)|0, sx = nx[p], sy = ny[p], wt = Math.exp(-D[p]/(PN*3*2*14*14)) + 1e-6;
+        for(let oy=-R; oy<=R; oy++){ const ty = py+oy; if(ty<0||ty>=h) continue;
+          for(let ox=-R; ox<=R; ox++){ const tx = px+ox; if(tx<0||tx>=w) continue; const q = ty*w+tx; if(!M[q]) continue; const b = ((sy+oy)*w + sx+ox)*3;
+            acc[q*3] += I[b]*wt; acc[q*3+1] += I[b+1]*wt; acc[q*3+2] += I[b+2]*wt; ws[q] += wt; } } }
+      for(let q=0;q<N;q++) if(M[q] && ws[q] > 0){ I[q*3] = acc[q*3]/ws[q]; I[q*3+1] = acc[q*3+1]/ws[q]; I[q*3+2] = acc[q*3+2]/ws[q]; } };
+    if(lv !== pyr.length-1){ for(const p of T) D[p] = dist(p, nx[p], ny[p], 1e30); vote(); }
+    const iters = lv === pyr.length-1 ? 8 : lv === 0 ? 3 : 5;
+    for(let it=0; it<iters; it++){
+      for(const p of T) D[p] = dist(p, nx[p], ny[p], 1e30);
+      for(let pass=0; pass<2; pass++){
+        const dir = (it*2 + pass) % 2 ? -1 : 1, order = dir > 0 ? T : [...T].reverse();
+        for(const p of order){ const px = p % w, py = (p/w)|0;
+          // propagation from the neighbour that was just improved
+          for(const [qx,qy] of [[px-dir,py],[px,py-dir]]){ if(qx<0||qy<0||qx>=w||qy>=h) continue; const q = qy*w+qx; const sx = nx[q]+dir, sy = ny[q];
+            if(sx>=0 && sx<w && sy>=0 && sy<h && valid[sy*w+sx] && (q !== p)){ const dd = dist(p, sx, sy, D[p]); if(dd < D[p]){ D[p] = dd; nx[p] = sx; ny[p] = sy; } }
+            const sx2 = nx[q], sy2 = ny[q]+dir; if(sx2>=0 && sx2<w && sy2>=0 && sy2<h && valid[sy2*w+sx2]){ const dd = dist(p, sx2, sy2, D[p]); if(dd < D[p]){ D[p] = dd; nx[p] = sx2; ny[p] = sy2; } } }
+          // random search around the current best
+          for(let rad = Math.max(w,h); rad >= 1; rad >>= 1){ const sx = nx[p] + ((Math.random()*2-1)*rad|0), sy = ny[p] + ((Math.random()*2-1)*rad|0);
+            if(sx<0||sy<0||sx>=w||sy>=h||!valid[sy*w+sx]) continue; const dd = dist(p, sx, sy, D[p]); if(dd < D[p]){ D[p] = dd; nx[p] = sx; ny[p] = sy; } }
+        }
+      }
+      vote();
+    }
+    // pass the match field up to the next finer level
+    NX = nx; NY = ny; pw = w;
+    if(lv > 0){ const f = pyr[lv-1]; for(let y=0;y<f.h;y++) for(let x=0;x<f.w;x++){ const q = y*f.w+x; if(!f.M[q]) continue; const c = Math.min(h-1,y>>1)*w + Math.min(w-1,x>>1);
+      f.I[q*3] = I[c*3]; f.I[q*3+1] = I[c*3+1]; f.I[q*3+2] = I[c*3+2]; } }
+  }
+  const id = cx.createImageData(w0, h0); for(let i=0;i<w0*h0;i++){ id.data[i*4] = L0.I[i*3]; id.data[i*4+1] = L0.I[i*3+1]; id.data[i*4+2] = L0.I[i*3+2]; id.data[i*4+3] = 255; }
+  cx.putImageData(id, 0, 0);
   const outC = document.createElement('canvas'); outC.width = W; outC.height = H; const ox = outC.getContext('2d');
   const fill = document.createElement('canvas'); fill.width = W; fill.height = H; const fx = fill.getContext('2d');
-  fx.filter = `blur(${Math.max(2, W/180)}px)`; fx.drawImage(c, 0, 0, W, H); fx.filter = 'none';
-  fx.globalCompositeOperation = 'destination-in'; fx.filter = `blur(${Math.max(1.5, W/500)}px)`; fx.drawImage(hole, 0, 0, W, H); fx.filter = 'none';
+  fx.imageSmoothingQuality = 'high'; fx.drawImage(cvs, 0, 0, W, H);
+  fx.globalCompositeOperation = 'destination-in'; fx.filter = `blur(${Math.max(1, W/700)}px)`; fx.drawImage(hole, 0, 0, W, H); fx.filter = 'none';
   ox.drawImage(img, 0, 0, W, H); ox.drawImage(fill, 0, 0); return outC;
 }
+// fallback when almost the whole picture is selected
+function inpaintSmooth(img, hole, W, H){ const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.filter = `blur(${W/40}px)`; x.drawImage(img, 0, 0, W, H); x.filter = 'none';
+  const f = document.createElement('canvas'); f.width = W; f.height = H; const fx = f.getContext('2d'); fx.drawImage(c, 0, 0); fx.globalCompositeOperation = 'destination-in'; fx.drawImage(hole, 0, 0, W, H);
+  const o = document.createElement('canvas'); o.width = W; o.height = H; const ox = o.getContext('2d'); ox.drawImage(img, 0, 0, W, H); ox.drawImage(f, 0, 0); return o; }
 function loadDataImg(src){ return new Promise((r, j) => { const i = new Image(); i.onload = () => r(i); i.onerror = j; i.src = src; }); }
 async function buildMagic(it){
   const el = images[it.mediaId], mg = it.magic; if(!el || !el.naturalWidth || !mg) return;
@@ -1996,7 +2056,12 @@ function magicFrame(it, lt, dur){
   const need = inD + outD + st*(n-1)*(outD ? 2 : 1); if(need > dur*.95){ const k = dur*.95/need; st *= k; inD *= k; outD *= k; }
   x.setTransform(1,0,0,1,0,0); x.globalAlpha = 1; x.clearRect(0,0,W,H);
   const bgA = mg.bg === 'fade' ? clamp(lt/Math.max(.2, inD), 0, 1) : 1;
-  if(mg.bg === 'zoom'){ const z = 1 + .08*(1 - eOutCubic(clamp(lt/Math.max(.3, inD + st*(n-1)), 0, 1))); x.globalAlpha = bgA; x.drawImage(bg, W*(1-z)/2, H*(1-z)/2, W*z, H*z); }
+  if(mg.bg === 'haze'){   // like a camera coming into focus: starts bright & soft, clears while the objects arrive
+    const e = eOutCubic(clamp(lt/Math.max(.3, inD + st*(n-1)), 0, 1));
+    if(e < 1){ x.filter = `blur(${((1-e)*W/160).toFixed(1)}px)`; x.drawImage(bg, 0, 0); x.filter = 'none'; x.fillStyle = `rgba(255,252,246,${(.85*(1-e)).toFixed(3)})`; x.fillRect(0,0,W,H); }
+    else x.drawImage(bg, 0, 0);
+  }
+  else if(mg.bg === 'zoom'){ const z = 1 + .08*(1 - eOutCubic(clamp(lt/Math.max(.3, inD + st*(n-1)), 0, 1))); x.globalAlpha = bgA; x.drawImage(bg, W*(1-z)/2, H*(1-z)/2, W*z, H*z); }
   else { x.globalAlpha = bgA; x.drawImage(bg, 0, 0); }
   order.forEach((ci, k) => {
     const cut = cuts[ci], tIn = (lt - k*st)/inD, tOut = outD ? (dur - lt - (n-1-k)*st)/outD : 9;

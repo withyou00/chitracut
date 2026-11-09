@@ -405,7 +405,7 @@ function rsubFor(tab, kind){
     case 'video': return [['basic','Basic'],['rmbg','Remove BG'],['mask','Mask'],['retouch','Retouch']];
     case 'audio': return kind === 'ovvideo' ? null : [['basic','Basic'],['voice','Voice changer'],['fx','Effects']];
     case 'speed': return kind === 'clip' ? [['normal','Normal'],['curve','Curve']] : null;
-    case 'anim': return (kind==='clipimg'||kind==='ovimage' ? [['magic','✨ Magic']] : []).concat([['in','In'],['out','Out'],['combo',(kind==='clip'||kind==='clipimg')?'Combo':'Loop']]);
+    case 'anim': return [['in','In'],['out','Out'],['combo',(kind==='clip'||kind==='clipimg')?'Combo':'Loop']];
     case 'adjust': return null;
     case 'text': return [['basic','Basic'],['style','Style'],['effects','Effects'],['bubble','Bubble']];
   }
@@ -564,7 +564,7 @@ function animList(it, sub){
 let MG_BUSY = '';
 function magicBody(it){
   const mg = ensureMagic(it), L = mg.layers, chips = (path, cur, list) => `<div class="chiprow mgchips">${list.map(([k,n]) => `<button data-set="${path}" data-val="${k}" class="${cur===k?'on':''}">${n}</button>`).join('')}</div>`;
-  let h = `<div class="mghero"><b>✨ Magic animate</b><span>AI finds the people, animals and objects in this picture, lifts each one out and animates them one by one — in and out.</span></div>
+  let h = `<div class="mghero"><b>✨ Magic animate</b><span>Every person and object in this photo animates in separately.</span></div>
     <div class="btns mgbtns"><button class="primary" data-mg="auto" ${MG_BUSY?'disabled':''}>🤖 Auto-detect objects</button><button data-mg="tap" class="${S.magicPick?'on':''}" ${MG_BUSY?'disabled':''}>👆 ${S.magicPick?'Tapping… (done)':'Tap to add object'}</button></div>
     <div class="mgprog" id="mgProg">${MG_BUSY}</div>`;
   if(S.magicPick) h += `<div class="note">👆 Tap any person or object in the player to cut it out. Tap <b>Tapping… (done)</b> when finished.</div>`;
@@ -577,11 +577,18 @@ function magicBody(it){
       ${mg.outS !== 'none' ? sl(it,'Out duration','magic.outDur',.2,2,.05) : ''}
       ${sl(it,'Delay between objects','magic.stag',0,.6,.01)}
       <div class="crow"><span>Order</span><select data-mgsel="order">${[['lr','Left → right'],['size','Biggest first'],['rand','Random']].map(([k,n]) => `<option value="${k}" ${mg.order===k?'selected':''}>${n}</option>`).join('')}</select></div>
-      <div class="crow"><span>Background</span><select data-mgsel="bg">${[['static','Stays'],['fade','Fades in'],['zoom','Zooms in']].map(([k,n]) => `<option value="${k}" ${mg.bg===k?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="crow"><span>Background</span><select data-mgsel="bg">${[['haze','Soft focus-in'],['static','Stays'],['fade','Fades in'],['zoom','Zooms in']].map(([k,n]) => `<option value="${k}" ${mg.bg===k?'selected':''}>${n}</option>`).join('')}</select></div>
       <div class="btns"><button data-mg="play">▶ Preview</button><button data-mg="clear">🗑 Remove all</button></div>`;
   }
-  h += `<div class="note">🧠 Runs in your browser — the picture is never uploaded. First use downloads the AI once (object finder ≈45 MB, cut-out ≈6 MB), then it is cached. Works best on clear photos and illustrations; if something is missed, use <b>Tap to add object</b>. Tip: make the clip 3–6 s long so there is time for in and out.</div>`;
+  h += `<div class="note">🧠 Runs in your browser — the picture is never uploaded. First use downloads the AI once (object finder ≈45 MB, cut-out ≈6 MB), then it is cached. Works best on clear photos and illustrations; if something is missed, use <b>Tap to add object</b>. The photo is lengthened automatically so every object has time to arrive.</div>`;
   return h;
+}
+// give the photo enough time on screen for every object to arrive (and leave) — like Canva, never squeeze them together
+function fitMagicDur(it){
+  const mg = it.magic; if(!mg || !mg.on) return; const n = Math.max(1, mg.layers.length);
+  const need = mg.inDur + mg.stag*(n-1) + 2 + (mg.outS === 'none' ? 0 : mg.outDur + mg.stag*(n-1));
+  if(it.type){ if(it.dur < need) it.dur = +need.toFixed(2); }
+  else { const len = (it.out - it.in)/(it.speed||1); if(len < need) it.out = +(it.in + need*(it.speed||1)).toFixed(2); }
 }
 function mgProg(m){ MG_BUSY = m; const e = $('#mgProg'); if(e) e.innerHTML = m; }
 async function magicTap(it, u, v){
@@ -589,7 +596,7 @@ async function magicTap(it, u, v){
   mgProg('✂️ Cutting out…');
   try{ const L = await magicAddAt(it, u, v);
     if(!L){ mgProg('⚠ Nothing found there — tap right on the object'); setTimeout(() => { if(MG_BUSY.startsWith('⚠')) mgProg(''); }, 2500); return; }
-    pushUndo(); const mg = ensureMagic(it); mg.layers.push(L); mg.on = true; mgProg(''); renderInspector(); afterEdit();
+    pushUndo(); const mg = ensureMagic(it); mg.layers.push(L); mg.on = true; fitMagicDur(it); mgProg(''); renderInspector(); afterEdit();
   }catch(e){ mgProg('⚠ Cut-out AI could not load (internet needed the first time): ' + esc(e.message||e)); }
 }
 IB.addEventListener('click', async e => {
@@ -602,7 +609,7 @@ IB.addEventListener('click', async e => {
     mgProg('⏳ Starting…'); renderInspector();
     try{ const layers = await magicAuto(it, (m) => mgProg(m));
       if(!layers.length){ mgProg('No clear objects found — use 👆 Tap to add object'); }
-      else { pushUndo(); mg.layers = layers.concat(mg.layers.filter(l => !layers.some(n => iou(n.box, l.box) > .7))); mg.on = true; mgProg(''); }
+      else { pushUndo(); mg.layers = layers.concat(mg.layers.filter(l => !layers.some(n => iou(n.box, l.box) > .7))); mg.on = true; fitMagicDur(it); mgProg(''); }
     }catch(err){ console.error(err); mgProg('⚠ AI could not load (internet needed the first time): ' + esc(err.message||err)); }
     renderInspector(); afterEdit(); if(mg.on){ const st = it.type ? it.start : derived[it.id].start; seek(st); play(); }
   }
@@ -610,7 +617,7 @@ IB.addEventListener('click', async e => {
 IB.addEventListener('change', e => {
   const it = selItem(); if(!it) return;
   if(e.target.dataset.mg === 'on'){ pushUndo(); ensureMagic(it).on = e.target.checked; afterEdit(); return; }
-  if(e.target.dataset.mgsel){ pushUndo(); ensureMagic(it)[e.target.dataset.mgsel] = e.target.value; afterEdit(); }
+  if(e.target.dataset.mgsel){ pushUndo(); ensureMagic(it)[e.target.dataset.mgsel] = e.target.value; fitMagicDur(it); afterEdit(); }
 });
 function animGrid(it, sub){
   const path = sub === 'in' ? 'anim.in' : sub === 'out' ? 'anim.out' : 'anim.loop', cur = getP(it, path), q = (S.animQ||'').toLowerCase().trim();
@@ -618,7 +625,8 @@ function animGrid(it, sub){
   if(q) list = list.filter(x => x[1].toLowerCase().includes(q));
   else if(cat === 'Trending') list = ANIM_TREND.map(id => list.find(x => x[0] === id)).filter(Boolean);
   else if(cat !== 'All') list = list.filter(x => x[2] === cat);
-  return `<button class="tile ${cur==='none'?'on':''}" data-set="${path}" data-val="none"><div class="tth">${ic('ban')}</div><span>None</span></button>` +
+  const mgOn = it.magic && it.magic.on, mgT = sub === 'in' && isImg(it) && (!q || 'magic animate'.includes(q)) ? `<button class="tile mgtile ${mgOn?'on':''}" data-gomagic="1"><div class="tth" style="display:grid;place-items:center;font-size:26px;background:linear-gradient(120deg,#3b1f6e,#16323a)">✨</div><span>✨ Magic</span></button>` : '';
+  return mgT + `<button class="tile ${cur==='none'&&!(sub==='in'&&mgOn)?'on':''}" data-set="${path}" data-val="none"><div class="tth">${ic('ban')}</div><span>None</span></button>` +
     list.map(([k,n])=>`<button class="tile ${cur===k?'on':''}" data-set="${path}" data-val="${k}" data-prev="${sub}"><div class="tth"><canvas class="apv" data-an="${k}" data-sub="${sub}" width="96" height="64"></canvas></div><span>${n}</span></button>`).join('');
 }
 function animBody(it, kind, sub){
@@ -627,7 +635,8 @@ function animBody(it, kind, sub){
   let h = `<div class="srch">${ic('target')}<input type="text" id="animQ" placeholder="Search animations" value="${esc(S.animQ||'')}"></div>`;
   if(sub !== 'combo') h += `<div class="chiprow scrollx">${cats.map(c=>`<button data-anicat="${c}" class="${c===cat&&!S.animQ?'on':''}">${c}</button>`).join('')}</div>`;
   h += `<div class="tiles atiles" id="animGrid">${animGrid(it, sub)}</div><div style="height:12px"></div>`;
-  if(sub === 'in' && cur !== 'none') h += sl(it,'Duration','anim.inDur',.1,3,.1);
+  if(sub === 'in' && it.magic && it.magic.on && isImg(it)) h += magicBody(it);
+  else if(sub === 'in' && cur !== 'none') h += sl(it,'Duration','anim.inDur',.1,3,.1);
   if(sub === 'out' && cur !== 'none') h += sl(it,'Duration','anim.outDur',.1,3,.1);
   h += `<div class="note">▶ Hover a tile for a live preview; click to see it in the player. ${ANIM_LIB.length + 25}+ animations.</div>`;
   h += clipLike ? '<div class="btns"><button data-all="anim">Apply to all clips</button></div>' : '<div class="btns"><button data-all="ovanim">Apply to all similar items</button></div>';
@@ -745,7 +754,7 @@ function inspBody(it, kind, tab, sub){
                      <div class="crow"><span>Ratio</span><select data-g="ratio">${['9:16','16:9','1:1','4:5','4:3','21:9','orig'].map(k=>`<option value="${k}" ${S.ratio===k?'selected':''}>${k==='orig'?'Original':k}</option>`).join('')}</select></div>`)) + KF_NOTE;
     case 'audio': return audioBody(it, kind, sub);
     case 'speed': return speedBody(it, kind, sub);
-    case 'anim': return sub === 'magic' ? magicBody(it) : animBody(it, kind, sub);
+    case 'anim': return animBody(it, kind, sub);
     case 'trans': return transBody(it);
     case 'gfx': { const g = GFXMAP[it.gfx] || {}; let b = '';
       if(g.text != null) b += `<div class="crow"><span>Text</span></div><input type="text" data-p="text" value="${esc(it.text||'')}" style="width:100%;margin:-6px 0 10px">`;
@@ -918,6 +927,8 @@ function doClick(t, it){
   if(d.voice){ applyVoice(it, d.voice); return true; }
   if(d.set){
     pushUndo(); setP(it, d.set, d.val);
+    if(d.set === 'anim.in' && it.magic) it.magic.on = false;
+    if(d.set.startsWith('magic.')) fitMagicDur(it);
     if(d.set === 'font') ensureFont(d.val);
     if(d.set === 'fx.type' || d.set.startsWith('trans')) layout();
     renderInspector(); renderTimeline(); applyChange(d.set, it);
@@ -1887,6 +1898,10 @@ async function runTTS(it, btn){
 function v8Click(t, it){
   const d = t.dataset;
   if(v9Click(t, it)) return true;
+  if(d.gomagic){ const mg = ensureMagic(it); pushUndo(); mg.on = true; setP(it, 'anim.in', 'none'); fitMagicDur(it); afterEdit(); renderInspector();
+    if(!mg.layers.length && !MG_BUSY) setTimeout(() => { const b = IB.querySelector('[data-mg=auto]'); b && b.click(); }, 50);
+    else { seek(it.type ? it.start : derived[it.id].start); play(); }
+    return true; }
   if(d.anicat){ S.animCat = d.anicat; S.animQ = ''; renderInspector(); return true; }
   if(d.vcat){ S.vcat = d.vcat; S.vq = ''; renderInspector(); return true; }
   if(d.tfxcat){ S.tfxCat = d.tfxcat; t.closest('#lcontent') ? renderLeft() : renderInspector(); return true; }

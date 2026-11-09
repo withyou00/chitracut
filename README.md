@@ -182,3 +182,18 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
   - You can set the in/out duration, the delay between objects, the order (left→right, biggest first, random) and the background (stays, fades in, zooms in).
 - Everything runs in the browser; the picture is never uploaded. The models download once (≈45 MB + ≈6 MB) and are then cached.
 - The objects and settings are saved inside the project and export like any other clip.
+
+## Phase 24 — Magic animate is easier to find
+- **✨ Magic** is now the first sub-tab under Animation for photos *and* videos. On a video it explains that Magic works on photos.
+- On a photo, a purple **✨ Magic animate** banner sits above the In/Out animations.
+- Searching "magic" in the animation search shows a Magic animate tile.
+- A version tag (v24) next to the logo shows which version is loaded.
+
+## Phase 25 — Magic animate, Canva-style
+- **✨ Magic** is now the first tile in **Animation › In** (photos only). There is no separate tab.
+  - Clicking the tile turns it on and runs auto-detect the first time.
+  - Picking any other In animation turns Magic off.
+- **Timing:**
+  - Defaults: the picture comes into focus from a soft bright haze, objects rise in one by one (0.6 s each, 0.1 s apart), and there is no Out.
+  - The photo is lengthened automatically so objects never overlap their in and out.
+- **Content-aware fill:** the space behind each object is now filled with a multi-scale PatchMatch fill. It copies real texture (ground, walls) from nearby instead of blurring.
