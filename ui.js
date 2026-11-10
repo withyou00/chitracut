@@ -147,7 +147,70 @@ function renderLeft(){
   $('#ltabs').innerHTML = LTABS.map(([k,n,i])=>`<button data-ltab="${k}" class="${S.ltab===k?'on':''}">${ic(i)}<span>${n}</span></button>`).join('');
   const subs = LSUB[S.ltab], sub = subs.some(s=>s[0]===S.lsub[S.ltab]) ? S.lsub[S.ltab] : subs[0][0];
   $('#lsub').innerHTML = subs.map(([k,n])=>`<button data-lsub="${k}" class="${sub===k?'on':''}">${n}</button>`).join('');
-  LC.innerHTML = leftContent(S.ltab, sub); fillRanges(LC); paintGfxTiles(); paintV8(LC, visTarget());
+  const q = (S.lq[S.ltab] || '').trim().toLowerCase(), canQ = LSEARCH[S.ltab];
+  LSB.style.display = canQ ? '' : 'none'; if(canQ){ LSI.placeholder = 'Search ' + canQ; if(LSI.value !== (S.lq[S.ltab]||'')) LSI.value = S.lq[S.ltab] || ''; LSX.style.display = q ? '' : 'none'; }
+  if(canQ && q){ $('#lsub').querySelectorAll('button').forEach(b => b.classList.remove('on')); LC.innerHTML = ''; LC.appendChild(leftSearch(S.ltab, q)); }
+  else LC.innerHTML = leftContent(S.ltab, sub);
+  fillRanges(LC); paintGfxTiles(); paintV8(LC, visTarget());
+}
+// ---- v27: search box on every library panel (effects, transitions, filters, sounds, text, stickers, templates…) ----
+const LSEARCH = {media:'media & library', audio:'sounds & music', text:'text styles & effects', stickers:'stickers', effects:'effects', transitions:'transitions', templates:'templates', filters:'filters', adjust:'LUTs'};
+S.lq = S.lq || {};
+const LSB = document.createElement('div'); LSB.id = 'lsearch';
+LSB.innerHTML = `<span class="lsico">${ic('target')}</span><input type="search" id="lsq" autocomplete="off"><button id="lsx" title="Clear">✕</button>`;
+const LRIGHT = document.createElement('div'); LRIGHT.id = 'lright'; LC.parentNode.insertBefore(LRIGHT, LC); LRIGHT.appendChild(LSB); LRIGHT.appendChild(LC);
+const LSI = LSB.querySelector('#lsq'), LSX = LSB.querySelector('#lsx');
+let lsT = null;
+LSI.addEventListener('input', () => { S.lq[S.ltab] = LSI.value; clearTimeout(lsT); lsT = setTimeout(renderLeft, 120); });
+LSI.addEventListener('keydown', e => { if(e.key === 'Escape'){ LSI.value = ''; S.lq[S.ltab] = ''; renderLeft(); } });
+LSX.addEventListener('click', () => { LSI.value = ''; S.lq[S.ltab] = ''; renderLeft(); LSI.focus(); });
+// a sub-category click leaves search mode
+$('#lsub').addEventListener('click', e => { if(e.target.closest('[data-lsub]') && S.lq[S.ltab]){ S.lq[S.ltab] = ''; } }, true);
+const EMOJI_NAMES = ["heart love", "laugh lol funny", "love eyes", "fire hot", "like thumbs up", "party celebrate", "sparkle magic", "star", "hundred perfect", "cool sunglasses", "party birthday", "sad cry", "angry", "think", "clap applause", "pray thanks namaste", "strong muscle", "cake birthday", "gift present", "flower", "rose flower", "sun", "moon night", "lightning flash", "boom blast", "dizzy star", "music note", "music notes song", "location pin", "check yes tick", "cross no wrong", "warning", "point right arrow", "point left arrow", "point up arrow", "point down arrow", "wow surprised", "star eyes", "angel", "love hearts", "wink fun", "hands celebrate", "sparkling heart love", "broken heart", "trophy winner", "graduation school", "books study school", "diya lamp deepavali festival"];
+const STK_NAMES = {thumb:'like thumbs up',heart:'heart love',bell:'bell subscribe notification',comment:'comment chat',share:'share',verified:'verified tick badge',check:'check tick',play:'play video',follow:'follow subscribe',camera:'camera photo',star:'star',pin:'pin location',music:'music',live:'live',new:'new',sale:'sale offer',hot:'hot',arrowR:'arrow right',arrowD:'arrow down',arrowC:'arrow curve',click:'click mouse',circle:'circle ring',cross:'cross wrong',q:'question',ex:'exclamation',num1:'number 1 one',num2:'number 2 two',num3:'number 3 three'};
+function leftSearchAll(tab){
+  // every category of the panel, each tagged with its category name (so "glitch" also finds effects in the Glitch group)
+  const keep = {sfx:S.sfxCat, gfx:S.gfxCat, pf:S.pfCat}, R = [];
+  try{
+    switch(tab){
+      case 'effects': FX_CATS.forEach(c => R.push([c[0], leftContent('effects', c[0])])); R.push(['', leftContent('effects', 'All')]); break;
+      case 'transitions': LSUB.transitions.forEach(([k]) => R.push([k, leftContent('transitions', k)])); break;
+      case 'filters': PF_CATS.forEach(c => { S.pfCat = c; R.push([c, leftContent('filters', 'filters')]); }); break;
+      case 'audio': SFX_CATS.forEach(c => { S.sfxCat = c; R.push([c + ' sound effect', leftContent('audio', 'sfx')]); }); R.push(['music', leftContent('audio', 'yours')]); break;
+      case 'text': [['add','text'],['templates','template'],['effects','effect']].forEach(([k,n]) => R.push([n, leftContent('text', k)])); break;
+      case 'stickers': [['emoji','emoji'],['social','social'],['badges','badge arrow']].forEach(([k,n]) => R.push([n, leftContent('stickers', k)])); break;
+      case 'templates': LSUB.templates.forEach(([k]) => R.push([k, leftContent('templates', k)])); break;
+      case 'media': R.push(['', leftContent('media', 'all')]); GFX_CATS.forEach(c => { S.gfxCat = c; R.push([c + ' graphic', leftContent('media', 'library')]); }); break;
+      case 'adjust': R.push(['lut', leftContent('adjust', 'lut')]); break;
+    }
+  } finally { S.sfxCat = keep.sfx; S.gfxCat = keep.gfx; S.pfCat = keep.pf; }
+  return R;
+}
+function leftSearch(tab, q){
+  const box = document.createElement('div'); box.className = 'lsres';
+  for(const [cat, html] of leftSearchAll(tab)){ const t = document.createElement('div'); t.innerHTML = html; t.querySelectorAll('.tile, .srow, .mtile').forEach(el => el.setAttribute('data-scat', cat)); while(t.firstChild) box.appendChild(t.firstChild); }
+  const words = q.split(/\s+/).filter(Boolean), seen = new Map();
+  // keep only the items; drop category chips, titles, notes and the "None" tiles
+  box.querySelectorAll('.chiprow, .ltitle, .lnote, .lhead, .dropzone, .segstat, .note').forEach(el => el.remove());
+  const items = [...box.querySelectorAll('.tile, .srow, .mtile, .tpl, .tpltile')];
+  let n = 0;
+  for(const el of items){
+    const dkey = o => Object.entries(o.dataset).filter(([k]) => k !== 'scat').map(([k,v]) => k+'='+v).join('&');
+    const key = dkey(el) || [...el.querySelectorAll('*')].map(dkey).filter(Boolean).join('|');
+    const hay = (el.textContent + ' ' + (el.title||'') + ' ' + Object.values(el.dataset).join(' ') + ' ' + (el.querySelector('img') ? el.querySelector('img').alt || '' : '')).toLowerCase();
+    const isNone = /=none(&|$)/.test(key) && !/none/.test(q);
+    if(isNone || !words.every(w => hay.includes(w)) || (key && seen.has(key))){ el.remove(); continue; }
+    if(key) seen.set(key, 1); n++;
+  }
+  // merge the results into one grid per kind (instead of one small grid per category)
+  const groups = new Map(), loose = [];
+  for(const el of box.querySelectorAll('.tile, .srow, .mtile')){ const par = el.parentElement; if(par === box){ loose.push(el); continue; }
+    const k = par.className; if(!groups.has(k)) groups.set(k, []); groups.get(k).push(el); }
+  box.innerHTML = '';
+  for(const [cls, els] of groups){ const g = document.createElement('div'); g.className = cls; els.forEach(e => g.appendChild(e)); box.appendChild(g); }
+  loose.forEach(e => box.appendChild(e));
+  const head = document.createElement('div'); head.className = 'lsinfo'; head.innerHTML = n ? `<b>${n}</b> result${n>1?'s':''} for “${esc(q)}”` : `No results for “${esc(q)}” — try another word`;
+  box.prepend(head); return box;
 }
 function renderMediaPanel(){ renderLeft(); }
 function toast(msg){ let t = $('#toast'); if(!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); } t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2800); }
@@ -185,7 +248,7 @@ function leftContent(tab, sub){
   switch(tab){
     case 'media': {
       if(sub === 'library'){
-        const cat = S.gfxCat || 'Social', list = GFX.filter(g => g.cat === cat);
+        const cat = S.gfxCat || 'Social', list = GFX.filter(g => cat === 'All' || g.cat === cat);
         return `<div class="chiprow">${GFX_CATS.map(c=>`<button data-gfxcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>
           <div class="tiles gfx">${list.map(g=>`<button class="tile" data-gfx="${g.id}" draggable="true"><div class="tth gth"><canvas data-gfxc="${g.id}" width="176" height="104"></canvas></div><span>${g.name}</span></button>`).join('')}</div>
           <div class="lnote">✨ Animated stock graphics generated by ChitraCut — <b>copyright free</b>, no download. Hover to preview · click = add at playhead · drag to timeline. Text and colours are editable.</div>`;
@@ -225,9 +288,9 @@ function leftContent(tab, sub){
         <div class="lnote">After selecting text, change font, colour and animation on the right. 70+ fonts in many languages.</div>`;
     }
     case 'stickers':
-      if(sub === 'social' || sub === 'badges') return `<div class="tiles small">${STICKER_SETS[sub].map(k=>`<button class="tile emoji" data-stk="svg:${k}"><div class="tth"><img src="${SVG_URL[k]}" style="width:44px;height:44px"></div></button>`).join('')}</div>
+      if(sub === 'social' || sub === 'badges') return `<div class="tiles small">${STICKER_SETS[sub].map(k=>`<button class="tile emoji" data-stk="svg:${k}" title="${STK_NAMES[k]||k}"><div class="tth"><img src="${SVG_URL[k]}" style="width:44px;height:44px"></div></button>`).join('')}</div>
         <div class="lnote">These are ChitraCut original generic icons (Like, Bell, Verified ✓, Share…). Real platform logos are trademarks, so they are not included.</div>`;
-      return `<div class="tiles small">${EMOJIS.map(e=>`<button class="tile emoji" data-stk="${e}"><div class="tth">${e}</div></button>`).join('')}</div>`;
+      return `<div class="tiles small">${EMOJIS.map((e,i)=>`<button class="tile emoji" data-stk="${e}" title="${EMOJI_NAMES[i]||''}"><div class="tth">${e}</div></button>`).join('')}</div>`;
     case 'effects': {
       const it = normItem(visTarget()), th = SCENES.portrait.src, head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'Select a clip first'}</div>`;
       if(sub === 'body'){
@@ -258,13 +321,13 @@ function leftContent(tab, sub){
         <div class="lnote">Use Export .srt for YouTube subtitles. Select a caption on the timeline to edit it.</div>`;
       return captionsAuto();
     case 'filters': {
-      const it = visTarget(), cat = S.pfCat || 'Featured', cur = it ? it.filter : '';
+      const it = visTarget(), cat = S.pfCat || 'Featured', cur = it ? it.filter : '';  // 'All' = every grade (used by search)
       const head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'Select a clip first'}</div>
         <div class="chiprow">${PF_CATS.map(c=>`<button data-pfcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>`;
       let tiles;
       if(cat === 'Basic'){ const th = SCENES.portrait.src; tiles = Object.keys(FILTERS).map(k=>`<button class="tile ${cur===k?'on':''}" data-filt="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join(''); }
       else {
-        const list = (cat === 'Featured' ? PF_FEATURED.map(id => PF_MAP[id]) : PRO_FILTERS.filter(f => f.cat === cat)).filter(Boolean), th = pfThumbs(list);
+        const list = (cat === 'Featured' ? PF_FEATURED.map(id => PF_MAP[id]) : cat === 'All' ? PRO_FILTERS : PRO_FILTERS.filter(f => f.cat === cat)).filter(Boolean), th = pfThumbs(list);
         tiles = `<button class="tile ${cur==='none'?'on':''}" data-filt="none"><div class="tth">${ic('ban')}</div><span>None</span></button>` +
           list.map(f=>`<button class="tile ${cur==='pf:'+f.id?'on':''}" data-filt="pf:${f.id}"><div class="tth"><img class="pfimg" src="${th[f.id]}"></div><span>${f.name}</span></button>`).join('');
       }

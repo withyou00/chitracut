@@ -205,3 +205,10 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
   - Characters the voice did not know were crashing it, which showed as a bare number error.
 - **Smaller pieces:** text is spoken in pieces of at most about 140 characters. If a piece still fails, it is split in half and retried.
 - **Fallback voice:** if the small 8-bit voice model cannot run in the browser, ChitraCut switches automatically to the full-precision voice (one-time larger download, ~114 MB for Kannada).
+
+## Phase 27 — Search everywhere
+- Every library panel has a search box at the top: Media & Library, Audio (sound effects + your music), Text, Stickers, Effects, Transitions, Templates, Filters and LUTs.
+- **What it searches:**
+  - All categories of the panel at once, by name and by category. For example, "glitch" finds every effect in the Glitch group, and "hd" finds all HD filters.
+  - Emojis and stickers have names, so you can search "like", "birthday", "arrow" and so on.
+- Results show in one grid with a count. ✕ or Esc clears the search, and picking a category on the left also leaves search.
