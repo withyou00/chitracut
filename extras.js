@@ -937,22 +937,59 @@ const TTS_SRC = `
 import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
 env.allowLocalModels = false;
 const cache = {};
+const msgOf = e => typeof e === 'number' ? 'ONNX runtime error ' + e : String(e && e.message || e);
+async function load(model, dtype){
+  const k = model + '|' + dtype;
+  if(!cache[k]) cache[k] = pipeline('text-to-speech', model, { dtype, progress_callback: p => self.postMessage({ type: 'progress', p }) });
+  try { return await cache[k]; } catch(e){ delete cache[k]; throw e; }
+}
+// run one piece; if the voice model chokes on it, split it in half and try again
+async function speak(tts, text, depth){
+  try { const r = await tts(text); if(!r.audio || !r.audio.length) throw new Error('empty'); return [r]; }
+  catch(e){
+    if(depth > 3 || text.length < 12) throw e;
+    const sp = text.split(' '), h = Math.ceil(sp.length/2);
+    if(sp.length < 2) throw e;
+    return [...await speak(tts, sp.slice(0,h).join(' '), depth+1), ...await speak(tts, sp.slice(h).join(' '), depth+1)];
+  }
+}
 self.onmessage = async e => {
   const { model, parts } = e.data;
-  try {
-    if (!cache[model]) cache[model] = await pipeline('text-to-speech', model, { progress_callback: p => self.postMessage({ type: 'progress', p }) });
-    const out = []; let sr = 16000;
-    for (let i = 0; i < parts.length; i++) {
-      self.postMessage({ type: 'status', i, n: parts.length });
-      const r = await cache[model](parts[i]); sr = r.sampling_rate; out.push(r.audio);
+  // the small 8-bit voice is tried first; some browsers can't run it, so the full-precision voice is the fallback
+  for (const dtype of ['q8', 'fp32']) {
+    try {
+      if (dtype === 'fp32') self.postMessage({ type: 'note', msg: 'Switching to the high-quality voice model (one-time download)…' });
+      const tts = await load(model, dtype);
+      const out = []; let sr = 16000, skipped = 0;
+      for (let i = 0; i < parts.length; i++) {
+        self.postMessage({ type: 'status', i, n: parts.length });
+        try { for (const r of await speak(tts, parts[i], 0)) { sr = r.sampling_rate; out.push(r.audio); } }
+        catch (err) { if (dtype === 'q8') throw err; skipped++; }
+      }
+      if (!out.length) throw new Error('no audio');
+      self.postMessage({ type: 'done', out, sr, skipped }); return;
+    } catch (err) {
+      if (dtype === 'fp32') { self.postMessage({ type: 'error', msg: msgOf(err) }); return; }
     }
-    self.postMessage({ type: 'done', out, sr });
-  } catch (err) { self.postMessage({ type: 'error', msg: String(err && err.message || err) }); }
+  }
 };`;
+// keep only what the voice can pronounce (unknown characters crash the model)
+const TTS_KEEP = {kan:/[^ಀ-೿\s,.?!'-]/g, hin:/[^ऀ-ॿ\s,.?!'-]/g, eng:/[^a-z\s,.?!'-]/g};
+const DIG = {kan:'ಸೊನ್ನೆ ಒಂದು ಎರಡು ಮೂರು ನಾಲ್ಕು ಐದು ಆರು ಏಳು ಎಂಟು ಒಂಬತ್ತು', hin:'शून्य एक दो तीन चार पाँच छह सात आठ नौ', eng:'zero one two three four five six seven eight nine'};
+function ttsClean(text, lang){
+  let t = text.normalize('NFC');
+  if(lang === 'eng') t = t.toLowerCase();
+  const dw = (DIG[lang] || DIG.eng).split(' ');
+  t = t.replace(/[0-9೦-೯०-९]/g, d => { const c = d.charCodeAt(0), v = c <= 57 ? c - 48 : c >= 0x0CE6 && c <= 0x0CEF ? c - 0x0CE6 : c - 0x0966; return ' ' + dw[v] + ' '; });
+  t = t.replace(/[।|;:\n]/g, '. ').replace(TTS_KEEP[lang] || TTS_KEEP.eng, ' ').replace(/\s+/g, ' ').trim();
+  return t;
+}
 let ttsWorker = null;
 async function synthSpeech(text, lang, onProg){
   const L = TTS_LANGS.find(l => l[0] === lang) || TTS_LANGS[0];
-  const parts = text.replace(/\s+/g,' ').split(/(?<=[.!?।|\n])\s+/).map(s => s.trim()).filter(Boolean).flatMap(s => s.length > 220 ? s.match(/.{1,200}(\s|$)/g) : [s]);
+  const clean = ttsClean(text, L[0]);
+  if(!clean.replace(/[\s,.?!'-]/g,'')) throw new Error(L[0] === 'eng' ? 'Type English text for the English voice' : `Type the text in ${L[1]} script for this voice`);
+  const parts = clean.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.replace(/[\s,.?!'-]/g,'')).flatMap(s => s.length > 140 ? s.split(/(?<=,)\s+/) : [s]).flatMap(s => s.length > 140 ? s.match(/.{1,120}(\s|$)/g).map(x => x.trim()).filter(Boolean) : [s]);
   if(!parts.length) throw new Error('Text is empty');
   if(!ttsWorker) ttsWorker = new Worker(URL.createObjectURL(new Blob([TTS_SRC],{type:'text/javascript'})),{type:'module'});
   const files = {};
@@ -960,6 +997,7 @@ async function synthSpeech(text, lang, onProg){
     ttsWorker.onmessage = e => { const d = e.data;
       if(d.type === 'progress' && d.p && d.p.status === 'progress' && d.p.total){ files[d.p.file] = [d.p.loaded, d.p.total]; const a = Object.values(files).reduce((s,x)=>s+x[0],0), b = Object.values(files).reduce((s,x)=>s+x[1],0); onProg && onProg(`⬇ Voice model: ${(a/1048576).toFixed(0)} / ${(b/1048576).toFixed(0)} MB`, a/b); }
       else if(d.type === 'status') onProg && onProg(`🗣 Generating voice… ${d.i+1}/${d.n}`, (d.i+1)/d.n);
+      else if(d.type === 'note') onProg && onProg('⏳ ' + d.msg, 0);
       else if(d.type === 'done') resolve(d); else if(d.type === 'error') reject(new Error(d.msg)); };
     ttsWorker.onerror = e => reject(new Error(e.message || 'TTS worker error (internet needed)'));
     ttsWorker.postMessage({model:L[2], parts});
@@ -1331,7 +1369,8 @@ async function separateStems(it, which, onProg){
         if(d.type === 'dl') onProg(`⬇ AI model: ${(d.got/1048576).toFixed(0)} / ${(d.total/1048576).toFixed(0)} MB (first time only)`, d.got/d.total);
         else if(d.type === 'status') onProg(d.msg, 0);
         else if(d.type === 'prog'){ const left = d.sec/d.k*(d.n-d.k); onProg(`🎛 ${d.ep === 'webgpu' ? '⚡ GPU' : 'CPU'} · ${d.k}/${d.n} · time left ~${left < 60 ? Math.ceil(left)+' s' : Math.ceil(left/60)+' min'}`, d.k/d.n); }
-        else if(d.type === 'done') resolve(d); else if(d.type === 'error') reject(new Error(d.msg)); };
+        else if(d.type === 'note') onProg && onProg('⏳ ' + d.msg, 0);
+      else if(d.type === 'done') resolve(d); else if(d.type === 'error') reject(new Error(d.msg)); };
       stemWorker.onerror = e => reject(new Error(e.message || 'worker error'));
       stemWorker.postMessage({L, R, urls:STEM_MODEL_URLS, base:location.href, comp:1.012, gpu:!!navigator.gpu});
     });

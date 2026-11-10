@@ -197,3 +197,11 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
   - Defaults: the picture comes into focus from a soft bright haze, objects rise in one by one (0.6 s each, 0.1 s apart), and there is no Out.
   - The photo is lengthened automatically so objects never overlap their in and out.
 - **Content-aware fill:** the space behind each object is now filled with a multi-scale PatchMatch fill. It copies real texture (ground, walls) from nearby instead of blurring.
+
+## Phase 26 — Text to speech fix
+- **Cleaning the text:** before speaking, the text is reduced to what the chosen voice can pronounce.
+  - Digits are turned into words (e.g. 2026 → ಎರಡು ಸೊನ್ನೆ ಎರಡು ಆರು).
+  - Characters from other scripts and symbols are removed.
+  - Characters the voice did not know were crashing it, which showed as a bare number error.
+- **Smaller pieces:** text is spoken in pieces of at most about 140 characters. If a piece still fails, it is split in half and retried.
+- **Fallback voice:** if the small 8-bit voice model cannot run in the browser, ChitraCut switches automatically to the full-precision voice (one-time larger download, ~114 MB for Kannada).
