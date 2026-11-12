@@ -727,7 +727,6 @@ body.resizing iframe,body.resizing canvas{pointer-events:none}
 #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:#1f2a2c;color:#fff;border:1px solid #2fd0d0;padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:9999;box-shadow:0 8px 24px #0008}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 .mtile.pick .mth{outline:2px solid var(--acc);outline-offset:1px}
-.mtile .mth .acts{display:flex}
 
 /* v23 magic animate */
 .mghero{display:flex;flex-direction:column;gap:4px;padding:12px;border-radius:12px;background:linear-gradient(120deg,#3b1f6e,#16323a);margin-bottom:10px}
@@ -786,3 +785,52 @@ body.resizing iframe,body.resizing canvas{pointer-events:none}
 .thead .tl{font-weight:500}
 /* v29: track names column always covers clips scrolled underneath it */
 .thead{background:#1d1d20!important;z-index:10!important;box-shadow:4px 0 6px -4px #0008}
+
+/* ===== v31: CapCut desktop palette & proportions (sampled from a CapCut screenshot) ===== */
+:root{--bg:#141414;--card:#262626;--panel2:#303030;--panel3:#3b3b3b;--line:#333336;--text:#e8e8e8;--mute:#9d9d9d}
+body,#app{background:#141414}
+#top{background:#141414}
+#left,#player,#right,#bottom{background:#262626!important;border-radius:8px}
+#ltabs{background:#303030;border-bottom:none;border-radius:8px 8px 0 0;padding:6px 4px 5px;gap:0;scrollbar-width:none;justify-content:space-between}
+#ltabs::-webkit-scrollbar{display:none}
+#ltabs button{padding:4px 5px;font-size:11.5px;color:#e6e6e6;gap:4px;min-width:0}
+#ltabs button svg{width:21px;height:21px}
+#ltabs button.on{color:#5ec7cd}
+#ltabs button:hover{background:#3b3b3b}
+#lsub{background:#262626;border-right:1px solid #2f2f2f}
+#lsub button{color:#e6e6e6;font-size:13px;border-radius:6px}
+#lsub button.on{background:#3b3b3b;color:#5ec7cd}
+.phead{background:#303030;border-bottom:none;border-radius:8px 8px 0 0;font-weight:500;font-size:13.5px;height:42px}
+#stage{background:#262626}
+#rtabs{background:#303030;border-bottom:none;border-radius:8px 8px 0 0}
+#rtabs button{font-weight:500;color:#e6e6e6}
+#rtabs button.on{color:#5ec7cd}
+#tools{background:#262626;border-bottom:1px solid #1f1f1f}
+#tl{background:#262626!important}
+.trow.ruler{background:#262626!important;border-bottom:none}
+.trow.ovrow .tbody,.trow.aurow .tbody,.trow.main .tbody{background:#292929!important}
+.thead{background:#262626!important}
+.trow.ovrow,.trow.aurow{border-bottom:3px solid #262626}
+/* media: 2-column cards like CapCut, actions on hover only */
+.mgrid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px 12px}
+.mth{height:96px;border-radius:7px;background-color:#363636;background-size:contain;border:2px solid transparent}
+.mtile span,.mtile .mn{color:#c7c7c7;font-size:12px}
+.mth .dur,.mth .badge{background:#000a;font-size:11px;padding:1px 6px}
+.mth .acts{display:none!important}
+.mtile:hover .mth .acts{display:flex!important}
+@media (hover:none){.mth .acts{display:flex!important}}
+.mtile:hover .mth{border-color:#5ec7cd}
+/* right panel Details (nothing selected) */
+.details{padding:10px 4px}
+.drow{display:flex;gap:12px;padding:9px 0;font-size:13px}
+.drow span{width:120px;flex:none;color:#8f8f8f}
+.drow b{font-weight:400;color:#e8e8e8;word-break:break-word}
+.dsep{height:1px;background:#333;margin:10px 0}
+.dhint{display:flex;align-items:center;gap:8px;color:#8f8f8f;font-size:12.5px;padding-top:6px}
+.dhint svg{width:16px;height:16px}
+/* buttons & inputs a touch lighter */
+button{background:#363636}
+button:hover{background:#414141}
+select,input[type=number],input[type=text],#lsearch{background:#1f1f1f!important;border-color:#3a3a3a}
+.lnote,.note{background:#2e2e2e}
+.clip .wave{opacity:.6}

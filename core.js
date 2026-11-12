@@ -277,7 +277,10 @@ function currentPair(){
 
 /* ================= MEDIA ELEMENTS ================= */
 const POOL = (() => { const d=document.createElement('div'); d.id='mediaPool'; d.style.cssText='position:fixed;left:0;top:0;width:4px;height:4px;overflow:hidden;opacity:.01;pointer-events:none;z-index:-1'; (document.body||document.documentElement).appendChild(d); return d; })();
-function mkVideo(url){ const v=document.createElement('video'); v.preload='auto'; v.playsInline=true; v.setAttribute('playsinline',''); v.style.cssText='width:4px;height:4px'; POOL.appendChild(v); if(url) v.src=url; return v; }
+function mkVideo(url){ const v=document.createElement('video'); v.preload='auto'; v.playsInline=true; v.setAttribute('playsinline',''); v.style.cssText='width:4px;height:4px'; POOL.appendChild(v); if(url) v.src=url;
+  // count the frames the browser really presents → the GPU only re-uploads a picture when there is a new one
+  v._fn = 0; if(v.requestVideoFrameCallback){ const f = () => { v._fn++; if(v.isConnected) v.requestVideoFrameCallback(f); }; v.requestVideoFrameCallback(f); }
+  return v; }
 function dropEl(v){ try{ v.pause(); v.removeAttribute('src'); v.load(); v.remove(); }catch(e){} }
 function getVid(c){
   let v = vids[c.id];
@@ -604,7 +607,8 @@ function pause(){
 }
 function updatePlayBtn(){ const b=$('#btnPlay'); if(b) b.innerHTML = ic(S.playing ? 'pause' : 'play'); }
 
-let lastNow = 0, pairKey = '', lastSyncT = -1;
+let lastNow = 0, pairKey = '', lastSyncT = -1, lastIdleKey = '', lastIdleDraw = 0, lastInteract = 0;
+['pointerdown','pointermove','keydown','input','wheel','change'].forEach(t => addEventListener(t, () => { lastInteract = performance.now(); }, {capture:true, passive:true}));
 // stall guard — when the playing video is still loading/decoding (start of play, clip change, big 4K files)
 // the music and PiP videos wait for it, and an export pauses its recorder, so nothing freezes in the final file
 let stalled = false, stallVT = -1, stallAdvT = 0, stallClip = null;
@@ -675,7 +679,11 @@ function tick(now){
       ch.vol.gain.value = g;
     }
   }
-  if(!(HEAVY && !S.playing && !exporting)) render(now);   // pause preview redraws while a heavy analysis runs (faster on phones)
+  // when paused, only redraw the preview if something could have changed (time, an edit, or the user is interacting) —
+  // the editor stays responsive instead of re-drawing the same picture 60 times a second
+  const idleKey = S.time + '|' + S.sel + '|' + editVer + '|' + undoS.length + '|' + (active && vids[active.id] ? vids[active.id]._fn + ':' + vids[active.id].readyState : '') + '|' + out.width + 'x' + out.height;
+  const busy = S.playing || exporting || idleKey !== lastIdleKey || now - lastInteract < 1500 || now - lastIdleDraw > 500;
+  if(busy && !(HEAVY && !S.playing && !exporting)){ render(now); lastIdleKey = idleKey; if(!S.playing) lastIdleDraw = now; }
   updatePH();
   syncInsp();
   if(exporting && rec && rec.state === 'recording') $('#ovBar').style.width = (S.total ? S.time/(expEnd || S.total)*100 : 0) + '%';
@@ -878,6 +886,7 @@ const dummy = mkTex(); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UN
 gl.uniform1i(U.u_tex,0); gl.uniform1i(U.u_lut,1); gl.uniform1i(U.u_seg,2); gl.uniform1i(U.u_lut2,3);
 const EX0 = {s:1,sx:1,dx:0,dy:0,a:1,r:0};
 const texOwn = new Map(), ovTex = {}, clipTex = new Map();
+const texK = new WeakMap(), dsCanv = new WeakMap();
 function texFor(id){
   let t = clipTex.get(id);
   if(t){ clipTex.delete(id); clipTex.set(id, t); return t; }
@@ -1077,9 +1086,18 @@ function drawClip(c,tex,ex){
   tex = texFor(c.id).tex;
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
   const fresh = isI || (el.readyState >= 2 && !el.seeking);
-  if(fresh || exporting || texOwn.get(tex) !== c.id){
+  const tk = texK.get(tex) || {}, nowT = performance.now();
+  // skip the upload when the same video frame is already on the GPU (big saving: video 30 fps vs screen 60 fps)
+  const same = !isI && texOwn.get(tex) === c.id && tk.el === el && el._fn > 0 && tk.fn === el._fn && Math.abs((tk.t ?? -1) - el.currentTime) < .5 && nowT - (tk.at||0) < 250 && !exporting;
+  const sameImg = isI && texOwn.get(tex) === c.id && tk.el === el && !(c.magic && c.magic.on);
+  if(!same && !sameImg && (fresh || exporting || texOwn.get(tex) !== c.id)){
     if(!isI && el.readyState < 2) return;
-    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el); texOwn.set(tex, c.id); if(!isI) texT.set(tex, el.currentTime); }catch(e){ return; }
+    let src = el;
+    // 4K / high-res video: shrink on the GPU first, then upload a small picture (much faster on most PCs and phones)
+    if(!isI && vw*vh > 2400000){ const lim = Math.max(cv.width, cv.height) * (exporting ? 1 : .75), k = Math.min(1, lim/Math.max(vw, vh));
+      if(k < .9){ let ds = dsCanv.get(tex); if(!ds){ ds = document.createElement('canvas'); dsCanv.set(tex, ds); } const w = Math.round(vw*k), h = Math.round(vh*k);
+        if(ds.width !== w || ds.height !== h){ ds.width = w; ds.height = h; } ds.getContext('2d').drawImage(el, 0, 0, w, h); src = ds; } }
+    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src); texOwn.set(tex, c.id); texK.set(tex, {el, fn:el._fn, t:isI ? 0 : el.currentTime, at:nowT}); if(!isI) texT.set(tex, el.currentTime); }catch(e){ return; }
   }
   const W=cv.width, H=cv.height, d=derived[c.id], lt=S.time-d.start, st=localToSrc(c,lt);
   gl.uniform2f(U.u_px,1/vw,1/vh);
@@ -1552,7 +1570,8 @@ function restore(s){
 }
 function undo(){ if(!undoS.length) return; redoS.push(snap()); restore(undoS.pop()); }
 function redo(){ if(!redoS.length) return; undoS.push(snap()); restore(redoS.pop()); }
-function afterEdit(){ layout(); renderTimeline(); renderInspector(); seek(Math.min(S.time,S.total)); $('#hint').style.display=(S.clips.length||S.overlays.length||S.audios.length)?'none':''; updateHint(); }
+var editVer = 0;
+function afterEdit(){ editVer++; layout(); renderTimeline(); renderInspector(); seek(Math.min(S.time,S.total)); $('#hint').style.display=(S.clips.length||S.overlays.length||S.audios.length)?'none':''; updateHint(); }
 function updateHint(){ const h = $('#hint'); if(h) h.innerHTML = S.media.length ? '<b>Add to timeline</b><br>Click <b>＋</b> on a file in Media, or drag it onto the timeline' : '<b>Add media</b><br>Press <b>Import</b> on the left or drag video / photo / music here'; }
 function split(){
   const fr=selFree();

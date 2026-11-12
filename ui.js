@@ -478,7 +478,12 @@ function renderInspector(){
   const it = selItem(), kind = kindOf(it);
   if(!it){
     $('#rtabs').innerHTML = ''; $('#rsub').innerHTML = '';
-    IB.innerHTML = `<div class="empty">${ic('cursor')}Select a clip, text or audio on the timeline.<br>Its settings appear here.</div>`;
+    $('#rtabs').innerHTML = '<button class="on">Details</button>';
+    const nV = S.clips.filter(c => !isImg(c)).length, nP = S.clips.length - nV, R = S.ratio === 'orig' ? 'Original' : S.ratio;
+    const row = (k, v) => `<div class="drow"><span>${k}</span><b>${v}</b></div>`;
+    IB.innerHTML = `<div class="details">${row('Name:', esc(S.project ? S.project.name : 'Project'))}${row('Saved in:', 'This browser (auto-save)')}${row('Duration:', fmtTC(S.total||0))}${row('Clips:', `${nV} video · ${nP} photo · ${S.audios.length} audio · ${S.overlays.length} layers`)}
+      <div class="dsep"></div>${row('Aspect ratio:', R)}${row('Resolution:', out.width + ' × ' + out.height)}${row('Preview quality:', (S.quality||720) + 'p')}${row('Frame rate:', '30.00fps')}
+      <div class="dsep"></div><div class="dhint">${ic('cursor')}Select a clip, text or audio on the timeline to edit it.</div></div>`;
     refreshLeftLive(); renderMTools(); return;
   }
   let tabs = RT[kind];

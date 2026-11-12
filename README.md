@@ -228,3 +228,14 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 
 ## Phase 29
 - Fix: when the timeline is scrolled, clips no longer show through the track-name column on the left.
+
+## Phase 30 — Lighter preview engine
+- **Frame-aware upload:** a video frame is copied to the GPU only when the browser has decoded a new one. Before, the same frame was copied 60×/s while the video runs at 25–30 fps.
+- **4K / high-resolution clips:** each frame is shrunk on the GPU to preview size before upload, so 4K is about 16× less data per frame. Export uses full quality.
+- **Idle:** while paused, the preview redraws only when something changes (time, edit, selection, a new decoded frame) or while you are interacting. This keeps the editor responsive instead of redrawing 60×/s.
+
+## Phase 31 — CapCut desktop look
+- **Colours:** sampled from a CapCut desktop screenshot — page #141414, panels #262626, panel headers #303030, track lanes #292929, accent #5ec7cd.
+- **Panel tops:** the left tabs, Player header and right tabs sit on a lighter header strip, like CapCut. All left tabs fit without a scrollbar.
+- **Media:** large 2-column cards; Add/PiP buttons appear on hover (always shown on touch screens).
+- **Right panel:** with nothing selected it shows **Details** — name, duration, clip counts, aspect ratio, resolution, preview quality, frame rate.
