@@ -1187,14 +1187,15 @@ function updatePH(){
 function seekDragStep(){
   if(!drag || drag.type !== 'seek') return;
   const r = TL.getBoundingClientRect(), L = r.left + HEADW, R = r.left + TL.clientWidth, x = drag.cx;
-  if(x < L + 24 && TL.scrollLeft > 0) TL.scrollLeft -= Math.min(60, 4 + (L + 24 - x)*.6);
-  else if(x > R - 24) TL.scrollLeft += Math.min(60, 4 + (x - R + 24)*.6);
+  // auto-scroll only when the pointer is pushed OUTSIDE the track area (not while dragging inside it)
+  if(x < L - 2 && TL.scrollLeft > 0) TL.scrollLeft -= Math.min(40, 3 + (L - x)*.4);
+  else if(x > R + 2) TL.scrollLeft += Math.min(40, 3 + (x - R)*.4);
   seek(Math.max(0, tAt(clamp(x, L, R))));
 }
 function seekEdgeLoop(){
   if(!drag || drag.type !== 'seek'){ return; }
   const r = TL.getBoundingClientRect(), L = r.left + HEADW, R = r.left + TL.clientWidth;
-  if((drag.cx < L + 24 && TL.scrollLeft > 0) || drag.cx > R - 24) seekDragStep();
+  if((drag.cx < L - 2 && TL.scrollLeft > 0) || drag.cx > R + 2) seekDragStep();
   drag.loop = setTimeout(seekEdgeLoop, 16);
 }
 const tAt = x => { const rb = $('#rulerBody'); return rb ? (x - rb.getBoundingClientRect().left)/S.pps : 0; };

@@ -212,3 +212,16 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
   - All categories of the panel at once, by name and by category. For example, "glitch" finds every effect in the Glitch group, and "hd" finds all HD filters.
   - Emojis and stickers have names, so you can search "like", "birthday", "arrow" and so on.
 - Results show in one grid with a count. ✕ or Esc clears the search, and picking a category on the left also leaves search.
+
+## Phase 28 — Smoother playback, clean export start, crisper timeline
+- **Many clips no longer lag:** only the current clip and its neighbours keep a live video decoder. Far-away clips and PiP videos release theirs, so browsers no longer choke when many videos are imported.
+- **Stall guard:** when the playing video is still loading (start of play, clip change, big 4K files), the music and PiP videos wait for it, so they stay in sync.
+- **Export:**
+  - The export warms up the first clip before recording starts.
+  - The recorder pauses while a clip is still loading, so the final file no longer begins with a frozen picture or has stutters at cuts.
+- **Scrubbing:** a slow seek (large 4K files) is no longer restarted early. Before this fix, restarting it was what froze the picture, so the frame shown — and the split point — lagged behind the playhead.
+- **Playhead drag:** the timeline only auto-scrolls when the pointer is pushed past the edge, so the playhead stays exactly under the mouse.
+- **Timeline look:**
+  - Taller tracks with tick-mark ruler.
+  - Blue audio clips with light-blue waveforms.
+  - Clearer labels and selection.

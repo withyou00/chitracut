@@ -496,10 +496,16 @@ function rebuildAudChain(a){ const ch = audChains[a.id]; if(!ch) return; killCha
 function dropAudChains(){ for(const id in audChains){ killChain(audChains[id]); delete audChains[id]; } }
 
 /* ================= PLAYBACK ================= */
+// Browsers can only run a few video decoders smoothly. Many imported clips used to keep one decoder each,
+// which made playback stutter. Now only the current clip and its neighbours keep a live video element.
+function trimDecoders(c){
+  const i = S.clips.indexOf(c), keep = new Set(S.clips.slice(Math.max(0, i-1), i+3).map(x => x.id));
+  for(const k in vids) if(!keep.has(k)){ if(chains.has(k)) dropChainFor(k); dropEl(vids[k]); delete vids[k]; }
+}
 function activate(c,src){
   if(active !== c){
     for(const k in vids) if(k !== c.id) vids[k].pause();
-    active = c;
+    active = c; trimDecoders(c);
   }
   if(!isImg(c)){
     const v = getVid(c);
@@ -507,7 +513,7 @@ function activate(c,src){
   }
   const nx = S.clips[S.clips.indexOf(c)+1];
   if(nx && !isImg(nx) && S.time < derived[nx.id].start){
-    const nv = getVid(nx); if(nv.paused && Math.abs(nv.currentTime-nx.in) > .1) nv.currentTime = nx.in;
+    const nv = getVid(nx); if(nv.paused && Math.abs(nv.currentTime-nx.in) > .03) nv.currentTime = nx.in;
   }
 }
 // while scrubbing, never interrupt a running seek: remember the newest target and jump there when the
@@ -516,7 +522,7 @@ function scrubTo(v, t){
   const now = performance.now();
   // a seek normally finishes in a few ms; if the browser never reports it (stuck decoder), restart it so
   // the picture follows the playhead again instead of freezing
-  if(!v.seeking || now - (v._seekT || 0) > 450){ v._pend = null; v._seekT = now; v.currentTime = t; return; }
+  if(!v.seeking || now - (v._seekT || 0) > 2500){ v._pend = null; v._seekT = now; v.currentTime = t; return; }
   v._pend = t;
   if(!v._hook){ v._hook = true; v.addEventListener('seeked', () => { const p = v._pend; if(p != null){ v._pend = null; if(Math.abs(v.currentTime - p) > .02){ v._seekT = performance.now(); v.currentTime = p; } } }); }
 }
@@ -535,6 +541,7 @@ function syncSecondary(){
 function syncEl(el,it,on){
   if(!on){ if(!el.paused) el.pause(); return; }
   const want = it.in + (S.time - it.start)*it.speed;
+  if(S.playing && stalled){ if(!el.paused) el.pause(); if(Math.abs(el.currentTime - want) > .05) el.currentTime = want; return; }
   if(S.playing){
     if(el.playbackRate !== it.speed) el.playbackRate = it.speed;
     if(el.paused){ el.currentTime = want; el.play().catch(()=>{}); }
@@ -547,6 +554,7 @@ function syncEl(el,it,on){
 function syncOvVideos(){
   for(const o of S.overlays){
     if(o.type !== 'video') continue;
+    if((S.time < o.start - 4 || S.time > o.start + o.dur + 2) && !ovVids[o.id]) continue;
     const v = ovVid(o), on = S.time >= o.start && S.time < o.start + o.dur;
     if(AC) ensureOvAudio(o,v);
     const th = S.trk && S.trk.ov[o.track] && (S.trk.ov[o.track].hide || S.trk.ov[o.track].mute);
@@ -554,6 +562,8 @@ function syncOvVideos(){
     syncEl(v,o,on);
   }
   for(const id in ovVids) if(!S.overlays.some(o => o.id === id)){ ovVids[id].pause(); if(ovAud[id]) ovAud[id].gain.value = 0; }
+  // free decoders of PiP videos that are far from the playhead
+  for(const o of S.overlays){ if(o.type !== 'video' || !ovVids[o.id]) continue; if(S.time < o.start - 4 || S.time > o.start + o.dur + 2){ if(ovAud[o.id]){ try{ ovAud[o.id].disconnect(); }catch(e){} delete ovAud[o.id]; } dropEl(ovVids[o.id]); delete ovVids[o.id]; } }
 }
 function syncAudItems(){
   for(const a of S.audios){
@@ -595,6 +605,24 @@ function pause(){
 function updatePlayBtn(){ const b=$('#btnPlay'); if(b) b.innerHTML = ic(S.playing ? 'pause' : 'play'); }
 
 let lastNow = 0, pairKey = '', lastSyncT = -1;
+// stall guard — when the playing video is still loading/decoding (start of play, clip change, big 4K files)
+// the music and PiP videos wait for it, and an export pauses its recorder, so nothing freezes in the final file
+let stalled = false, stallVT = -1, stallAdvT = 0, stallClip = null;
+function checkStall(now){
+  const c = active; let st = false;
+  if(c && !isImg(c) && S.time < S.mainEnd - 1e-3){
+    const v = vids[c.id];
+    if(stallClip !== c){ stallClip = c; stallVT = -1; stallAdvT = now; }
+    if(v){ if(v.currentTime !== stallVT){ stallVT = v.currentTime; stallAdvT = now; }
+      st = v.seeking || v.readyState < 3 || (now - stallAdvT > 160); }
+  }
+  if(st !== stalled){ stalled = st;
+    if(st){ for(const k in ovVids) ovVids[k].pause(); for(const k in audEls) audEls[k].pause(); }
+    if(rec && exporting){ try{ if(st && rec.state === 'recording') rec.pause(); else if(!st && rec.state === 'paused') rec.resume(); }catch(e){} }
+  }
+  if(exporting && rec && rec.state === 'inactive' && !st && recArmed){ recArmed = false; rec.start(250); }
+}
+var recArmed = false;
 var HEAVY = 0;
 function tick(now){
   requestAnimationFrame(tick);
@@ -629,6 +657,7 @@ function tick(now){
       S.time += dt;
       if(active && S.time > S.mainEnd + 1e-4) deactivate();
     }
+    checkStall(now);
     if(exporting && expEnd != null && S.time >= expEnd - 1e-3 && expEnd < S.total - 1e-4){ S.time = expEnd; pause(); onPlaybackEnd(); }
     else if(S.time >= S.total - 1e-4){ S.time = S.total; pause(); onPlaybackEnd(); }
     else { syncSecondary(); syncOvVideos(); syncAudItems(); }
@@ -1507,7 +1536,7 @@ async function computeWave(m){
     if(mx<.002) return;   // silent / no audio track
     const draw=(W,H,col)=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'); x.fillStyle=col;
       for(let i=0;i<W;i++){ const p=peaks[Math.floor(i*n/W)]/mx, h=Math.max(1,p*(H-2)); x.fillRect(i,(H-h)/2,1,h); } return c; };
-    draw(Math.min(n,16000),40,'rgba(255,255,255,.6)').toBlob(b=>{ if(m.wave) URL.revokeObjectURL(m.wave); m.wave=URL.createObjectURL(b); layout(); renderTimeline(); });
+    draw(Math.min(n,16000),48,'rgba(150,200,255,.95)').toBlob(b=>{ if(m.wave) URL.revokeObjectURL(m.wave); m.wave=URL.createObjectURL(b); layout(); renderTimeline(); });
     if(m.type==='audio'){ m.thumb=draw(160,70,'#b9a6ff').toDataURL('image/png'); renderMediaPanel(); }
   }catch(e){}
 }
@@ -2080,10 +2109,19 @@ function recordTimeline(o){
     rec.onstop = () => { finish(); resolve(new Blob(chunks, {type:o.mime.split(';')[0]})); };
     rec.onerror = e => { finish(); reject(e.error || new Error('recorder error')); };
     recCancel = () => { finish(); reject(new Error('cancel')); };
-    recDone = () => { if(rec && rec.state === 'recording') setTimeout(() => rec.stop(), 150); };
+    recDone = () => { if(rec && (rec.state === 'recording' || rec.state === 'paused')){ try{ if(rec.state === 'paused') rec.resume(); }catch(e){} setTimeout(() => rec.stop(), 150); } };
     exporting = true; soloMain = !!o.mainOnly; expEnd = o.t1; spk.gain.value = o.monitor ? 1 : 0;
     seek(o.t0);
-    setTimeout(() => { if(!exporting) return; rec.start(250); play(); }, 450);
+    // warm-up: wait until the first clip (and the next one) have decoded their first frames
+    const c0 = clipAt(o.t0), v0 = c0 && !isImg(c0) ? getVid(c0) : null;
+    const ready = v => !v || (v.readyState >= 3 && !v.seeking);
+    const t0w = performance.now();
+    await new Promise(res => { const chk = () => (ready(v0) || performance.now() - t0w > 8000) ? res() : setTimeout(chk, 50); chk(); });
+    await new Promise(r => setTimeout(r, 250));
+    if(!exporting) return;
+    recArmed = true; stalled = true; stallClip = null;   // the recorder starts on the first tick where the video is really moving
+    play();
+    if(!v0 || isImg(c0)){ setTimeout(() => { if(exporting && rec && rec.state === 'inactive'){ recArmed = false; rec.start(250); } }, 30); }
   });
 }
 const expName = ext => (S.project ? S.project.name.replace(/[^\wಀ-೿ -]/g,'') : 'ChitraCut') + '_' + Date.now() + ext;
