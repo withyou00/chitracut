@@ -768,7 +768,7 @@ body.resizing iframe,body.resizing canvas{pointer-events:none}
 .tick.m{padding:0;height:100%;bottom:auto;top:0}
 .tick.m::before{height:4px;border-left-color:#505258}
 .trow.main{height:88px;margin:6px 0}
-.trow.main .thead{background:transparent}
+.trow.main .thead{background:#1d1d20}
 .trow.ovrow{height:40px}
 .trow.aurow{height:54px}
 .trow.ovrow .tbody,.trow.aurow .tbody,.trow.main .tbody{background:#232327}
@@ -784,3 +784,5 @@ body.resizing iframe,body.resizing canvas{pointer-events:none}
 .it.sel,.clip.sel{border-color:#fff;box-shadow:0 0 0 1px #fff3}
 .thead{color:#b6b8be}
 .thead .tl{font-weight:500}
+/* v29: track names column always covers clips scrolled underneath it */
+.thead{background:#1d1d20!important;z-index:10!important;box-shadow:4px 0 6px -4px #0008}

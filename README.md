@@ -225,3 +225,6 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
   - Taller tracks with tick-mark ruler.
   - Blue audio clips with light-blue waveforms.
   - Clearer labels and selection.
+
+## Phase 29
+- Fix: when the timeline is scrolled, clips no longer show through the track-name column on the left.
