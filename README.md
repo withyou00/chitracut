@@ -248,3 +248,4 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - Every main render resets the shared WebGL state (scissor, viewport, texture unit); the effect/transition preview tiles always restore it, even on errors.
 - Moving the mouse over the side panels no longer forces the preview to keep re-rendering (less lag while browsing filters/effects).
 - Bug fix: dragging a filter thumbnail onto the player/timeline used to import the thumbnail picture as a new "download.jpg" overlay. Panel pictures can no longer be dragged out as files; instead a filter tile can be dragged onto a clip (timeline) or onto the player to apply that filter.
+- Filter drag: the side panel no longer re-renders in the middle of a drag (that cancelled the drag in real Chrome). Drop on a clip → filter applied to that clip; drop on an empty part of the timeline → a 3 s filter layer at that spot; drop on the player → applied to the selected clip.

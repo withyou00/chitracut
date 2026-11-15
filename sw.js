@@ -19,7 +19,7 @@ self.addEventListener('fetch', e => {
   // app files: newest version when online (3 s limit), cached copy when offline
   if (url.origin === self.location.origin) {
     e.respondWith(
-      timeout(fetch(req), 3000)
+      timeout(fetch(req, {cache:'no-cache'}), 3000)
         .then(r => { if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(req, copy)); } return r; })
         .catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('./index.html')))
     );

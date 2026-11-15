@@ -834,3 +834,7 @@ button:hover{background:#414141}
 select,input[type=number],input[type=text],#lsearch{background:#1f1f1f!important;border-color:#3a3a3a}
 .lnote,.note{background:#2e2e2e}
 .clip .wave{opacity:.6}
+/* v32: panel preview pictures can't be dragged out as files */
+#left img,#insp img,.tiles img{-webkit-user-drag:none;user-select:none}
+.tile[draggable=true]{cursor:grab}
+.pfimg{background:#333 center/cover no-repeat}

@@ -143,6 +143,7 @@ const TEXT_ADD = [
   ['caption','Caption',{text:'Caption text',...CAPTION_STYLE}]
 ];
 function renderLeft(){
+  if(ccDrag){ leftPending = true; return; }   // re-drawing the panel mid-drag would cancel the drag
   if(S.ltab === 'captions' && capBusy) return;
   $('#ltabs').innerHTML = LTABS.map(([k,n,i])=>`<button data-ltab="${k}" class="${S.ltab===k?'on':''}">${ic(i)}<span>${n}</span></button>`).join('');
   const subs = LSUB[S.ltab], sub = subs.some(s=>s[0]===S.lsub[S.ltab]) ? S.lsub[S.ltab] : subs[0][0];
@@ -442,9 +443,9 @@ LC.addEventListener('change', e => {
   else if(e.target.id === 'cModel') S.capModel = e.target.value;
   else { editing = false; renderTimeline(); }
 });
-let ccDrag = false;   // a drag that started inside the app (never import it as a new file)
+var ccDrag = false, leftPending = false;   // a drag that started inside the app (never import it as a new file)
 document.addEventListener('dragstart', () => { ccDrag = true; }, true);
-document.addEventListener('dragend', () => { setTimeout(() => { ccDrag = false; }, 0); TL.classList.remove('dragging'); }, true);
+document.addEventListener('dragend', () => { setTimeout(() => { ccDrag = false; if(leftPending){ leftPending = false; renderLeft(); } }, 0); TL.classList.remove('dragging'); }, true);
 // apply a dragged filter to the clip / layer it was dropped on
 function dropFilter(val, it){
   if(!it) return alert('Drop the filter on a clip');
@@ -1375,8 +1376,11 @@ TL.addEventListener('drop', async e => {
   if(d && d.startsWith('ccmedia:')){ dropMedia(media(d.slice(8)), z, t); renderLeft(); return; }
   if(d && d.startsWith('ccgfx:')){ addGfx(d.slice(6), t); return; }
   if(d && d.startsWith('ccfilt:')){ const el = e.target.closest && e.target.closest('.clip[data-id], .it[data-oid]');
-    const it = el ? (el.dataset.id ? S.clips.find(c => c.id === el.dataset.id) : S.overlays.find(o => o.id === el.dataset.oid)) : clipAt(t);
-    dropFilter(d.slice(7), it); return; }
+    const it = el ? (el.dataset.id ? S.clips.find(c => c.id === el.dataset.id) : S.overlays.find(o => o.id === el.dataset.oid)) : (z === 'main' ? clipAt(t) : null);
+    if(it){ dropFilter(d.slice(7), it); toast('Filter applied: ' + filterName(d.slice(7))); return; }
+    // dropped on an empty part of the timeline → a filter layer there (like CapCut)
+    const o = newOverlay('adjust', {start:t, dur:3, filter:d.slice(7), filterAmt:80}); addOverlay(o, 'adjust'); renderTimeline(); renderInspector(); seek(S.time);
+    toast('Filter layer added: ' + filterName(d.slice(7))); return; }
   if(!S.project || ccDrag) return;
   for(const f of e.dataTransfer.files){
     let m = null;
