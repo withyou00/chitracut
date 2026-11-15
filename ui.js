@@ -325,11 +325,11 @@ function leftContent(tab, sub){
       const head = `<div class="ltitle" style="margin-top:0">${it ? 'Selected: '+esc((media(it.mediaId)||{}).name||'') : 'Select a clip first'}</div>
         <div class="chiprow">${PF_CATS.map(c=>`<button data-pfcat="${c}" class="${c===cat?'on':''}">${c}</button>`).join('')}</div>`;
       let tiles;
-      if(cat === 'Basic'){ const th = SCENES.portrait.src; tiles = Object.keys(FILTERS).map(k=>`<button class="tile ${cur===k?'on':''}" data-filt="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join(''); }
+      if(cat === 'Basic'){ const th = SCENES.portrait.src; tiles = Object.keys(FILTERS).map(k=>`<button class="tile ${cur===k?'on':''}" draggable="true" data-filt="${k}"><div class="tth">${k==='none'?ic('ban'):`<div class="pv" style="background-image:url(${th});filter:${FILTER_CSS[k]}"></div>`}</div><span>${FILTER_NAMES[k]}</span></button>`).join(''); }
       else {
         const list = (cat === 'Featured' ? PF_FEATURED.map(id => PF_MAP[id]) : cat === 'All' ? PRO_FILTERS : PRO_FILTERS.filter(f => f.cat === cat)).filter(Boolean), th = pfThumbs(list);
         tiles = `<button class="tile ${cur==='none'?'on':''}" data-filt="none"><div class="tth">${ic('ban')}</div><span>None</span></button>` +
-          list.map(f=>`<button class="tile ${cur==='pf:'+f.id?'on':''}" data-filt="pf:${f.id}"><div class="tth"><img class="pfimg" src="${th[f.id]}"></div><span>${f.name}</span></button>`).join('');
+          list.map(f=>`<button class="tile ${cur==='pf:'+f.id?'on':''}" draggable="true" data-filt="pf:${f.id}"><div class="tth"><div class="pfimg" style="background-image:url(${th[f.id]})"></div></div><span>${f.name}</span></button>`).join('');
       }
       return head + `<div class="tiles">${tiles}</div>
         ${it && cur !== 'none' ? `<div style="margin-top:14px"><div class="ltitle" style="margin:0 0 6px">${esc(filterName(cur))}</div>${sl(it,'Strength','filterAmt',0,100)}</div><div class="btns">${it.type!=='adjust'?`<button data-all="filter">Apply to all clips</button><button data-addfl="${cur}">${ic('layers')} Add as filter layer</button>`:''}</div>` : ''}
@@ -442,10 +442,21 @@ LC.addEventListener('change', e => {
   else if(e.target.id === 'cModel') S.capModel = e.target.value;
   else { editing = false; renderTimeline(); }
 });
+let ccDrag = false;   // a drag that started inside the app (never import it as a new file)
+document.addEventListener('dragstart', () => { ccDrag = true; }, true);
+document.addEventListener('dragend', () => { setTimeout(() => { ccDrag = false; }, 0); TL.classList.remove('dragging'); }, true);
+// apply a dragged filter to the clip / layer it was dropped on
+function dropFilter(val, it){
+  if(!it) return alert('Drop the filter on a clip');
+  if(!(!it.type || isMediaOv(it) || it.type === 'adjust')) return;
+  pushUndo(); it.filter = val; S.sel = it.id; afterEdit(); renderTimeline(); renderInspector(); renderLeft();
+}
 LC.addEventListener('dragstart', e => {
+  const fl = e.target.closest && e.target.closest('[data-filt]');
+  if(fl){ e.dataTransfer.setData('text/plain', 'ccfilt:' + fl.dataset.filt); e.dataTransfer.effectAllowed = 'copy'; TL.classList.add('dragging'); return; }
   const g = e.target.closest('[data-gfx]');
   if(g){ e.dataTransfer.setData('text/plain', 'ccgfx:' + g.dataset.gfx); e.dataTransfer.effectAllowed = 'copy'; TL.classList.add('dragging'); return; }
-  const t = e.target.closest('.mtile'); if(!t) return;
+  const t = e.target.closest('.mtile'); if(!t){ e.preventDefault(); return; }   // preview pictures are not draggable
   e.dataTransfer.setData('text/plain', 'ccmedia:' + t.dataset.mid); e.dataTransfer.effectAllowed = 'copy';
   TL.classList.add('dragging');
 });
@@ -1363,7 +1374,10 @@ TL.addEventListener('drop', async e => {
   const d = e.dataTransfer.getData('text/plain');
   if(d && d.startsWith('ccmedia:')){ dropMedia(media(d.slice(8)), z, t); renderLeft(); return; }
   if(d && d.startsWith('ccgfx:')){ addGfx(d.slice(6), t); return; }
-  if(!S.project) return;
+  if(d && d.startsWith('ccfilt:')){ const el = e.target.closest && e.target.closest('.clip[data-id], .it[data-oid]');
+    const it = el ? (el.dataset.id ? S.clips.find(c => c.id === el.dataset.id) : S.overlays.find(o => o.id === el.dataset.oid)) : clipAt(t);
+    dropFilter(d.slice(7), it); return; }
+  if(!S.project || ccDrag) return;
   for(const f of e.dataTransfer.files){
     let m = null;
     try{ m = f.type.startsWith('video/') ? await addVideoMedia(f) : f.type.startsWith('image/') ? await addImageMedia(f) : f.type.startsWith('audio/') ? await addAudioMedia(f) : null; }
@@ -1601,10 +1615,14 @@ document.addEventListener('keydown', e => {
   else if(k === 'end'){ seek(S.total); }
 });
 window.addEventListener('dragover', e => e.preventDefault());
-window.addEventListener('drop', e => { e.preventDefault(); if(S.project && e.dataTransfer.files.length) importFiles([...e.dataTransfer.files]); });
+window.addEventListener('drop', e => { e.preventDefault();
+  const d = e.dataTransfer.getData('text/plain');
+  if(d && d.startsWith('ccfilt:') && e.target.closest && e.target.closest('#stage')){ dropFilter(d.slice(7), visTarget()); return; }
+  if(ccDrag) return;   // pictures dragged out of the side panels are never imported as media
+  if(S.project && e.dataTransfer.files.length) importFiles([...e.dataTransfer.files]); });
 new ResizeObserver(fitCanvas).observe($('#stage'));
 window.addEventListener('resize', () => { HEADW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--head')) || 150; renderTimeline(); });
-if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js', {updateViaCache:'none'}).then(r => r.update()).catch(()=>{});
 
 /* =====================================================================
    PREVIEW GIZMOS: mask editing & tracking box (captures pointer before default drag)

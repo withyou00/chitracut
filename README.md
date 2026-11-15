@@ -247,3 +247,4 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - Frame-upload skip is limited to one video frame (40 ms) during playback, so a missed frame callback can never freeze the picture under a filter.
 - Every main render resets the shared WebGL state (scissor, viewport, texture unit); the effect/transition preview tiles always restore it, even on errors.
 - Moving the mouse over the side panels no longer forces the preview to keep re-rendering (less lag while browsing filters/effects).
+- Bug fix: dragging a filter thumbnail onto the player/timeline used to import the thumbnail picture as a new "download.jpg" overlay. Panel pictures can no longer be dragged out as files; instead a filter tile can be dragged onto a clip (timeline) or onto the player to apply that filter.
