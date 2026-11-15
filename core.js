@@ -502,7 +502,8 @@ function dropAudChains(){ for(const id in audChains){ killChain(audChains[id]); 
 // Browsers can only run a few video decoders smoothly. Many imported clips used to keep one decoder each,
 // which made playback stutter. Now only the current clip and its neighbours keep a live video element.
 function trimDecoders(c){
-  const i = S.clips.indexOf(c), keep = new Set(S.clips.slice(Math.max(0, i-1), i+3).map(x => x.id));
+  if(!S.playing && !exporting && Object.keys(vids).length <= 6) return;   // scrubbing: keep decoders alive (re-creating one = black/stuck frame)
+  const i = S.clips.indexOf(c), keep = new Set(S.clips.slice(Math.max(0, i-2), i+3).map(x => x.id));
   for(const k in vids) if(!keep.has(k)){ if(chains.has(k)) dropChainFor(k); dropEl(vids[k]); delete vids[k]; }
 }
 function activate(c,src){
@@ -608,7 +609,10 @@ function pause(){
 function updatePlayBtn(){ const b=$('#btnPlay'); if(b) b.innerHTML = ic(S.playing ? 'pause' : 'play'); }
 
 let lastNow = 0, pairKey = '', lastSyncT = -1, lastIdleKey = '', lastIdleDraw = 0, lastInteract = 0;
-['pointerdown','pointermove','keydown','input','wheel','change'].forEach(t => addEventListener(t, () => { lastInteract = performance.now(); }, {capture:true, passive:true}));
+// plain mouse movement over the side panels must not keep the preview redrawing (that was a big source of lag)
+['pointerdown','pointermove','keydown','input','wheel','change'].forEach(t => addEventListener(t, e => {
+  if(t === 'pointermove' && !e.buttons && !(e.target && e.target.closest && e.target.closest('#stage'))) return;
+  lastInteract = performance.now(); }, {capture:true, passive:true}));
 // stall guard — when the playing video is still loading/decoding (start of play, clip change, big 4K files)
 // the music and PiP videos wait for it, and an export pauses its recorder, so nothing freezes in the final file
 let stalled = false, stallVT = -1, stallAdvT = 0, stallClip = null;
@@ -1077,27 +1081,30 @@ function transState(type,p,W,H){
 }
 const texT = new WeakMap();
 function drawClip(c,tex,ex){
-  if(ex.a <= 0.001) return;
-  let el = isImg(c) ? images[c.mediaId] : vids[c.id]; if(!el) return;
+  if(ex.a <= 0.001) return true;
+  let el = isImg(c) ? images[c.mediaId] : vids[c.id]; if(!el) return false;
   const isI = el.tagName === 'IMG';
   if(isI && c.magic && c.magic.on && typeof magicFrame === 'function'){ const dd = derived[c.id], mf = dd && magicFrame(c, S.time - dd.start, dd.dur); if(mf) el = mf; }   // v23 magic animate
   const vw = isI ? (el.naturalWidth || el.width) : el.videoWidth, vh = isI ? (el.naturalHeight || el.height) : el.videoHeight;
-  if(!vw) return;
+  if(!vw) return false;
   tex = texFor(c.id).tex;
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
   const fresh = isI || (el.readyState >= 2 && !el.seeking);
   const tk = texK.get(tex) || {}, nowT = performance.now();
   // skip the upload when the same video frame is already on the GPU (big saving: video 30 fps vs screen 60 fps)
-  const same = !isI && texOwn.get(tex) === c.id && tk.el === el && el._fn > 0 && tk.fn === el._fn && Math.abs((tk.t ?? -1) - el.currentTime) < .5 && nowT - (tk.at||0) < 250 && !exporting;
+  // (while playing the window is one video frame, so a missed frame-callback can never freeze the picture)
+  const same = !isI && texOwn.get(tex) === c.id && tk.el === el && el._fn > 0 && tk.fn === el._fn && Math.abs((tk.t ?? -1) - el.currentTime) < (S.playing ? .05 : .5) && nowT - (tk.at||0) < (S.playing ? 40 : 250) && !exporting;
   const sameImg = isI && texOwn.get(tex) === c.id && tk.el === el && !(c.magic && c.magic.on);
   if(!same && !sameImg && (fresh || exporting || texOwn.get(tex) !== c.id)){
-    if(!isI && el.readyState < 2) return;
+    if(!isI && el.readyState < 2){ if(texOwn.get(tex) !== c.id) return false; }   // not decoded yet → keep showing the last picture of this clip
+    else {
     let src = el;
     // 4K / high-res video: shrink on the GPU first, then upload a small picture (much faster on most PCs and phones)
     if(!isI && vw*vh > 2400000){ const lim = Math.max(cv.width, cv.height) * (exporting ? 1 : .75), k = Math.min(1, lim/Math.max(vw, vh));
       if(k < .9){ let ds = dsCanv.get(tex); if(!ds){ ds = document.createElement('canvas'); dsCanv.set(tex, ds); } const w = Math.round(vw*k), h = Math.round(vh*k);
         if(ds.width !== w || ds.height !== h){ ds.width = w; ds.height = h; } ds.getContext('2d').drawImage(el, 0, 0, w, h); src = ds; } }
-    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src); texOwn.set(tex, c.id); texK.set(tex, {el, fn:el._fn, t:isI ? 0 : el.currentTime, at:nowT}); if(!isI) texT.set(tex, el.currentTime); }catch(e){ return; }
+    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src); texOwn.set(tex, c.id); texK.set(tex, {el, fn:el._fn, t:isI ? 0 : el.currentTime, at:nowT}); if(!isI) texT.set(tex, el.currentTime); }catch(e){ if(texOwn.get(tex) !== c.id) return false; }
+    }
   }
   const W=cv.width, H=cv.height, d=derived[c.id], lt=S.time-d.start, st=localToSrc(c,lt);
   gl.uniform2f(U.u_px,1/vw,1/vh);
@@ -1127,10 +1134,12 @@ function drawClip(c,tex,ex){
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   geo[c.id] = {cx:W/2+ox, cy:H/2-oy, rot, hw, hh, flip:!!c.tf.flip};
   gl.uniform1f(U.u_trT, 0);
+  return true;
 }
+let missT = 0;
 function render(now){
   const W=cv.width, H=cv.height;
-  gl.viewport(0,0,W,H);
+  gl.viewport(0,0,W,H); gl.disable(gl.SCISSOR_TEST); gl.activeTexture(gl.TEXTURE0);   // clean GL state (preview tiles share this context)
   const pr = currentPair(), tr = pr && pr.b ? transState(pr.b.trans.type, pr.p, W, H) : null;
   if(!exporting && pr && !S.mainHide){   // a clip has no picture yet (first seek) → keep showing the previous frame briefly
     const notReady = [pr.a, pr.b].some(c => c && !isImg(c) && vids[c.id] && vids[c.id].readyState < 2 && !(clipTex.get(c.id) && texOwn.get(clipTex.get(c.id).tex) === c.id));
@@ -1141,12 +1150,14 @@ function render(now){
   gl.clearColor(bgc,bgc,bgc,1); gl.clear(gl.COLOR_BUFFER_BIT);
   gl.uniform2f(U.u_canvas,W,H); gl.uniform2f(U.u_res,W,H); gl.uniform1f(U.u_trT,0); gl.uniform1f(U.u_time,((now||0)%1000)/1000);
   if(pr && !S.mainHide){
-    drawClip(pr.a, texA, tr ? tr.A : EX0);
+    let ok = drawClip(pr.a, texA, tr ? tr.A : EX0);
     if(pr.b){
       if(tr.sc){ gl.enable(gl.SCISSOR_TEST); gl.scissor(...tr.sc); }
-      drawClip(pr.b, texB, tr.B);
+      ok = drawClip(pr.b, texB, tr.B) && ok;
       gl.disable(gl.SCISSOR_TEST);
     }
+    // fast scrubbing onto a clip that is still loading: keep the last good picture on screen instead of flashing black
+    if(!ok && !exporting){ const t = performance.now(); if(!missT) missT = t; if(t - missT < 3000){ lastIdleKey = ''; return; } } else missT = 0;
   }
   octx.globalAlpha = 1; octx.filter = 'none'; octx.globalCompositeOperation = 'source-over';
   octx.drawImage(cv,0,0);
@@ -2498,6 +2509,10 @@ function pvTexture(img){
 // layers: [{img, ex:{s,sx,sy,dx,dy,r,a,fx,mT,mP}, fx:[type,amount], sec}] — dx/dy are in tile pixels
 function glTile(canvas, layers, opt){
   const w = canvas.width, h = canvas.height; if(w > cv.width || h > cv.height) return;
+  try{ glTile0(canvas, layers, opt, w, h); }
+  finally{ gl.disable(gl.SCISSOR_TEST); gl.uniform1f(U.u_trT,0); gl.activeTexture(gl.TEXTURE0); gl.viewport(0,0,cv.width,cv.height); }
+}
+function glTile0(canvas, layers, opt, w, h){
   gl.viewport(0,0,w,h); gl.enable(gl.SCISSOR_TEST); gl.scissor(0,0,w,h);
   const cl = opt && opt.clear != null ? opt.clear : 0; gl.clearColor(cl,cl,cl,1); gl.clear(gl.COLOR_BUFFER_BIT);
   gl.uniform2f(U.u_canvas,w,h); gl.uniform2f(U.u_res,w,h);

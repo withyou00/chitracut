@@ -239,3 +239,11 @@ GitHub Pages ನಲ್ಲಿ **ಸಂಪೂರ್ಣ ಉಚಿತವಾಗಿ** 
 - **Panel tops:** the left tabs, Player header and right tabs sit on a lighter header strip, like CapCut. All left tabs fit without a scrollbar.
 - **Media:** large 2-column cards; Add/PiP buttons appear on hover (always shown on touch screens).
 - **Right panel:** with nothing selected it shows **Details** — name, duration, clip counts, aspect ratio, resolution, preview quality, frame rate.
+
+## Phase 32 — preview stability
+- Fast scrubbing onto a clip that is still loading keeps the last good picture instead of flashing black (up to 3 s).
+- A clip whose new frame is not decoded yet reuses its last uploaded frame instead of returning early.
+- Video decoders are no longer thrown away while scrubbing (only while playing, or when more than 6 are open); keep-window widened to 2 clips back / 2 ahead.
+- Frame-upload skip is limited to one video frame (40 ms) during playback, so a missed frame callback can never freeze the picture under a filter.
+- Every main render resets the shared WebGL state (scissor, viewport, texture unit); the effect/transition preview tiles always restore it, even on errors.
+- Moving the mouse over the side panels no longer forces the preview to keep re-rendering (less lag while browsing filters/effects).
